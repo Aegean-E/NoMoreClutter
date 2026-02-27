@@ -114,16 +114,31 @@ Return ONLY valid JSON, no other text."""
             )
             
             result_text = response.choices[0].message.content
+            
+            # Try to find JSON in the response
+            result_text = result_text.strip()
+            if "```json" in result_text:
+                result_text = result_text.split("```json")[1].split("```")[0]
+            elif "```" in result_text:
+                result_text = result_text.split("```")[1].split("```")[0]
+            
+            result_text = result_text.strip()
             results = json.loads(result_text)
+            
+            # Validate results
+            if not isinstance(results, list):
+                results = []
             
             return [
                 FileChange(
-                    original=r["original"],
+                    original=r.get("original", ""),
                     action=r.get("action", "move"),
                     new_path=r.get("new_path", "")
                 )
-                for r in results
+                for r in results if r.get("original") and r.get("new_path")
             ]
+        except json.JSONDecodeError as e:
+            raise LLMError(f"Failed to parse AI response: {str(e)}")
         except Exception as e:
             raise LLMError(f"Failed to analyze files: {str(e)}")
     

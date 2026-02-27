@@ -4,7 +4,7 @@ import json
 import threading
 from tkinter import filedialog, messagebox
 from services import FileScanner, LLMService, FileExecutor, LLMError
-from models import FILE_TYPE_CATEGORIES
+from models import FILE_TYPE_CATEGORIES, FileChange
 
 
 SETTINGS_FILE = "settings.json"
@@ -129,6 +129,9 @@ class NoMoreClutterApp(ctk.CTk):
         self.settings_window.geometry("600x550")
         self.settings_window.withdraw()
         
+        # Prevent closing, just hide
+        self.settings_window.protocol("WM_DELETE_WINDOW", self._hide_settings)
+        
         scroll = ctk.CTkScrollableFrame(self.settings_window, label_text="⚙ Settings")
         scroll.pack(fill="both", expand=True, padx=20, pady=20)
         
@@ -180,10 +183,21 @@ class NoMoreClutterApp(ctk.CTk):
         ctk.CTkButton(scroll, text="💾 Save Settings", command=self._save_settings, height=40).pack(padx=10, pady=20, anchor="e")
     
     def _open_settings(self):
-        if self.settings_window:
-            self.settings_window.deiconify()
-            self.settings_window.lift()
-            self.settings_window.focus_force()
+        try:
+            if self.settings_window and self.settings_window.winfo_exists():
+                self.settings_window.deiconify()
+                self.settings_window.lift()
+                self.settings_window.focus_force()
+            else:
+                self._build_settings_window()
+        except:
+            try:
+                self._build_settings_window()
+            except:
+                pass
+    
+    def _hide_settings(self):
+        self.settings_window.withdraw()
     
     def _toggle_limit(self):
         if self.unlimited_var.get():
@@ -250,13 +264,17 @@ class NoMoreClutterApp(ctk.CTk):
             messagebox.showinfo("Info", "No matching files found")
             return
         
-        limit = 0 if self.unlimited_var.get() else int(self.limit_entry.get() or 50)
+        try:
+            limit = 0 if self.unlimited_var.get() else int(self.limit_entry.get() or 50)
+        except:
+            limit = 50
         if limit > 0:
             files = files[:limit]
         
         self.total_files = len(files)
         self.processed_files = 0
         self.analysis_results = []
+        self.current_files = files  # Store for fallback
         
         self.status_label.configure(text=f"Found {self.total_files} files. Starting analysis...", text_color="yellow")
         self.analyze_btn.configure(state="disabled")
@@ -268,7 +286,10 @@ class NoMoreClutterApp(ctk.CTk):
         thread.start()
     
     def _analyze_thread(self, files):
-        batch_size = int(self.batch_size_entry.get() or 10)
+        try:
+            batch_size = int(self.batch_size_entry.get() or 10)
+        except:
+            batch_size = 10
         all_results = []
         
         for i in range(0, len(files), batch_size):
@@ -297,24 +318,46 @@ class NoMoreClutterApp(ctk.CTk):
                 self.after(0, self._update_progress, len(batch), all_results)
                 
             except Exception as e:
-                self.after(0, self._show_error, str(e))
+                error_msg = str(e)
+                self.after(0, self._show_error, error_msg)
+                # Still show what we have so far
+                if all_results:
+                    self.after(0, self._analysis_complete, all_results)
                 return
         
         self.after(0, self._analysis_complete, all_results)
     
     def _update_progress(self, count, results):
-        self.output_text.insert("end", f"✅ Analyzed {self.processed_files}/{self.total_files} files...\n")
+        self.output_text.insert("end", f"✅ Batch analyzed - got {len(results)} suggestions...\n")
         self.output_text.see("end")
         self.status_label.configure(text=f"Analyzing... {self.processed_files}/{self.total_files} files done", text_color="yellow")
     
     def _analysis_complete(self, results):
+        # Fallback: if AI returns nothing, organize by extension
+        if not results and hasattr(self, 'current_files') and self.current_files:
+            output = self.output_folder if self.output_folder else self.source_folder
+            
+            # Build reverse mapping: extension -> category
+            ext_to_cat = {}
+            for cat, exts in FILE_TYPE_CATEGORIES.items():
+                for ext in exts:
+                    ext_to_cat[ext.lower()] = cat
+            
+            # Create default organization by extension
+            results = []
+            for f in self.current_files:
+                ext = os.path.splitext(f)[1].lower()
+                category = ext_to_cat.get(ext, "Other")
+                folder_path = os.path.join(output, category)
+                results.append(FileChange(original=f, action="move", new_path=os.path.join(folder_path, os.path.basename(f))))
+        
         self.analysis_results = results
         
         self.output_text.delete("1.0", "end")
         
         if not results:
-            self.output_text.insert("end", "📭 No organization suggestions found\n")
-            self.status_label.configure(text="Analysis complete: 0 changes", text_color="gray")
+            self.output_text.insert("end", "⚠️ Could not generate suggestions. Check AI connection.\n")
+            self.status_label.configure(text="Analysis failed - check errors", text_color="red")
             return
         
         output = self.output_folder if self.output_folder else self.source_folder
@@ -335,8 +378,10 @@ class NoMoreClutterApp(ctk.CTk):
         self.analyze_btn.configure(state="normal")
     
     def _show_error(self, error):
+        self.output_text.insert("end", f"❌ Error: {error}\n")
+        self.output_text.see("end")
         messagebox.showerror("Error", error)
-        self.status_label.configure(text="Error occurred", text_color="red")
+        self.status_label.configure(text="Error occurred - check output", text_color="red")
         self.analyze_btn.configure(state="normal")
     
     def _execute(self):
