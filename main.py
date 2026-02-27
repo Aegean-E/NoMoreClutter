@@ -27,8 +27,8 @@ class NoMoreClutterApp(ctk.CTk):
         self.processed_files = 0
         
         self._load_settings()
-        self._build_settings_window()
         self._build_ui()
+        self._build_settings_window()
     
     def _load_settings(self):
         try:
@@ -128,8 +128,6 @@ class NoMoreClutterApp(ctk.CTk):
         self.settings_window.title("Settings")
         self.settings_window.geometry("600x550")
         self.settings_window.withdraw()
-        self.settings_window.transient(self)
-        self.settings_window.grab_set()
         
         scroll = ctk.CTkScrollableFrame(self.settings_window, label_text="⚙ Settings")
         scroll.pack(fill="both", expand=True, padx=20, pady=20)
@@ -182,8 +180,10 @@ class NoMoreClutterApp(ctk.CTk):
         ctk.CTkButton(scroll, text="💾 Save Settings", command=self._save_settings, height=40).pack(padx=10, pady=20, anchor="e")
     
     def _open_settings(self):
-        self.settings_window.deiconify()
-        self.settings_window.lift()
+        if self.settings_window:
+            self.settings_window.deiconify()
+            self.settings_window.lift()
+            self.settings_window.focus_force()
     
     def _toggle_limit(self):
         if self.unlimited_var.get():

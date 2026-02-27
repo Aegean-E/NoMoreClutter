@@ -65,10 +65,12 @@ class LLMService:
 Existing folders in target directory:
 {existing_str}
 
-Analyze each file and propose how it should be organized. 
+For EVERY file below, propose where it should go and what it should be named.
 - First, check if an existing folder is suitable (use it!)
-- Only create NEW descriptive folder names if no existing folder fits (e.g., "Work_Projects", "Personal_Photos", "2024_Invoices")
+- If no existing folder fits, create NEW descriptive folder names (e.g., "Work_Projects", "Personal_Photos", "2024_Invoices")
 - {rename_instruction}
+
+IMPORTANT: Include EVERY file in the response - do not skip any!
 
 Respond with a JSON array of objects with this structure:
 {{
@@ -77,7 +79,7 @@ Respond with a JSON array of objects with this structure:
   "new_path": "full/path/to/FolderName/new_filename.ext"
 }}
 
-Prefer using existing folders when appropriate. Create meaningful new folder names only when needed.
+ALL files must be included in the response.
 Return ONLY valid JSON, no other text."""
         else:
             rename_instruction = "Also analyze the filename to provide a better, descriptive name (e.g., 'IMG_001.jpg' → 'vacation_beach_2024.jpg')." if ai_rename else "Keep original filename."
@@ -87,9 +89,12 @@ Return ONLY valid JSON, no other text."""
 Existing folders in target directory:
 {existing_str}
 
-Analyze each file and propose how it should be organized using ONLY existing subfolders.
-{rename_instruction}
-If no suitable existing folder exists, keep the file in its current location (do not include it in results).
+For EVERY file below, propose where it should go.
+- Move files into existing folders that match their type or content
+- If no existing folder fits, use the most appropriate existing folder anyway
+- {rename_instruction}
+
+IMPORTANT: Include EVERY file in the response - do not skip any!
 
 Respond with a JSON array of objects with this structure:
 {{
@@ -98,7 +103,7 @@ Respond with a JSON array of objects with this structure:
   "new_path": "full/path/to/existing/subfolder/new_filename.ext"
 }}
 
-Only include files that should be moved to existing folders. Do NOT create new folders.
+ALL files must be included in the response.
 Return ONLY valid JSON, no other text."""
 
         try:
