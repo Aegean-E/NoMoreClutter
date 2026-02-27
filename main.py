@@ -1,9 +1,17 @@
-import customtkinter as ctk
 import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['NUMEXPR_NUM_THREADS'] = '1'
+
 import json
 import threading
+
 from tkinter import filedialog, messagebox
-from services import FileScanner, LLMService, FileExecutor, LLMError
+
+import customtkinter as ctk
+
+from services import get_FileScanner, get_LLMService, get_FileExecutor
 from models import FILE_TYPE_CATEGORIES, FileChange
 
 
@@ -49,7 +57,6 @@ class NoMoreClutterApp(ctk.CTk):
             "numbered_rename": self.numbered_rename_var.get(),
             "ai_rename": self.ai_rename_var.get(),
             "auto_execute": self.auto_execute_var.get(),
-            "unlimited": self.unlimited_var.get(),
             "limit": self.limit_entry.get(),
             "batch_size": self.batch_size_entry.get(),
         }
@@ -166,10 +173,7 @@ class NoMoreClutterApp(ctk.CTk):
         self.auto_execute_var = ctk.BooleanVar(value=self.settings.get("auto_execute", False))
         ctk.CTkCheckBox(scroll, text="Automatically move files after analysis (no confirmation)", variable=self.auto_execute_var).pack(padx=10, pady=3, anchor="w")
         
-        self.unlimited_var = ctk.BooleanVar(value=self.settings.get("unlimited", True))
-        ctk.CTkCheckBox(scroll, text="Process all files at once", variable=self.unlimited_var, command=self._toggle_limit).pack(padx=10, pady=3, anchor="w")
-        
-        ctk.CTkLabel(scroll, text="Files to process per batch (smaller = faster UI):").pack(padx=10, pady=(10, 0), anchor="w")
+        ctk.CTkLabel(scroll, text="Max files to process (0 = unlimited):").pack(padx=10, pady=(10, 0), anchor="w")
         self.limit_entry = ctk.CTkEntry(scroll, width=100)
         self.limit_entry.insert(0, self.settings.get("limit", "50"))
         self.limit_entry.pack(padx=10, pady=5, anchor="w")
@@ -178,9 +182,26 @@ class NoMoreClutterApp(ctk.CTk):
         self.batch_size_entry = ctk.CTkEntry(scroll, width=100)
         self.batch_size_entry.insert(0, self.settings.get("batch_size", "10"))
         self.batch_size_entry.pack(padx=10, pady=5, anchor="w")
-        self._toggle_limit()
         
         ctk.CTkButton(scroll, text="💾 Save Settings", command=self._save_settings, height=40).pack(padx=10, pady=20, anchor="e")
+        
+        # Test connection button
+        ctk.CTkButton(scroll, text="🔗 Test AI Connection", command=self._test_connection, height=40).pack(padx=10, pady=10, anchor="e")
+        self.connection_status = ctk.CTkLabel(scroll, text="", text_color="gray")
+        self.connection_status.pack(padx=10, pady=5, anchor="e")
+    
+    def _test_connection(self):
+        try:
+            LLMService, _ = get_LLMService()
+            llm = LLMService(base_url=self.llm_url.get().strip(), api_key="not-needed")
+            model_name = self.llm_model.get().strip()
+            success, msg = llm.test_connection(model_name)
+            if success:
+                self.connection_status.configure(text=f"✅ Connected to: {model_name}", text_color="green")
+            else:
+                self.connection_status.configure(text=f"❌ {msg}", text_color="red")
+        except Exception as e:
+            self.connection_status.configure(text=f"❌ Error: {str(e)}", text_color="red")
     
     def _open_settings(self):
         try:
@@ -198,12 +219,6 @@ class NoMoreClutterApp(ctk.CTk):
     
     def _hide_settings(self):
         self.settings_window.withdraw()
-    
-    def _toggle_limit(self):
-        if self.unlimited_var.get():
-            self.limit_entry.configure(state="disabled")
-        else:
-            self.limit_entry.configure(state="normal")
     
     def _select_source(self):
         folder = filedialog.askdirectory(title="Select Source Folder")
@@ -259,15 +274,18 @@ class NoMoreClutterApp(ctk.CTk):
             messagebox.showwarning("Warning", "Please select a source folder")
             return
         
-        files = FileScanner.scan_folder(self.source_folder, extensions)
+        # Only scan the source folder, not subfolders
+        files = get_FileScanner().scan_folder(self.source_folder, extensions, include_subfolders=False)
         if not files:
             messagebox.showinfo("Info", "No matching files found")
             return
         
         try:
-            limit = 0 if self.unlimited_var.get() else int(self.limit_entry.get() or 50)
+            limit = int(self.limit_entry.get() or 0)
         except:
-            limit = 50
+            limit = 0
+        
+        # If limit is 0, process all files (unlimited)
         if limit > 0:
             files = files[:limit]
         
@@ -292,10 +310,13 @@ class NoMoreClutterApp(ctk.CTk):
             batch_size = 10
         all_results = []
         
+        self.after(0, self._update_status, "🔄 Analyzing files...")
+        
         for i in range(0, len(files), batch_size):
             batch = files[i:i + batch_size]
             
             try:
+                LLMService, LLMError = get_LLMService()
                 llm = LLMService(base_url=self.llm_url.get().strip(), api_key="not-needed")
                 existing = self._get_existing_folders() + self.created_folders
                 output = self.output_folder if self.output_folder else self.source_folder
@@ -319,13 +340,60 @@ class NoMoreClutterApp(ctk.CTk):
                 
             except Exception as e:
                 error_msg = str(e)
-                self.after(0, self._show_error, error_msg)
-                # Still show what we have so far
-                if all_results:
-                    self.after(0, self._analysis_complete, all_results)
-                return
+                self.output_text.insert("end", f"⚠️ AI Error: {error_msg}\n")
+                # Use fallback - organize by extension
+                self.output_text.insert("end", "🔄 Using automatic organization by file type...\n")
+                self.after(0, self._update_status, "⚠️ AI failed, using auto...")
+                break
+        else:
+            # Loop completed without break - AI worked
+            if all_results:
+                self.after(0, self._update_status, f"✅ Analyzed {len(all_results)} files")
+        
+        # If no results or error occurred, use fallback
+        if not all_results:
+            self.after(0, self._update_status, "🔄 Organizing files automatically...")
+            all_results = self._create_fallback_results()
         
         self.after(0, self._analysis_complete, all_results)
+    
+    def _update_status(self, text):
+        self.status_label.configure(text=text)
+    
+    def _create_fallback_results(self):
+        """Create automatic organization by file extension - no AI needed"""
+        if not hasattr(self, 'current_files') or not self.current_files:
+            return []
+        
+        output = self.output_folder if self.output_folder else self.source_folder
+        
+        # Build reverse mapping: extension -> category
+        ext_to_cat = {}
+        for cat, exts in FILE_TYPE_CATEGORIES.items():
+            for ext in exts:
+                ext_to_cat[ext.lower()] = cat
+        
+        # Get existing folders
+        existing = self._get_existing_folders()
+        
+        results = []
+        for f in self.current_files:
+            ext = os.path.splitext(f)[1].lower()
+            category = ext_to_cat.get(ext, "Other")
+            
+            # Use existing folder if available, otherwise use category
+            folder_name = category
+            if category in existing:
+                folder_name = category
+            
+            folder_path = os.path.join(output, folder_name)
+            results.append(FileChange(
+                original=f, 
+                action="move", 
+                new_path=os.path.join(folder_path, os.path.basename(f))
+            ))
+        
+        return results
     
     def _update_progress(self, count, results):
         self.output_text.insert("end", f"✅ Batch analyzed - got {len(results)} suggestions...\n")
@@ -406,6 +474,7 @@ class NoMoreClutterApp(ctk.CTk):
                 else:
                     new_folders.add(rel)
         
+        FileExecutor = get_FileExecutor()
         success, errors = FileExecutor.execute(self.analysis_results)
         self.created_folders.extend(list(new_folders))
         

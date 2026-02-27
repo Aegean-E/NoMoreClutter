@@ -1,12 +1,26 @@
 import json
 import os
-from openai import OpenAI
 from models import FileChange, IMAGE_EXTENSIONS
 
 
 class LLMService:
     def __init__(self, base_url: str, api_key: str = "not-needed"):
+        from openai import OpenAI
         self.client = OpenAI(base_url=base_url, api_key=api_key)
+    
+    def test_connection(self, model: str = None) -> tuple[bool, str]:
+        """Test if the LLM is accessible"""
+        try:
+            test_model = model or "test"
+            response = self.client.chat.completions.create(
+                model=test_model,
+                messages=[{"role": "user", "content": "hi"}],
+                max_tokens=5
+            )
+            return True, "Connected"
+        except Exception as e:
+            error_msg = str(e)
+            return False, error_msg
     
     def _get_base_path(self, file_path: str) -> str:
         return os.path.dirname(file_path)
@@ -53,58 +67,58 @@ class LLMService:
         if not files:
             return []
         
-        file_list = "\n".join([f"- {os.path.basename(f)}" for f in files])
+        # Send EXACT file paths to AI - these must be used exactly as provided!
+        file_list = "\n".join([f"- {f}" for f in files])
         existing = existing_folders or []
         existing_str = "\n".join([f"- {f}" for f in existing]) if existing else "None"
         
         if create_new_folders:
             rename_instruction = "Also analyze the filename to provide a better, descriptive name for each file (e.g., 'IMG_001.jpg' → 'vacation_beach_2024.jpg')." if ai_rename else "Keep original filename, only organize into folders."
-            prompt = f"""You are a file organizer AI. Given this list of files:
+            prompt = f"""You are a file organizer AI. Given this list of EXACT file paths:
 {file_list}
 
-Existing folders in target directory:
+Existing folders in output directory:
 {existing_str}
 
-For EVERY file below, propose where it should go and what it should be named.
-- First, check if an existing folder is suitable (use it!)
-- If no existing folder fits, create NEW descriptive folder names (e.g., "Work_Projects", "Personal_Photos", "2024_Invoices")
+For EVERY file path above, you MUST use the EXACT path as the "original" value. Do NOT change or simplify the paths!
+
+IMPORTANT: 
+- Use EACH file path exactly as shown above
+- Output folder is where files will go (not the source folder in the path)
+- Create descriptive folder names or use existing ones
 - {rename_instruction}
 
-IMPORTANT: Include EVERY file in the response - do not skip any!
+Respond with a JSON array:
+[
+  {{"original": "EXACT_PATH_FROM_ABOVE", "action": "move", "new_path": "OUTPUT_PATH"}}
+]
 
-Respond with a JSON array of objects with this structure:
-{{
-  "original": "full/path/to/file.ext",
-  "action": "move",
-  "new_path": "full/path/to/FolderName/new_filename.ext"
-}}
-
-ALL files must be included in the response.
-Return ONLY valid JSON, no other text."""
+Use EXACT paths from the input list! Do NOT use placeholder paths like "full/path/to/..."!
+ALL files must be included.
+Return ONLY valid JSON."""
         else:
             rename_instruction = "Also analyze the filename to provide a better, descriptive name (e.g., 'IMG_001.jpg' → 'vacation_beach_2024.jpg')." if ai_rename else "Keep original filename."
-            prompt = f"""You are a file organizer AI. Given this list of files:
+            prompt = f"""You are a file organizer AI. Given this list of EXACT file paths:
 {file_list}
 
-Existing folders in target directory:
+Existing folders in output directory:
 {existing_str}
 
-For EVERY file below, propose where it should go.
-- Move files into existing folders that match their type or content
-- If no existing folder fits, use the most appropriate existing folder anyway
+For EVERY file path above, you MUST use the EXACT path as the "original" value. Do NOT change or simplify the paths!
+
+IMPORTANT:
+- Use EACH file path exactly as shown above
+- Only use EXISTING folders from the list above
 - {rename_instruction}
 
-IMPORTANT: Include EVERY file in the response - do not skip any!
+Respond with a JSON array:
+[
+  {{"original": "EXACT_PATH_FROM_ABOVE", "action": "move", "new_path": "EXISTING_FOLDER_PATH"}}
+]
 
-Respond with a JSON array of objects with this structure:
-{{
-  "original": "full/path/to/file.ext",
-  "action": "move",
-  "new_path": "full/path/to/existing/subfolder/new_filename.ext"
-}}
-
-ALL files must be included in the response.
-Return ONLY valid JSON, no other text."""
+Use EXACT paths from the input list! Do NOT use placeholder paths!
+ALL files must be included.
+Return ONLY valid JSON."""
 
         try:
             response = self.client.chat.completions.create(
@@ -115,14 +129,23 @@ Return ONLY valid JSON, no other text."""
             
             result_text = response.choices[0].message.content
             
+            if not result_text or not result_text.strip():
+                raise LLMError("AI returned empty response")
+            
             # Try to find JSON in the response
             result_text = result_text.strip()
+            
+            # Remove markdown code blocks
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0]
             elif "```" in result_text:
                 result_text = result_text.split("```")[1].split("```")[0]
             
             result_text = result_text.strip()
+            
+            if not result_text:
+                raise LLMError("AI returned empty response after parsing")
+            
             results = json.loads(result_text)
             
             # Validate results
@@ -139,6 +162,8 @@ Return ONLY valid JSON, no other text."""
             ]
         except json.JSONDecodeError as e:
             raise LLMError(f"Failed to parse AI response: {str(e)}")
+        except LLMError:
+            raise
         except Exception as e:
             raise LLMError(f"Failed to analyze files: {str(e)}")
     
