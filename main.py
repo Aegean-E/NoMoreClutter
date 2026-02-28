@@ -412,6 +412,10 @@ class NoMoreClutterApp(ctk.CTk):
                 
                 self.after(0, self._update_progress, len(batch), all_results)
                 
+                # Delay between batches to let LM Studio recover
+                import time
+                time.sleep(3)
+                
             except Exception as e:
                 error_msg = str(e)
                 self.after(0, lambda msg=error_msg: self.output_text.insert("end", f"⚠️ AI Error: {msg}\n"))
