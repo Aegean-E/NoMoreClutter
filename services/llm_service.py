@@ -205,7 +205,7 @@ Respond with ONLY: true or false"""}
                 "role": "user",
                 "content": [
                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}},
-                    {"type": "text", "text": "What is in this image? Choose ONE: Nature, People, Animals, Vehicles, Documents, Screenshots, Memes, Artwork, Other. Respond with ONLY the category."}
+                    {"type": "text", "text": "What is in this image? Choose an appropriate category/folder name. Examples: Nature, People, Animals, Cars, Screenshots, Memes, Art, Documents, Wallpapers. Respond with ONLY the category."}
                 ]
             }]
             
@@ -323,12 +323,12 @@ Respond with ONLY: true or false"""}
 Image files: 
 {file_list}
 
-Categories: Nature, People, Animals, Vehicles, Documents, Screenshots, Memes, Artwork, Other
+Choose an appropriate category/folder name for each image based on its content.
+Examples: Nature, People, Animals, Cars, Screenshots, Memes, Art, Documents, Wallpapers, Travel, Food, etc.
+Create new categories if needed or use generic ones.
 
 Respond with JSON array:
-[{{"filename": "original.jpg", "folder": "Category"}}]
-
-Keep original filename, only suggest folder category based on image content."""
+[{{"filename": "original.jpg", "folder": "Category"}}]"""
         
         messages[0]["content"].append({
             "type": "text",
