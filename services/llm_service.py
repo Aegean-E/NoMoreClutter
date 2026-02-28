@@ -306,137 +306,77 @@ Respond with ONLY: true or false"""}
         existing = existing_folders or []
         existing_str = "\n".join([f"- {f}" for f in existing]) if existing else "None"
         
-        # Send images to AI for vision analysis
-        messages = [{"role": "user", "content": []}]
+        # Process images one at a time to avoid LM Studio issues
+        all_results = []
         
-        # Add each image to the message
-        for img_path in files:
+        for idx, img_path in enumerate(files):
             try:
+                import base64
                 with open(img_path, "rb") as f:
-                    img_data = base64.b64encode(f.read()).decode("utf-8")
+                    data = f.read()
+                    if len(data) < 100:
+                        continue
+                    img_data = base64.b64encode(data).decode("utf-8")
                 
-                # Add image to message
-                messages[0]["content"].append({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:{self._get_mime_type(img_path)};base64,{img_data}"
-                    }
-                })
-            except Exception:
-                pass  # Skip if can't read image
+                messages = [{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:{self._get_mime_type(img_path)};base64,{img_data}"}
+                        },
+                        {
+                            "type": "text",
+                            "text": f"""What is in this image? Choose category: Nature, People, Animals, Cars, Screenshots, Memes, Art, Documents, Wallpapers, Other. Also give short descriptive name (1-2 words). Respond JSON: [{{"filename": "name.jpg", "folder": "Category"}}]"""
+                        }
+                    ]
+                }]
+                
+                response = self.client.chat.completions.create(model=model, messages=messages, temperature=0.3)
+                result_text = response.choices[0].message.content.strip()
+                
+                if "```json" in result_text:
+                    result_text = result_text.split("```json")[1].split("```")[0]
+                elif "```" in result_text:
+                    result_text = result_text.split("```")[1].split("```")[0]
+                
+                results = json.loads(result_text)
+                
+                if results:
+                    r = results[0]
+                    folder = r.get("folder", "Other")
+                    new_name = r.get("filename", os.path.basename(img_path))
+                    
+                    # Validate folder
+                    is_valid_folder = self._validate_image_suggestion(img_path, folder, model)
+                    if not is_valid_folder:
+                        folder = self._reanalyze_image(img_path, model, existing)
+                    
+                    # Validate name
+                    is_valid_name = self._validate_filename(img_path, new_name, model)
+                    if not is_valid_name:
+                        new_name = self._reanalyze_filename(img_path, model)
+                        if not new_name:
+                            new_name = os.path.basename(img_path)
+                    
+                    if not create_new_folders:
+                        folder = self._find_existing_folder_by_ai_suggestion(folder, existing, target_folder)
+                    else:
+                        folder = os.path.join(target_folder, folder)
+                    
+                    all_results.append(FileChange(
+                        original=img_path,
+                        action="move",
+                        new_path=os.path.join(folder, new_name)
+                    ))
+                    
+                print(f"DEBUG: Processed {idx+1}/{len(files)}")
+                
+            except Exception as e:
+                print(f"DEBUG: Error processing {img_path}: {e}")
+                continue
         
-        # Add analysis request
-        file_list = "\n".join([f"- {os.path.basename(f)}" for f in files])
-        prompt_text = f"""Look at each image and categorize it into a folder.
-
-Image files: 
-{file_list}
-
-Choose an appropriate category/folder name for each image based on its content.
-Examples: Nature, People, Animals, Cars, Screenshots, Memes, Art, Documents, Wallpapers, Travel, Food, etc.
-Create new categories if needed or use generic ones.
-
-Respond with JSON array:
-[{{"filename": "original.jpg", "folder": "Category"}}]"""
-        
-        messages[0]["content"].append({
-            "type": "text",
-            "text": prompt_text
-        })
-        
-        try:
-            response = self.client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=0.3
-            )
-            
-            result_text = response.choices[0].message.content
-            
-            # Parse JSON from response
-            result_text = result_text.strip()
-            if "```json" in result_text:
-                result_text = result_text.split("```json")[1].split("```")[0]
-            elif "```" in result_text:
-                result_text = result_text.split("```")[1].split("```")[0]
-            
-            results = json.loads(result_text)
-            
-            # Validate each suggestion - AI checks if folder is correct
-            validated_results = []
-            for result in results:
-                filename = result.get("filename", "")
-                folder = result.get("folder", "General")
-                
-                # Find the actual image file
-                actual_file = None
-                for f in files:
-                    if os.path.basename(f) == filename:
-                        actual_file = f
-                        break
-                
-                if not actual_file:
-                    continue
-                
-                # Validate: ask AI if folder suggestion is correct
-                is_valid_folder = self._validate_image_suggestion(actual_file, folder, model)
-                
-                # Get descriptive filename
-                new_name = self._get_descriptive_filename(actual_file, model)
-                if not new_name:
-                    new_name = filename
-                
-                # Validate the filename too
-                is_valid_name = self._validate_filename(actual_file, new_name, model)
-                
-                if not is_valid_folder:
-                    # Re-analyze this image
-                    new_folder = self._reanalyze_image(actual_file, model, existing)
-                    folder = new_folder
-                
-                if not is_valid_name:
-                    # Re-get descriptive filename
-                    new_name = self._reanalyze_filename(actual_file, model)
-                    if not new_name:
-                        new_name = filename
-                
-                validated_results.append({
-                    "filename": filename,
-                    "folder": folder,
-                    "new_name": new_name
-                })
-            
-            # Map results back to actual files
-            file_changes = []
-            for result in validated_results:
-                filename = result.get("filename", "")
-                folder = result.get("folder", "General")
-                new_name = result.get("new_name", filename)
-                
-                # Find matching file
-                for f in files:
-                    if os.path.basename(f) == filename:
-                        # If create_new_folders is False, use existing folder only
-                        if not create_new_folders:
-                            # Only use existing folders - find best match
-                            new_folder = self._find_existing_folder_by_ai_suggestion(folder, existing, target_folder)
-                        else:
-                            new_folder = os.path.join(target_folder, folder)
-                        
-                        new_path = os.path.join(new_folder, new_name)
-                        file_changes.append(FileChange(
-                            original=f,
-                            action="move",
-                            new_path=new_path
-                        ))
-                        break
-            
-            return file_changes
-            
-        except Exception as e:
-            import traceback
-            print(f"DEBUG IMAGE ERROR: {traceback.format_exc()}")
-            raise LLMError(f"Failed to analyze images: {str(e)}")
+        return all_results
     
     def _find_existing_folder_by_ai_suggestion(self, ai_folder: str, existing_folders: list, target_folder: str) -> str:
         """Find an existing folder that best matches the AI's folder suggestion"""
