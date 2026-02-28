@@ -25,22 +25,16 @@ class LLMService:
     def _get_base_path(self, file_path: str) -> str:
         return os.path.dirname(file_path)
     
-    def _adjust_path_for_output(self, original_path: str, new_path: str, output_folder: str) -> str:
-        if not output_folder:
-            return new_path
-        
-        base = self._get_base_path(original_path)
-        if base != output_folder:
-            new_path = new_path.replace(base, output_folder, 1)
-        return new_path
-    
     def analyze_files(self, files: list, model: str, create_new_folders: bool = True, 
                       existing_folders: list = None, analyze_images: bool = False,
                       numbered_rename: bool = False, ai_rename: bool = True,
                       target_folder: str = "", output_folder: str = "") -> list[FileChange]:
         
         if not output_folder:
-            output_folder = target_folder
+            output_folder = target_folder or ""
+        
+        if not output_folder:
+            output_folder = os.path.dirname(files[0]) if files else ""
         
         image_files = [f for f in files if os.path.splitext(f)[1].lower() in IMAGE_EXTENSIONS]
         other_files = [f for f in files if f not in image_files]
@@ -54,12 +48,11 @@ class LLMService:
             non_image = other_files if not analyze_images else [f for f in files if f not in image_files]
             results.extend(self._analyze_regular_files(non_image, model, create_new_folders, existing_folders, ai_rename))
         
-        for r in results:
-            r.new_path = self._adjust_path_for_output(r.original, r.new_path, output_folder)
-        
-        if numbered_rename:
+        # Apply numbered rename to all results BEFORE matching (so it persists)
+        if numbered_rename and results:
             results = self._apply_numbered_rename(results, output_folder)
         
+        # Return early with numbered rename already applied - don't let main.py reconstruct paths
         return results
     
     def _analyze_regular_files(self, files: list, model: str, create_new_folders: bool, 
@@ -129,6 +122,9 @@ Return ONLY valid JSON."""
             
             result_text = response.choices[0].message.content
             
+            # Debug: log first 200 chars of response
+            print(f"AI response (first 200): {result_text[:200] if result_text else 'EMPTY'}")
+            
             if not result_text or not result_text.strip():
                 raise LLMError("AI returned empty response")
             
@@ -148,18 +144,27 @@ Return ONLY valid JSON."""
             
             results = json.loads(result_text)
             
+            print(f"DEBUG AI: Got {len(results)} results, first result keys: {results[0].keys() if results else 'NONE'}")
+            print(f"DEBUG AI: First result: {results[0] if results else 'NONE'}")
+            
             # Validate results
             if not isinstance(results, list):
                 results = []
             
-            return [
-                FileChange(
-                    original=r.get("original", ""),
-                    action=r.get("action", "move"),
-                    new_path=r.get("new_path", "")
-                )
-                for r in results if r.get("original") and r.get("new_path")
-            ]
+            # Flexible key matching
+            parsed_results = []
+            for r in results:
+                original = r.get("original") or r.get("source") or r.get("file") or r.get("file_path") or r.get("path", "")
+                new_path = r.get("new_path") or r.get("destination") or r.get("target") or r.get("new_path") or r.get("output") or ""
+                
+                if original and new_path:
+                    parsed_results.append(FileChange(
+                        original=original,
+                        action=r.get("action", "move"),
+                        new_path=new_path
+                    ))
+            
+            return parsed_results
         except json.JSONDecodeError as e:
             raise LLMError(f"Failed to parse AI response: {str(e)}")
         except LLMError:
@@ -172,50 +177,124 @@ Return ONLY valid JSON."""
         if not files:
             return []
         
+        # Ensure target_folder is valid
+        if not target_folder:
+            target_folder = os.path.dirname(files[0]) if files else ""
+        
+        import base64
+        
         existing = existing_folders or []
         existing_str = "\n".join([f"- {f}" for f in existing]) if existing else "None"
         
-        file_list = "\n".join([f"- {os.path.basename(f)}" for f in files])
+        # Send images to AI for vision analysis
+        messages = [{"role": "user", "content": []}]
         
-        prompt = f"""You are a vision-capable AI that analyzes images and organizes them.
-Image filenames to analyze:
-{file_list}
+        # Add each image to the message
+        for img_path in files:
+            try:
+                with open(img_path, "rb") as f:
+                    img_data = base64.b64encode(f.read()).decode("utf-8")
+                
+                # Add image to message
+                messages[0]["content"].append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{img_data}"
+                    }
+                })
+            except Exception:
+                pass  # Skip if can't read image
+        
+        # Add analysis request
+        file_list = "\n".join([f"- {os.path.basename(f)}" for f in files])
+        messages[0]["content"].append({
+            "type": "text",
+            "text": f"""Analyze these images and suggest folder organization.
 
-Existing folders in target directory:
-{existing_str}
+Image files: {file_list}
 
-For each image, infer what it might contain based on the filename (e.g., "vacation_photo.jpg" likely contains vacation photos, "screenshot_2024.png" is a screenshot).
-Propose folder organization and new names.
+Existing folders: {existing_str}
 
-Respond with a JSON array of objects:
-{{
-  "original": "full/path/to/image.ext",
-  "action": "move",
-  "new_path": "full/path/to/FolderName/image.ext"
-}}
+For each image:
+1. Analyze what's in the image (landscape, person, screenshot, document, meme, etc.)
+2. Suggest a descriptive folder name (e.g., "Nature", "People", "Screenshots", "Documents", "Memes")
+3. Keep or suggest a better filename
 
-Use descriptive folder names. Return ONLY valid JSON."""
+Respond with JSON array:
+[
+  {{"filename": "image.jpg", "folder": "Suggested_Folder", "new_name": "optional_better_name.jpg"}}
+]
 
+ALL images must be included. Return ONLY valid JSON."""
+        })
+        
         try:
             response = self.client.chat.completions.create(
                 model=model,
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
                 temperature=0.3
             )
             
             result_text = response.choices[0].message.content
+            
+            # Parse JSON from response
+            result_text = result_text.strip()
+            if "```json" in result_text:
+                result_text = result_text.split("```json")[1].split("```")[0]
+            elif "```" in result_text:
+                result_text = result_text.split("```")[1].split("```")[0]
+            
             results = json.loads(result_text)
             
-            return [
-                FileChange(
-                    original=r["original"],
-                    action=r.get("action", "move"),
-                    new_path=r.get("new_path", "")
-                )
-                for r in results
-            ]
+            # Map results back to actual files
+            file_changes = []
+            for result in results:
+                filename = result.get("filename", "")
+                folder = result.get("folder", "General")
+                new_name = result.get("new_name", filename)
+                
+                # Find matching file
+                for f in files:
+                    if os.path.basename(f) == filename:
+                        # If create_new_folders is False, use existing folder only
+                        if not create_new_folders:
+                            # Only use existing folders - find best match
+                            new_folder = self._find_existing_folder_by_ai_suggestion(folder, existing, target_folder)
+                        else:
+                            new_folder = os.path.join(target_folder, folder)
+                        
+                        new_path = os.path.join(new_folder, new_name)
+                        file_changes.append(FileChange(
+                            original=f,
+                            action="move",
+                            new_path=new_path
+                        ))
+                        break
+            
+            return file_changes
+            
         except Exception as e:
             raise LLMError(f"Failed to analyze images: {str(e)}")
+    
+    def _find_existing_folder_by_ai_suggestion(self, ai_folder: str, existing_folders: list, target_folder: str) -> str:
+        """Find an existing folder that best matches the AI's folder suggestion"""
+        if not existing_folders or not target_folder:
+            return target_folder or ""
+        
+        ai_folder_lower = ai_folder.lower().strip()
+        
+        # First try exact or close match
+        for folder in existing_folders:
+            if folder.lower() == ai_folder_lower:
+                return os.path.join(target_folder, folder)
+        
+        # Try partial match
+        for folder in existing_folders:
+            if ai_folder_lower in folder.lower() or folder.lower() in ai_folder_lower:
+                return os.path.join(target_folder, folder)
+        
+        # Use first existing folder as fallback
+        return os.path.join(target_folder, existing_folders[0])
     
     def _apply_numbered_rename(self, changes: list[FileChange], target_folder: str) -> list[FileChange]:
         folder_counts = {}
@@ -233,6 +312,31 @@ Use descriptive folder names. Return ONLY valid JSON."""
             change.new_path = os.path.join(folder, new_name)
         
         return changes
+    
+    def _find_existing_folder(self, extension: str, existing_folders: list, target_folder: str) -> str:
+        """Find an existing folder that matches the file extension"""
+        ext_to_category = {
+            ".jpg": "Images", ".jpeg": "Images", ".png": "Images", ".gif": "Images", ".bmp": "Images", ".webp": "Images",
+            ".pdf": "Documents", ".doc": "Documents", ".docx": "Documents", ".txt": "Documents",
+            ".mp4": "Videos", ".avi": "Videos", ".mkv": "Videos", ".mov": "Videos",
+            ".mp3": "Audio", ".wav": "Audio", ".flac": "Audio",
+            ".zip": "Archives", ".rar": "Archives", ".7z": "Archives",
+            ".py": "Code", ".js": "Code", ".ts": "Code", ".java": "Code",
+        }
+        
+        # Try to find folder by category
+        category = ext_to_category.get(extension.lower(), "Other")
+        
+        # Check if folder exists
+        for folder in existing_folders:
+            if folder.lower() == category.lower():
+                return os.path.join(target_folder, folder)
+        
+        # Return first existing folder or target
+        if existing_folders:
+            return os.path.join(target_folder, existing_folders[0])
+        
+        return target_folder
     
     def _count_files_in_folder(self, folder: str, extension: str) -> int:
         if not os.path.exists(folder):

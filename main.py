@@ -94,6 +94,9 @@ class NoMoreClutterApp(ctk.CTk):
         self.folder_info_label = ctk.CTkLabel(folders_frame, text="", text_color="gray", font=ctk.CTkFont(size=12))
         self.folder_info_label.grid(row=4, column=0, columnspan=3, padx=15, pady=(0, 10), sticky="w")
         
+        self.existing_folders_label = ctk.CTkLabel(folders_frame, text="", text_color="gray", font=ctk.CTkFont(size=11))
+        self.existing_folders_label.grid(row=5, column=0, columnspan=3, padx=15, pady=(0, 10), sticky="w")
+        
         file_types_frame = ctk.CTkFrame(self)
         file_types_frame.grid(row=2, column=0, padx=20, pady=10, sticky="ew")
         file_types_frame.grid_columnconfigure((0, 1, 2), weight=1)
@@ -241,6 +244,16 @@ class NoMoreClutterApp(ctk.CTk):
         output = self.output_folder if self.output_folder else self.source_folder
         if output:
             self.folder_info_label.configure(text=f"Files will be organized in: {output}")
+            
+        # Show existing folders
+        existing = self._get_existing_folders()
+        if existing:
+            folders_str = ", ".join(existing[:10])
+            if len(existing) > 10:
+                folders_str += f", ... (+{len(existing) - 10} more)"
+            self.existing_folders_label.configure(text=f"Available folders: {folders_str}", text_color="cyan")
+        else:
+            self.existing_folders_label.configure(text="No existing folders in output directory", text_color="gray")
     
     def _get_selected_extensions(self):
         extensions = []
@@ -303,6 +316,81 @@ class NoMoreClutterApp(ctk.CTk):
         thread = threading.Thread(target=self._analyze_thread, args=(files,))
         thread.start()
     
+    def _match_results_to_files(self, results, actual_files, output_folder, use_numbered_rename=False):
+        """Match AI results to actual files by filename and apply folder suggestions"""
+        if not results or not actual_files:
+            return []
+        
+        # If numbered rename is already applied, just match filenames 1:1
+        if use_numbered_rename:
+            matched = []
+            actual_file_map = {os.path.basename(f): f for f in actual_files}
+            for r in results:
+                ai_basename = os.path.basename(r.new_path)
+                actual_path = actual_file_map.get(ai_basename)
+                if actual_path:
+                    matched.append(FileChange(
+                        original=actual_path,
+                        action="move",
+                        new_path=r.new_path  # Keep the numbered name
+                    ))
+            return matched
+        
+        matched = []
+        actual_file_map = {os.path.basename(f): f for f in actual_files}
+        used_files = set()
+        
+        print(f"DEBUG: actual_files basenames: {list(actual_file_map.keys())[:5]}")
+        
+        # Try to match each AI result to an actual file
+        for r in results:
+            ai_original = r.original
+            ai_basename = os.path.basename(ai_original)
+            
+            print(f"DEBUG: Trying to match AI result: {ai_basename}")
+            
+            # Get AI's suggested folder name
+            ai_folder = os.path.dirname(r.new_path)
+            ai_folder_name = os.path.basename(ai_folder) if ai_folder else "General"
+            
+            # Try to find matching actual file
+            actual_path = actual_file_map.get(ai_basename)
+            
+            # If no exact match, try partial match
+            if not actual_path:
+                for fname, fpath in actual_file_map.items():
+                    if fname not in used_files and (ai_basename.lower() in fname.lower() or fname.lower() in ai_basename.lower()):
+                        actual_path = fpath
+                        break
+            
+            if actual_path and actual_path not in used_files:
+                used_files.add(actual_path)
+                new_path = os.path.join(output_folder, ai_folder_name, os.path.basename(actual_path))
+                matched.append(FileChange(
+                    original=actual_path,
+                    action="move",
+                    new_path=new_path
+                ))
+        
+        # If we got some matches, use them
+        if matched:
+            return matched
+        
+        # Fallback: index-based mapping - use AI folder suggestions
+        for idx, f in enumerate(actual_files):
+            if idx < len(results):
+                r = results[idx]
+                ai_folder = os.path.dirname(r.new_path)
+                ai_folder_name = os.path.basename(ai_folder) if ai_folder else "General"
+                new_path = os.path.join(output_folder, ai_folder_name, os.path.basename(f))
+                matched.append(FileChange(
+                    original=f,
+                    action="move",
+                    new_path=new_path
+                ))
+        
+        return matched
+    
     def _analyze_thread(self, files):
         try:
             batch_size = int(self.batch_size_entry.get() or 10)
@@ -320,6 +408,7 @@ class NoMoreClutterApp(ctk.CTk):
                 llm = LLMService(base_url=self.llm_url.get().strip(), api_key="not-needed")
                 existing = self._get_existing_folders() + self.created_folders
                 output = self.output_folder if self.output_folder else self.source_folder
+                target = self.source_folder if self.source_folder else output
                 
                 results = llm.analyze_files(
                     files=batch,
@@ -329,33 +418,61 @@ class NoMoreClutterApp(ctk.CTk):
                     analyze_images=self.analyze_images_var.get(),
                     numbered_rename=self.numbered_rename_var.get(),
                     ai_rename=self.ai_rename_var.get(),
-                    target_folder=self.source_folder,
+                    target_folder=target,
                     output_folder=output
                 )
                 
+                print(f"DEBUG: Got {len(results)} raw results from AI")
+                
+                # Match AI results to actual files by filename
+                results = self._match_results_to_files(results, batch, output, self.numbered_rename_var.get())
+                
+                print(f"DEBUG: After matching: {len(results)} results")
+                
                 all_results.extend(results)
                 self.processed_files += len(batch)
+                
+                # Execute moves immediately for this batch
+                if results:
+                    self.after(0, lambda r=results: self._execute_batch(r))
                 
                 self.after(0, self._update_progress, len(batch), all_results)
                 
             except Exception as e:
                 error_msg = str(e)
-                self.output_text.insert("end", f"⚠️ AI Error: {error_msg}\n")
-                # Use fallback - organize by extension
-                self.output_text.insert("end", "🔄 Using automatic organization by file type...\n")
-                self.after(0, self._update_status, "⚠️ AI failed, using auto...")
+                self.after(0, lambda msg=error_msg: self.output_text.insert("end", f"⚠️ AI Error: {msg}\n"))
+                self.after(0, lambda: self.output_text.insert("end", "🔄 Using automatic organization by file type...\n"))
+                self.after(0, lambda: self._update_status("⚠️ AI failed, using auto..."))
                 break
         else:
             # Loop completed without break - AI worked
             if all_results:
-                self.after(0, self._update_status, f"✅ Analyzed {len(all_results)} files")
+                self.after(0, self._update_status, f"✅ Completed {len(all_results)} files")
         
         # If no results or error occurred, use fallback
         if not all_results:
             self.after(0, self._update_status, "🔄 Organizing files automatically...")
             all_results = self._create_fallback_results()
+            if all_results:
+                self._execute_batch(all_results)
         
         self.after(0, self._analysis_complete, all_results)
+    
+    def _execute_batch(self, results):
+        """Execute moves for a batch of files and log them"""
+        if not results:
+            return
+        
+        FileExecutor = get_FileExecutor()
+        success, errors = FileExecutor.execute(results)
+        
+        # Log each moved file
+        for r in results:
+            filename = os.path.basename(r.original)
+            folder = os.path.basename(os.path.dirname(r.new_path))
+            self.output_text.insert("end", f"✅ Moved: {filename} → {folder}/\n")
+        
+        self.output_text.see("end")
     
     def _update_status(self, text):
         self.status_label.configure(text=text)
@@ -401,48 +518,9 @@ class NoMoreClutterApp(ctk.CTk):
         self.status_label.configure(text=f"Analyzing... {self.processed_files}/{self.total_files} files done", text_color="yellow")
     
     def _analysis_complete(self, results):
-        # Fallback: if AI returns nothing, organize by extension
-        if not results and hasattr(self, 'current_files') and self.current_files:
-            output = self.output_folder if self.output_folder else self.source_folder
-            
-            # Build reverse mapping: extension -> category
-            ext_to_cat = {}
-            for cat, exts in FILE_TYPE_CATEGORIES.items():
-                for ext in exts:
-                    ext_to_cat[ext.lower()] = cat
-            
-            # Create default organization by extension
-            results = []
-            for f in self.current_files:
-                ext = os.path.splitext(f)[1].lower()
-                category = ext_to_cat.get(ext, "Other")
-                folder_path = os.path.join(output, category)
-                results.append(FileChange(original=f, action="move", new_path=os.path.join(folder_path, os.path.basename(f))))
-        
-        self.analysis_results = results
-        
-        self.output_text.delete("1.0", "end")
-        
-        if not results:
-            self.output_text.insert("end", "⚠️ Could not generate suggestions. Check AI connection.\n")
-            self.status_label.configure(text="Analysis failed - check errors", text_color="red")
-            return
-        
-        output = self.output_folder if self.output_folder else self.source_folder
-        
-        for r in results:
-            filename = r.original.split(os.sep)[-1]
-            self.output_text.insert("end", f"📄 {filename}\n")
-            self.output_text.insert("end", f"   ➜ {r.new_path}\n\n")
-        
-        self.status_label.configure(text=f"✅ Analysis complete: {len(results)} files to move", text_color="green")
-        
-        if self.auto_execute_var.get() and results:
-            self.status_label.configure(text=f"⏳ Auto-executing {len(results)} moves...", text_color="yellow")
-            self._execute()
-        else:
-            self.execute_btn.configure(state="normal")
-        
+        # Since we execute in batches, just show summary
+        self.output_text.insert("end", f"\n✅ All done! Processed {len(results)} files\n")
+        self.status_label.configure(text=f"✅ Completed: {len(results)} files processed", text_color="green")
         self.analyze_btn.configure(state="normal")
     
     def _show_error(self, error):
