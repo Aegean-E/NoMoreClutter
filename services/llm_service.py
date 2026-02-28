@@ -171,6 +171,15 @@ Return ONLY valid JSON."""
         except Exception as e:
             raise LLMError(f"Failed to analyze files: {str(e)}")
     
+    def _get_mime_type(self, file_path: str) -> str:
+        ext = os.path.splitext(file_path)[1].lower()
+        mime_types = {
+            '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+            '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp',
+            '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.tiff': 'image/tiff'
+        }
+        return mime_types.get(ext, 'image/jpeg')
+    
     def _validate_image_suggestion(self, image_path: str, suggested_folder: str, model: str) -> bool:
         """Ask AI to validate if the folder suggestion is correct"""
         import base64
@@ -182,7 +191,7 @@ Return ONLY valid JSON."""
             messages = [{
                 "role": "user",
                 "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}},
+                    {"type": "image_url", "image_url": {"url": f"data:{self._get_mime_type(image_path)};base64,{img_data}"}},
                     {"type": "text", "text": f"""Look at this image. Is the folder "{suggested_folder}" appropriate?
 Respond with ONLY: true or false"""}
                 ]
@@ -204,7 +213,7 @@ Respond with ONLY: true or false"""}
             messages = [{
                 "role": "user",
                 "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}},
+                    {"type": "image_url", "image_url": {"url": f"data:{self._get_mime_type(image_path)};base64,{img_data}"}},
                     {"type": "text", "text": "What is in this image? Choose an appropriate category/folder name. Examples: Nature, People, Animals, Cars, Screenshots, Memes, Art, Documents, Wallpapers. Respond with ONLY the category."}
                 ]
             }]
@@ -225,7 +234,7 @@ Respond with ONLY: true or false"""}
             messages = [{
                 "role": "user",
                 "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}},
+                    {"type": "image_url", "image_url": {"url": f"data:{self._get_mime_type(image_path)};base64,{img_data}"}},
                     {"type": "text", "text": "Look at this image. Give a SHORT name (1-2 words). Examples: sunset_beach, cat_portrait, family_photo. Respond with ONLY the name."}
                 ]
             }]
@@ -247,7 +256,7 @@ Respond with ONLY: true or false"""}
             messages = [{
                 "role": "user",
                 "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}},
+                    {"type": "image_url", "image_url": {"url": f"data:{self._get_mime_type(image_path)};base64,{img_data}"}},
                     {"type": "text", "text": f"""Look at this image. Is the name "{suggested_name}" appropriate? Respond with ONLY: true or false"""}
                 ]
             }]
@@ -269,7 +278,7 @@ Respond with ONLY: true or false"""}
             messages = [{
                 "role": "user",
                 "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}},
+                    {"type": "image_url", "image_url": {"url": f"data:{self._get_mime_type(image_path)};base64,{img_data}"}},
                     {"type": "text", "text": "Look at this image carefully. What do you see? Give SHORT name (1-2 words). Respond with ONLY the name."}
                 ]
             }]
@@ -310,7 +319,7 @@ Respond with ONLY: true or false"""}
                 messages[0]["content"].append({
                     "type": "image_url",
                     "image_url": {
-                        "url": f"data:image/jpeg;base64,{img_data}"
+                        "url": f"data:{self._get_mime_type(img_path)};base64,{img_data}"
                     }
                 })
             except Exception:
