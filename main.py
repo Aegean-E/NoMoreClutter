@@ -307,7 +307,7 @@ class NoMoreClutterApp(ctk.CTk):
         self.analysis_results = []
         self.current_files = files  # Store for fallback
         
-        self.status_label.configure(text=f"Found {self.total_files} files. Starting analysis...", text_color="yellow")
+        self.status_label.configure(text=f"Found {self.total_files} files. Analyzing...", text_color="yellow")
         self.analyze_btn.configure(state="disabled")
         self.output_text.delete("1.0", "end")
         self.output_text.insert("end", f"📂 Found {self.total_files} files to analyze...\n\n")
@@ -316,79 +316,49 @@ class NoMoreClutterApp(ctk.CTk):
         thread = threading.Thread(target=self._analyze_thread, args=(files,))
         thread.start()
     
-    def _match_results_to_files(self, results, actual_files, output_folder, use_numbered_rename=False):
-        """Match AI results to actual files by filename and apply folder suggestions"""
+    def _match_results_to_files(self, results, actual_files, output_folder, use_numbered_rename=False, create_new_folders=True):
+        """Match AI results to actual files - simplified index-based mapping"""
         if not results or not actual_files:
             return []
         
-        # If numbered rename is already applied, just match filenames 1:1
-        if use_numbered_rename:
-            matched = []
-            actual_file_map = {os.path.basename(f): f for f in actual_files}
-            for r in results:
-                ai_basename = os.path.basename(r.new_path)
-                actual_path = actual_file_map.get(ai_basename)
-                if actual_path:
-                    matched.append(FileChange(
-                        original=actual_path,
-                        action="move",
-                        new_path=r.new_path  # Keep the numbered name
-                    ))
-            return matched
+        print(f"DEBUG: Got {len(results)} AI results, {len(actual_files)} actual files")
         
         matched = []
-        actual_file_map = {os.path.basename(f): f for f in actual_files}
-        used_files = set()
         
-        print(f"DEBUG: actual_files basenames: {list(actual_file_map.keys())[:5]}")
+        # Get existing folders in output
+        existing = self._get_existing_folders()
         
-        # Try to match each AI result to an actual file
-        for r in results:
-            ai_original = r.original
-            ai_basename = os.path.basename(ai_original)
-            
-            print(f"DEBUG: Trying to match AI result: {ai_basename}")
-            
-            # Get AI's suggested folder name
-            ai_folder = os.path.dirname(r.new_path)
-            ai_folder_name = os.path.basename(ai_folder) if ai_folder else "General"
-            
-            # Try to find matching actual file
-            actual_path = actual_file_map.get(ai_basename)
-            
-            # If no exact match, try partial match
-            if not actual_path:
-                for fname, fpath in actual_file_map.items():
-                    if fname not in used_files and (ai_basename.lower() in fname.lower() or fname.lower() in ai_basename.lower()):
-                        actual_path = fpath
-                        break
-            
-            if actual_path and actual_path not in used_files:
-                used_files.add(actual_path)
-                new_path = os.path.join(output_folder, ai_folder_name, os.path.basename(actual_path))
-                matched.append(FileChange(
-                    original=actual_path,
-                    action="move",
-                    new_path=new_path
-                ))
-        
-        # If we got some matches, use them
-        if matched:
-            return matched
-        
-        # Fallback: index-based mapping - use AI folder suggestions
+        # Simple index-based mapping: use AI folder + name suggestions directly
         for idx, f in enumerate(actual_files):
             if idx < len(results):
                 r = results[idx]
+                
+                # Use AI's suggested filename
+                ai_filename = os.path.basename(r.new_path)
+                
+                # Get AI's suggested folder
                 ai_folder = os.path.dirname(r.new_path)
                 ai_folder_name = os.path.basename(ai_folder) if ai_folder else "General"
-                new_path = os.path.join(output_folder, ai_folder_name, os.path.basename(f))
+                
+                # If create_new_folders is ON, use AI's folder name
+                # If OFF, only use existing folders
+                if create_new_folders:
+                    target_folder = os.path.join(output_folder, ai_folder_name)
+                elif existing and ai_folder_name in existing:
+                    target_folder = os.path.join(output_folder, ai_folder_name)
+                elif existing:
+                    target_folder = os.path.join(output_folder, existing[0])
+                else:
+                    target_folder = output_folder
+                
+                new_path = os.path.join(target_folder, ai_filename)
                 matched.append(FileChange(
                     original=f,
                     action="move",
                     new_path=new_path
                 ))
         
+        print(f"DEBUG: Matched {len(matched)} files, first new_path: {matched[0].new_path if matched else 'NONE'}")
         return matched
     
     def _analyze_thread(self, files):
@@ -425,7 +395,11 @@ class NoMoreClutterApp(ctk.CTk):
                 print(f"DEBUG: Got {len(results)} raw results from AI")
                 
                 # Match AI results to actual files by filename
-                results = self._match_results_to_files(results, batch, output, self.numbered_rename_var.get())
+                results = self._match_results_to_files(
+                    results, batch, output, 
+                    self.numbered_rename_var.get(),
+                    self.create_folders_var.get()
+                )
                 
                 print(f"DEBUG: After matching: {len(results)} results")
                 
@@ -441,20 +415,13 @@ class NoMoreClutterApp(ctk.CTk):
             except Exception as e:
                 error_msg = str(e)
                 self.after(0, lambda msg=error_msg: self.output_text.insert("end", f"⚠️ AI Error: {msg}\n"))
-                self.after(0, lambda: self.output_text.insert("end", "🔄 Using automatic organization by file type...\n"))
-                self.after(0, lambda: self._update_status("⚠️ AI failed, using auto..."))
-                break
-        else:
-            # Loop completed without break - AI worked
-            if all_results:
-                self.after(0, self._update_status, f"✅ Completed {len(all_results)} files")
+                self.after(0, lambda: self._update_status("⚠️ AI failed - stopping"))
+                self.after(0, lambda: self.analyze_btn.configure(state="normal"))
+                return  # Stop completely - don't use fallback
         
-        # If no results or error occurred, use fallback
-        if not all_results:
-            self.after(0, self._update_status, "🔄 Organizing files automatically...")
-            all_results = self._create_fallback_results()
-            if all_results:
-                self._execute_batch(all_results)
+        # Loop completed without break - AI worked
+        if all_results:
+            self.after(0, self._update_status, f"✅ Completed {len(all_results)} files")
         
         self.after(0, self._analysis_complete, all_results)
     

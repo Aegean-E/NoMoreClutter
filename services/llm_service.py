@@ -144,8 +144,7 @@ Return ONLY valid JSON."""
             
             results = json.loads(result_text)
             
-            print(f"DEBUG AI: Got {len(results)} results, first result keys: {results[0].keys() if results else 'NONE'}")
-            print(f"DEBUG AI: First result: {results[0] if results else 'NONE'}")
+            print(f"DEBUG AI: Raw results: {results}")
             
             # Validate results
             if not isinstance(results, list):
@@ -172,6 +171,116 @@ Return ONLY valid JSON."""
         except Exception as e:
             raise LLMError(f"Failed to analyze files: {str(e)}")
     
+    def _validate_image_suggestion(self, image_path: str, suggested_folder: str, model: str) -> bool:
+        """Ask AI to validate if the folder suggestion is correct"""
+        import base64
+        
+        try:
+            with open(image_path, "rb") as f:
+                img_data = base64.b64encode(f.read()).decode("utf-8")
+            
+            messages = [{
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}},
+                    {"type": "text", "text": f"""Look at this image. Is the folder "{suggested_folder}" appropriate?
+Respond with ONLY: true or false"""}
+                ]
+            }]
+            
+            response = self.client.chat.completions.create(model=model, messages=messages, max_tokens=5, temperature=0.1)
+            answer = response.choices[0].message.content.strip().lower()
+            return "true" in answer or "yes" in answer
+        except:
+            return True
+    
+    def _reanalyze_image(self, image_path: str, model: str, existing_folders: list) -> str:
+        """Re-analyze an image with more careful prompting"""
+        import base64
+        try:
+            with open(image_path, "rb") as f:
+                img_data = base64.b64encode(f.read()).decode("utf-8")
+            
+            messages = [{
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}},
+                    {"type": "text", "text": "What is in this image? Choose ONE: Nature, People, Animals, Vehicles, Documents, Screenshots, Memes, Artwork, Other. Respond with ONLY the category."}
+                ]
+            }]
+            
+            response = self.client.chat.completions.create(model=model, messages=messages, max_tokens=20, temperature=0.1)
+            return response.choices[0].message.content.strip()
+        except:
+            return "Other"
+    
+    def _get_descriptive_filename(self, image_path: str, model: str) -> str:
+        """Ask AI to give a descriptive filename based on image content"""
+        import base64
+        try:
+            with open(image_path, "rb") as f:
+                img_data = base64.b64encode(f.read()).decode("utf-8")
+            ext = os.path.splitext(image_path)[1].lower()
+            
+            messages = [{
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}},
+                    {"type": "text", "text": "Look at this image. Give a SHORT name (1-2 words). Examples: sunset_beach, cat_portrait, family_photo. Respond with ONLY the name."}
+                ]
+            }]
+            
+            response = self.client.chat.completions.create(model=model, messages=messages, max_tokens=20, temperature=0.3)
+            name = response.choices[0].message.content.strip()
+            name = "".join(c for c in name if c.isalnum() or c == "_")
+            return name + ext
+        except:
+            return ""
+    
+    def _validate_filename(self, image_path: str, suggested_name: str, model: str) -> bool:
+        """Ask AI to validate if the filename describes the image"""
+        import base64
+        try:
+            with open(image_path, "rb") as f:
+                img_data = base64.b64encode(f.read()).decode("utf-8")
+            
+            messages = [{
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}},
+                    {"type": "text", "text": f"""Look at this image. Is the name "{suggested_name}" appropriate? Respond with ONLY: true or false"""}
+                ]
+            }]
+            
+            response = self.client.chat.completions.create(model=model, messages=messages, max_tokens=5, temperature=0.1)
+            answer = response.choices[0].message.content.strip().lower()
+            return "true" in answer or "yes" in answer
+        except:
+            return True
+    
+    def _reanalyze_filename(self, image_path: str, model: str) -> str:
+        """Re-analyze image to get better descriptive filename"""
+        import base64
+        try:
+            with open(image_path, "rb") as f:
+                img_data = base64.b64encode(f.read()).decode("utf-8")
+            ext = os.path.splitext(image_path)[1].lower()
+            
+            messages = [{
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}},
+                    {"type": "text", "text": "Look at this image carefully. What do you see? Give SHORT name (1-2 words). Respond with ONLY the name."}
+                ]
+            }]
+            
+            response = self.client.chat.completions.create(model=model, messages=messages, max_tokens=20, temperature=0.3)
+            name = response.choices[0].message.content.strip()
+            name = "".join(c for c in name if c.isalnum() or c == "_")
+            return name + ext
+        except:
+            return ""
+    
     def _analyze_image_files(self, files: list, model: str, create_new_folders: bool,
                              existing_folders: list, target_folder: str) -> list[FileChange]:
         if not files:
@@ -180,6 +289,8 @@ Return ONLY valid JSON."""
         # Ensure target_folder is valid
         if not target_folder:
             target_folder = os.path.dirname(files[0]) if files else ""
+        
+        print(f"DEBUG IMAGE: target_folder = {target_folder}, files[0] = {files[0] if files else 'NO FILES'}")
         
         import base64
         
@@ -207,25 +318,21 @@ Return ONLY valid JSON."""
         
         # Add analysis request
         file_list = "\n".join([f"- {os.path.basename(f)}" for f in files])
-        messages[0]["content"].append({
-            "type": "text",
-            "text": f"""Analyze these images and suggest folder organization.
+        prompt_text = f"""Look at each image and categorize it into a folder.
 
-Image files: {file_list}
+Image files: 
+{file_list}
 
-Existing folders: {existing_str}
-
-For each image:
-1. Analyze what's in the image (landscape, person, screenshot, document, meme, etc.)
-2. Suggest a descriptive folder name (e.g., "Nature", "People", "Screenshots", "Documents", "Memes")
-3. Keep or suggest a better filename
+Categories: Nature, People, Animals, Vehicles, Documents, Screenshots, Memes, Artwork, Other
 
 Respond with JSON array:
-[
-  {{"filename": "image.jpg", "folder": "Suggested_Folder", "new_name": "optional_better_name.jpg"}}
-]
+[{{"filename": "original.jpg", "folder": "Category"}}]
 
-ALL images must be included. Return ONLY valid JSON."""
+Keep original filename, only suggest folder category based on image content."""
+        
+        messages[0]["content"].append({
+            "type": "text",
+            "text": prompt_text
         })
         
         try:
@@ -246,9 +353,53 @@ ALL images must be included. Return ONLY valid JSON."""
             
             results = json.loads(result_text)
             
+            # Validate each suggestion - AI checks if folder is correct
+            validated_results = []
+            for result in results:
+                filename = result.get("filename", "")
+                folder = result.get("folder", "General")
+                
+                # Find the actual image file
+                actual_file = None
+                for f in files:
+                    if os.path.basename(f) == filename:
+                        actual_file = f
+                        break
+                
+                if not actual_file:
+                    continue
+                
+                # Validate: ask AI if folder suggestion is correct
+                is_valid_folder = self._validate_image_suggestion(actual_file, folder, model)
+                
+                # Get descriptive filename
+                new_name = self._get_descriptive_filename(actual_file, model)
+                if not new_name:
+                    new_name = filename
+                
+                # Validate the filename too
+                is_valid_name = self._validate_filename(actual_file, new_name, model)
+                
+                if not is_valid_folder:
+                    # Re-analyze this image
+                    new_folder = self._reanalyze_image(actual_file, model, existing)
+                    folder = new_folder
+                
+                if not is_valid_name:
+                    # Re-get descriptive filename
+                    new_name = self._reanalyze_filename(actual_file, model)
+                    if not new_name:
+                        new_name = filename
+                
+                validated_results.append({
+                    "filename": filename,
+                    "folder": folder,
+                    "new_name": new_name
+                })
+            
             # Map results back to actual files
             file_changes = []
-            for result in results:
+            for result in validated_results:
                 filename = result.get("filename", "")
                 folder = result.get("folder", "General")
                 new_name = result.get("new_name", filename)
@@ -274,6 +425,8 @@ ALL images must be included. Return ONLY valid JSON."""
             return file_changes
             
         except Exception as e:
+            import traceback
+            print(f"DEBUG IMAGE ERROR: {traceback.format_exc()}")
             raise LLMError(f"Failed to analyze images: {str(e)}")
     
     def _find_existing_folder_by_ai_suggestion(self, ai_folder: str, existing_folders: list, target_folder: str) -> str:
