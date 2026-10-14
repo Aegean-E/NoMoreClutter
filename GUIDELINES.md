@@ -11,7 +11,7 @@ This document defines the architectural guidelines and design principles for **N
 | **[PRINCIPLE-001](#principle-001-rlm-compatibility-recursive-language-model)** | RLM Compatibility | Hierarchical and recursive problem decomposition for file categorization. |
 | **[PRINCIPLE-002](#principle-002-automatic-git-workflow-commit--push)** | Automatic Git Workflow | Automated conventional commits and pushes upon task completion. |
 | **[PRINCIPLE-003](#principle-003-modularity--pluggable-architecture)** | Modularity | Pluggable providers (Cloud, Embedded, Local Server) and decoupled UI/services. |
-| **[PRINCIPLE-004](#principle-004-living-principles-system)** | Living Principles | Formal protocol for adding and evolving project principles over time. |
+| **[PRINCIPLE-004](#principle-004-living-principles-system-extensible-governance--auto-sync)** | Living Principles & Auto-Sync | Extensible protocol; automatically synchronizes all AI guidelines across the repository. |
 | **[PRINCIPLE-005](#principle-005-ai-cold-start-readiness--living-documentation-readme-sync)** | AI Cold-Start Readiness & README Sync | Self-describing repo for instant agent onboarding; README updated after every change. |
 | **[PRINCIPLE-006](#principle-006-pre-flight-impact--quality-checklist-cold-start-gate)** | Impact & Quality Checklist | Pre-flight cold-start checklist evaluating why, benefits, risks, and quality preservation. |
 
@@ -46,11 +46,12 @@ This document defines the architectural guidelines and design principles for **N
     - *Local Server Providers* — LM Studio, Ollama.
   - **Decoupled Architecture**: Keep `main.py` purely focused on UI/presentation, delegating all logic to `services/` and `models/`.
 
-### PRINCIPLE-004: Living Principles System
-- **Problem**: Projects evolve, and static rules become outdated.
+### PRINCIPLE-004: Living Principles System (Extensible Governance & Auto-Sync)
+- **Problem**: Projects evolve, and static rules or fragmented guideline files become outdated and desynchronized.
 - **Guideline**:
   - When new architectural patterns or project requirements emerge, register a new principle following the `PRINCIPLE-XXX` template.
-  - Keep both `AGENTS.md` and `GUIDELINES.md` in sync.
+  - **Mandatory Auto-Sync**: Modifying or adding any principle must automatically update all AI guideline targets (`AGENTS.md`, `GUIDELINES.md`, `GEMINI.md`, `CLAUDE.md`, `.cursorrules`, `.agents/rules/principles.md`, `.github/copilot-instructions.md`, and `README.md`).
+  - Use `scripts/sync_principles.py` to programmatically validate and synchronize all targets.
 
 ### PRINCIPLE-005: AI Cold-Start Readiness & Living Documentation (README Sync)
 - **Problem**: New AI sessions and developers starting fresh ("cold start") lose context if documentation is stale, fragmented, or implicit.

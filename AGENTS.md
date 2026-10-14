@@ -39,14 +39,24 @@
 
 ---
 
-### PRINCIPLE-004: Living Principles System (Extensible Governance)
-- **Concept**: Principles can and will be added as the project evolves.
+### PRINCIPLE-004: Living Principles System (Extensible Governance & Auto-Sync)
+- **Concept**: Principles can and will be added as the project evolves. Whenever any principle is added, updated, or revised, all AI guideline documents across the repository must be automatically synchronized to maintain absolute consistency.
 - **Rules**:
-  1. **Registration**: Any new principle must be formally appended to this file and `GUIDELINES.md` using the standard schema:
+  1. **Canonical Schema**: Any new principle must follow the standard schema:
      - `PRINCIPLE-XXX: [Title]`
      - **Concept**: High-level explanation.
      - **Rules**: Concrete, testable requirements.
-  2. **Forward Compatibility**: When new principles are introduced, existing code should be audited and adapted incrementally to maintain compliance.
+  2. **Automated Cross-AI Synchronization**: Whenever principles change, the AI MUST immediately update all guideline targets across the repository:
+     - `AGENTS.md` (Master AI specification)
+     - `GUIDELINES.md` (Human and architectural reference)
+     - `GEMINI.md` (Gemini & Antigravity IDE)
+     - `.agents/rules/principles.md` (Antigravity workspace rules)
+     - `CLAUDE.md` (Anthropic Claude Code)
+     - `.cursorrules` (Cursor IDE)
+     - `.github/copilot-instructions.md` (GitHub Copilot)
+     - `README.md` (Public documentation)
+  3. **Automated Sync Tooling**: Maintain a synchronization script (`scripts/sync_principles.py`) to programmatically validate and propagate principle updates across all targets.
+  4. **Forward Compatibility**: When new principles are introduced, existing code should be audited and adapted incrementally to maintain compliance.
 
 ---
 
@@ -89,8 +99,10 @@
 - [ ] Have I adhered to **RLM compatibility** (recursive decomposition where applicable)?
 - [ ] Is the architecture **modular** and decoupled?
 - [ ] Have all changes been verified for functionality and correctness?
+- [ ] Have all **AI guideline files been automatically synchronized** if principles changed (**PRINCIPLE-004**)?
 - [ ] Has **README.md been updated** to reflect all changes (**PRINCIPLE-005**)?
 - [ ] Has an **automatic commit** been created with a conventional commit message (**PRINCIPLE-002**)?
 - [ ] Has the commit been **automatically pushed** to the remote repository (**PRINCIPLE-002**)?
+
 
 
