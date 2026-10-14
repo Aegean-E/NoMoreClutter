@@ -161,17 +161,38 @@
 
 ---
 
+### PRINCIPLE-014: Empirical Grounding & Anti-Hallucination Invariant (Verify-Before-Execution)
+- **Concept**: The AI must operate under strict empirical grounding. An agent must never make assumptions about codebase state, API contracts, imported symbols, or data contents without empirically verifying them against disk first. Intuitive guesses, phantom imports, and ungrounded hallucinations are strictly prohibited.
+- **Rules**:
+  1. **Read-Before-Write Invariant**: Never edit a file, call an internal function, or instantiate a class without first reading or grepping its definition and signature from the local codebase.
+  2. **Empirical Fact-Checking**: When referencing file paths, configuration keys, or third-party capabilities, verify their presence on disk or in the active runtime environment rather than presuming they exist.
+  3. **Zero Assumption on Ambiguity**: When data or intent is ambiguous, fall back to safe deterministic patterns (e.g., date-based albums for photos, explicit exceptions for unsupported features) rather than guessing arbitrary categories or hallucinating contents.
+  4. **Automated AST & Test Gating**: Rely on deterministic verification tools (`scripts/update_knowledge_base.py`, compiler/linter checks, and unit tests) to mechanically catch hallucinations before committing.
+
+---
+
+### PRINCIPLE-015: Attentional Drift Prevention & Compaction Resilience (Context Anchor Protocol)
+- **Concept**: In long-running sessions, large contexts induce attentional drift (the AI forgetting rules, skipping checklists, or losing constraints) and conversation compaction discards transient conversational context. To remain permanently immune to amnesia, all critical task state must be externalized to persistent disk artifacts, and the agent must continuously re-anchor against the repository's ground truth.
+- **Rules**:
+  1. **Externalized Working Memory**: Never store task status, multi-step plans, or architectural decisions solely in transient conversation turns. Persist them immediately to structured artifacts (`.agents/task_ledger.json`, `knowledge/decisions.md`, or working scratch files).
+  2. **Continuous Checklist Re-anchoring**: At the beginning of each turn and after any compaction event, the AI must actively re-anchor to the Pre-flight/Post-flight checklist and active principles rather than relying on stale conversational inertia.
+  3. **Context-Budgeted Information Retrieval**: When retrieving code or context, use targeted slice viewing (`StartLine`/`EndLine`, `grep_search`, AST outlines) rather than blindly dumping large files into context, preventing context bloating that accelerates compaction.
+  4. **Compaction Self-Orientation**: Upon detecting a compaction resume or cold restart, the AI must immediately inspect `git status`, the latest commit log (`git log -n 1`), and the task ledger (`.agents/task_ledger.json`) to establish 100% factual grounding before proposing or executing code.
+
+---
+
 ## 🛠️ AI Task Checklists
 
 ### 🛫 Pre-Flight Checklist (Run at Cold Start / Before Coding)
-- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-013`) and repo state?
-- [ ] **Disruption & Progress Audit**: Have I checked for uncommitted changes, untracked files, or interrupted tasks from prior disruptions (**PRINCIPLE-013**)?
+- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-015`) and repo state?
+- [ ] **Compaction & Disruption Audit**: Have I inspected `git status`, `git log -n 1`, and `.agents/task_ledger.json` to ground myself after any compaction or disruption (**PRINCIPLE-013**, **PRINCIPLE-015**)?
+- [ ] **Empirical Grounding**: Have I verified relevant file paths, signatures, and imports on disk before proposing edits (**PRINCIPLE-014**)?
 - [ ] **Knowledge Base Context**: Have I checked relevant guides in `knowledge/` to understand existing patterns (**PRINCIPLE-010**)?
 - [ ] **Necessity Assessment**: Why is this change needed, and what specific problem does it address?
 - [ ] **Benefit Projection**: How will this directly enhance user value, modularity, or RLM architecture?
 - [ ] **Test Coverage Plan**: Have I planned unit tests to validate this change and prevent regressions (**PRINCIPLE-011**)?
 - [ ] **Crash Resilience & Atomicity Plan**: Are file writes, settings, and undo logs protected against power-loss corruption (**PRINCIPLE-012**, **PRINCIPLE-013**)?
-- [ ] **Code Conciseness & Token Budget Plan**: Is the code concise, and are LLM prompts token-budgeted and compact (**PRINCIPLE-009**)?
+- [ ] **Code Conciseness & Token Budget Plan**: Is the code concise, and are LLM prompts token-budgeted and compact (**PRINCIPLE-009**, **PRINCIPLE-015**)?
 - [ ] **Performance & Resource Plan**: Is the solution designed for optimal speed, minimal latency, and lean dependencies (**PRINCIPLE-007**)?
 - [ ] **Friction & Accessibility Check**: Does the solution maintain "one-click start" without forcing external app installs (**PRINCIPLE-008**)?
 - [ ] **Risk / Harm Analysis**: What could break, regress, or introduce latency/fragility, and how will I prevent it?
@@ -180,11 +201,12 @@
 ### 🛬 Post-Flight Checklist (Run Before Completion)
 - [ ] Have I adhered to **RLM compatibility** (recursive decomposition where applicable)?
 - [ ] Is the architecture **modular** and decoupled?
-- [ ] Is the code **concise, lean, and token-frugal** without context waste (**PRINCIPLE-009**)?
+- [ ] Is the code **concise, lean, and token-frugal** without context waste (**PRINCIPLE-009**, **PRINCIPLE-015**)?
+- [ ] Are all code changes **empirically grounded with zero hallucinated imports or assumptions** (**PRINCIPLE-014**)?
 - [ ] Are code paths **optimized for speed, responsiveness, and lean resource consumption** (**PRINCIPLE-007**)?
 - [ ] Does the app maintain **one-click zero-install accessibility** while preserving local servers (**PRINCIPLE-008**)?
 - [ ] Are all state changes and logs **crash-resilient and written atomically** (**PRINCIPLE-012**, **PRINCIPLE-013**)?
-- [ ] Have intermediate milestones been **safely checkpointed and disruption-protected** (**PRINCIPLE-013**)?
+- [ ] Have intermediate milestones been **safely checkpointed and disruption-protected** (**PRINCIPLE-013**, **PRINCIPLE-015**)?
 - [ ] Have all **automated unit tests passed with 100% success** (`python -m unittest discover tests`) (**PRINCIPLE-011**)?
 - [ ] Have all **AI guideline files been automatically synchronized** if principles changed (**PRINCIPLE-004**)?
 - [ ] Has the **AI knowledge base in `knowledge/` been updated and verified** (**PRINCIPLE-010**)?

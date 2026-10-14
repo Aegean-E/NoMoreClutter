@@ -21,6 +21,8 @@ This document defines the architectural guidelines and design principles for **N
 | **[PRINCIPLE-011](#principle-011-automated-test-verification--continuous-test-coverage-regression-shield)** | Regression Shield | 100% test pass gate and continuous test coverage before staging and committing. |
 | **[PRINCIPLE-012](#principle-012-crash-resilience-state-atomicity--power-loss-recovery-fail-safe-operations)** | Crash Resilience & Atomicity | Fail-safe atomic writes (fsync + replace) and incremental WAL for sudden power cuts. |
 | **[PRINCIPLE-013](#principle-013-incremental-progress-checkpointing--disruption-recovery-zero-progress-loss-workflow)** | Zero-Progress-Loss Workflow | Micro-milestone commits, pre-flight disruption audit, and task ledger recovery. |
+| **[PRINCIPLE-014](#principle-014-empirical-grounding--anti-hallucination-invariant-verify-before-execution)** | Empirical Grounding | Read-before-write invariant, verifying disk symbols, and deterministic AST verification. |
+| **[PRINCIPLE-015](#principle-015-attentional-drift-prevention--compaction-resilience-context-anchor-protocol)** | Compaction & Drift Resilience | Context anchor protocol, continuous checklist re-anchoring, and ledger self-orientation. |
 
 ---
 
@@ -142,10 +144,30 @@ This document defines the architectural guidelines and design principles for **N
 
 ---
 
+### PRINCIPLE-014: Empirical Grounding & Anti-Hallucination Invariant (Verify-Before-Execution)
+- **Problem**: AI coding models frequently hallucinate non-existent module imports, obsolete function signatures, phantom file paths, or arbitrary data categories when guessing without empirical verification.
+- **Guideline**:
+  - **Read-Before-Write Invariant**: Never edit a file, call an internal function, or instantiate a class without first reading or grepping its definition and signature from the local codebase.
+  - **Empirical Fact-Checking**: When referencing file paths, configuration keys, or third-party capabilities, verify their presence on disk or in the active runtime environment rather than presuming they exist.
+  - **Zero Assumption on Ambiguity**: When data or intent is ambiguous, fall back to safe deterministic patterns (e.g., date-based albums for photos, explicit exceptions for unsupported features) rather than guessing arbitrary categories or hallucinating contents.
+  - **Automated AST & Test Gating**: Rely on deterministic verification tools (`scripts/update_knowledge_base.py`, compiler/linter checks, and unit tests) to mechanically catch hallucinations before committing.
+
+---
+
+### PRINCIPLE-015: Attentional Drift Prevention & Compaction Resilience (Context Anchor Protocol)
+- **Problem**: In long-running pair programming sessions, large contexts induce "attentional drift" (the AI forgetting rules, skipping checklists, or losing constraints) and conversation compaction discards transient conversational context, causing amnesia.
+- **Guideline**:
+  - **Externalized Working Memory**: Never store task status, multi-step plans, or architectural decisions solely in transient conversation turns. Persist them immediately to structured artifacts (`.agents/task_ledger.json`, `knowledge/decisions.md`, or working scratch files).
+  - **Continuous Checklist Re-anchoring**: At the beginning of each turn and after any compaction event, the AI must actively re-anchor to the Pre-flight/Post-flight checklist and active principles rather than relying on stale conversational inertia.
+  - **Context-Budgeted Information Retrieval**: When retrieving code or context, use targeted slice viewing (`StartLine`/`EndLine`, `grep_search`, AST outlines) rather than blindly dumping large files into context, preventing context bloating that accelerates compaction.
+  - **Compaction Self-Orientation**: Upon detecting a compaction resume or cold restart, the AI must immediately inspect `git status`, the latest commit log (`git log -n 1`), and the task ledger (`.agents/task_ledger.json`) to establish 100% factual grounding before proposing or executing code.
+
+---
+
 ## 📝 How to Add New Principles
 
 To add a new principle:
-1. Assign the next sequential ID (`PRINCIPLE-014`, etc.).
+1. Assign the next sequential ID (`PRINCIPLE-016`, etc.).
 2. Define the **Problem/Concept** and concrete **Rules/Guidelines**.
 3. Update `GUIDELINES.md` and `AGENTS.md`.
 4. Run `py scripts/sync_principles.py` to auto-propagate across all AI guidelines.

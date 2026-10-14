@@ -127,5 +127,7 @@ NoMoreClutter follows a clean separation of concerns:
 
 ## 4. Key Architectural Guarantees
 - **No Data Overwrite**: Files cannot accidentally overwrite existing files.
-- **Token Efficiency**: Payloads never exceed prompt budgets; rate limits are observed with adaptive pacing.
-- **Decoupled AI Engine**: The core organizer works regardless of whether the provider is Groq, Gemini, OpenAI, LM Studio, Ollama, or a local heuristic.
+- **Token Efficiency**: Payloads never exceed prompt budgets; rate limits are observed with adaptive pacing (**PRINCIPLE-009**).
+- **Decoupled AI Engine**: The core organizer works regardless of whether the provider is Groq, Gemini, OpenAI, LM Studio, Ollama, or a local heuristic (**PRINCIPLE-003**, **PRINCIPLE-008**).
+- **Empirical Grounding (Zero Hallucination)**: Read-before-write validation, verified disk paths, and AST confirmation before code execution (**PRINCIPLE-014**).
+- **Compaction & Disruption Resilience**: All task state is externalized to atomic disk records (`task_ledger.json`, WAL history); agents re-anchor against disk status upon compaction resume (**PRINCIPLE-012**, **PRINCIPLE-013**, **PRINCIPLE-015**).
