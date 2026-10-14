@@ -32,7 +32,7 @@ An intelligent AI-powered desktop application that automatically organizes your 
 ### 🗂️ Interactive Tree Preview & Per-File Checkboxes
 - **Hierarchical Visualizer**: Replaces blind all-or-nothing moves with an expandable, interactive Tree Preview window (`TreePreviewDialog`).
 - **Selective Move Execution**: Files are grouped by destination subfolders (`Photos/2018`, `Invoices`). Toggle individual files or entire folders with `[☑ Select All]` to skip files you don't want moved.
-- **Live Search & Direct In-App Preview**: Instant search bar auto-expands and filters matching files. Double-click any row or click `👁️ Preview` to inspect file contents instantly without opening external apps.
+- **Live Search & Direct Native Preview**: Instant search bar auto-expands and filters matching files. Double-click any row or click `👁️ Preview` to launch and inspect the target file directly in your operating system's default application (e.g. Photos, Notepad, Acrobat).
 
 ### 🔍 Smart Duplicate File Finder & Storage Reclaimer
 - **Real-Time Progressive Streaming & Zero-Freeze UI**: Confirmed duplicate clusters are streamed and rendered in real time into the UI as files are hashed. The window remains fluid and responsive with live updating reclaimable space counters, completely eliminating post-scan freezing.
@@ -43,7 +43,7 @@ An intelligent AI-powered desktop application that automatically organizes your 
 ### 👁️ In-App File Viewer & Visual Duplicate Comparator
 - **Universal Multi-Format In-App Preview**: Preview images (proportional aspect scaling), text & source code files (auto-encoding detection), extracted documents (PDF / Word text snippets via `DocumentPeeker`), or binary files (512-byte hex dump) directly in the app without launching external OS software.
 - **Side-by-Side Duplicate Inspector**: Compare canonical original files against redundant duplicate candidates side-by-side with 100% byte-for-byte verification banners, metadata comparison, and one-click `🗑️ Delete Duplicate` or `📦 Isolate` buttons.
-- **Quick Inspection Hotkeys & Buttons**: Available anywhere via the `👁️ File Viewer` header button, `👁️ Preview` in Tree Preview rows, or `👥 Compare` on duplicate cards.
+- **Quick Inspection Hotkeys & Buttons**: Available anywhere via the `👁️ File Viewer` header button, `👁️ Preview` to open in native default apps, or `👥 Compare` on duplicate cards.
 
 ### 🧹 Orphan Folder & Junk Pruner (One-Click Deep Clean)
 - **Bottom-Up Leaf Pruning**: Recursively prunes abandoned empty directory branches from deepest leaves upward using safe `os.rmdir()` (which never deletes non-empty folders).

@@ -28,20 +28,20 @@
 | `services/providers/registry.py` | 135 | 4892 | 1 | 3 |
 | `services/rlm_organizer.py` | 432 | 18699 | 2 | 0 |
 | `ui/__init__.py` | 10 | 347 | 0 | 0 |
-| `ui/duplicate_finder.py` | 544 | 21140 | 1 | 0 |
+| `ui/duplicate_finder.py` | 554 | 21647 | 1 | 0 |
 | `ui/file_viewer.py` | 628 | 24173 | 1 | 5 |
 | `ui/junk_cleaner.py` | 360 | 13874 | 1 | 0 |
-| `ui/tree_preview.py` | 477 | 18064 | 1 | 0 |
+| `ui/tree_preview.py` | 479 | 18199 | 1 | 0 |
 | `tests/test_ai_status.py` | 118 | 5346 | 1 | 0 |
 | `tests/test_benchmark_service.py` | 152 | 6518 | 3 | 0 |
 | `tests/test_cleaner_service.py` | 85 | 3024 | 1 | 0 |
 | `tests/test_deduplicator.py` | 138 | 5268 | 1 | 0 |
-| `tests/test_deploy_manager.py` | 241 | 10673 | 4 | 0 |
+| `tests/test_deploy_manager.py` | 241 | 10685 | 4 | 0 |
 | `tests/test_disruption_recovery.py` | 114 | 4682 | 1 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
 | `tests/test_file_executor.py` | 223 | 8964 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
-| `tests/test_file_viewer.py` | 120 | 5095 | 1 | 0 |
+| `tests/test_file_viewer.py` | 152 | 6672 | 1 | 0 |
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
 | `tests/test_providers.py` | 73 | 2626 | 1 | 0 |
 | `tests/test_rlm_organizer.py` | 121 | 5209 | 2 | 0 |
@@ -658,6 +658,7 @@ without initializing GUI/Tkinter widgets (preventing headless memory exhaustion)
   - Method `.test_text_reading_logic()`
   - Method `.test_image_dimension_scaling()`
   - Method `.test_compare_mode_determination()`
+  - Method `.test_open_file_launches_system_default()`
 
 ### `tests/test_llm_service.py`
 > Unit tests for LLMService Facade (PRINCIPLE-011).

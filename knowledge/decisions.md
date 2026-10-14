@@ -319,11 +319,12 @@ Implement a multi-path 1-Click Quick Deploy architecture:
    - Implemented `FileViewerDialog` with two display modes:
      - **Single-File Mode**: Previews images (proportional scaling with Pillow), plain text / code (multi-encoding detection, line-capped), extracted document text (PDF / DOCX via `DocumentPeeker`), or binary files (512-byte hex dump). Includes metadata, "Copy Path", "Reveal in Explorer", and "OS Open" actions.
      - **Side-by-Side Duplicate Comparison Mode**: Displays canonical original side-by-side with redundant duplicate, byte-for-byte match confirmation banner, and direct "Delete" / "Isolate" action buttons.
-   - Connected "👁️ Preview" and "👥 Compare" buttons directly from `TreePreviewDialog` and `DuplicateFinderDialog`.
+   - Connected "👥 Compare" on duplicate cards directly to `FileViewerDialog`.
+   - Following user feedback and modal grab lockout constraints with stacked dialogs, clicking "👁️ Preview" or double-clicking file rows in `TreePreviewDialog` and `DuplicateFinderDialog` launches the target file directly in the user's native system default application (`os.startfile` on Windows, `open` on macOS, `xdg-open` on Linux) with robust path validation and safe fallback.
 2. **Headless Pure Logic Decoupling**:
    - Extracted all formatting, decoding, scaling, and category logic into pure, zero-GUI helper functions (`get_category_badge`, `get_file_meta_summary`, `compute_image_preview_size`, `read_text_preview`, `generate_hexdump`).
    - `FileViewerDialog` delegates directly to these pure helpers.
-   - Unit tests (`tests/test_file_viewer.py`) test only these pure functions without instantiating Tk/CustomTkinter widgets, guaranteeing 100% headless safety and eliminating RAM exhaustion.
+   - Unit tests (`tests/test_file_viewer.py`) test pure functions and system launcher routing without instantiating Tk/CustomTkinter widgets, guaranteeing 100% headless safety and eliminating RAM exhaustion.
 
 ### Consequences
 - **Positive**: Fluid, seamless in-app preview and visual duplicate verification; tests run in under 0.02s with zero GUI overhead or RAM bloat.

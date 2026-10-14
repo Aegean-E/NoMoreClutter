@@ -213,9 +213,9 @@ class TestEmbeddedProvider(unittest.TestCase):
             provider.analyze_image("dummy.jpg", "test prompt", "test.gguf")
 
     def test_analyze_image_vision_model_raises_file_not_found(self):
-        provider = EmbeddedProvider(model_filename="moondream2-vision")
+        provider = EmbeddedProvider(model_filename="nonexistent-vision.gguf")
         with self.assertRaises(FileNotFoundError):
-            provider.analyze_image("dummy.jpg", "test prompt", "moondream2-vision")
+            provider.analyze_image("dummy.jpg", "test prompt", "nonexistent-vision.gguf")
 
 
 class TestAppDeploymentLogic(unittest.TestCase):

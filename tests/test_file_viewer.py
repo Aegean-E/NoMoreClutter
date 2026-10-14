@@ -115,6 +115,38 @@ class TestFileViewerPureLogic(unittest.TestCase):
         is_compare_missing = bool(missing_cmp and os.path.exists(missing_cmp))
         self.assertFalse(is_compare_missing)
 
+    def test_open_file_launches_system_default(self):
+        from unittest.mock import patch, MagicMock
+        from ui.tree_preview import TreePreviewDialog
+        from ui.duplicate_finder import DuplicateFinderDialog
+
+        dummy = MagicMock()
+
+        # Test Windows os.startfile invocation
+        with patch("sys.platform", "win32"), patch("os.startfile") as mock_startfile:
+            TreePreviewDialog._open_file(dummy, self.test_text_file)
+            mock_startfile.assert_called_once_with(os.path.abspath(self.test_text_file))
+
+        # Test Darwin open invocation
+        with patch("sys.platform", "darwin"), patch("subprocess.Popen") as mock_popen:
+            TreePreviewDialog._open_file(dummy, self.test_text_file)
+            mock_popen.assert_called_once_with(["open", os.path.abspath(self.test_text_file)])
+
+        # Test non-existent file is a safe no-op
+        with patch("os.startfile") as mock_startfile:
+            TreePreviewDialog._open_file(dummy, "non_existent_path_xyz.txt")
+            mock_startfile.assert_not_called()
+
+        # Test empty string is a safe no-op
+        with patch("os.startfile") as mock_startfile:
+            TreePreviewDialog._open_file(dummy, "")
+            mock_startfile.assert_not_called()
+
+        # Verify DuplicateFinderDialog adheres to identical contract
+        with patch("sys.platform", "win32"), patch("os.startfile") as mock_startfile:
+            DuplicateFinderDialog._open_file(dummy, self.test_text_file)
+            mock_startfile.assert_called_once_with(os.path.abspath(self.test_text_file))
+
 
 if __name__ == "__main__":
     unittest.main()

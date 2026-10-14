@@ -403,13 +403,15 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             text_color="#69DB7C",
         ).pack(side="left", padx=8)
 
-        ctk.CTkLabel(
+        orig_lbl = ctk.CTkLabel(
             orig_row,
             text=group.original,
             font=ctk.CTkFont(family="Segoe UI", size=11),
             text_color="#E9ECEF",
             anchor="w",
-        ).pack(side="left", fill="x", expand=True, padx=4)
+        )
+        orig_lbl.pack(side="left", fill="x", expand=True, padx=4)
+        orig_lbl.bind("<Double-Button-1>", lambda event, p=group.original: self._open_file(p))
 
         ctk.CTkButton(
             orig_row,
@@ -419,7 +421,7 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             font=ctk.CTkFont(size=9, weight="bold"),
             fg_color="#25262B",
             hover_color="#373A40",
-            command=lambda p=group.original: self._open_viewer(p),
+            command=lambda p=group.original: self._open_file(p),
         ).pack(side="right", padx=6)
 
         # Duplicate Rows (Selected for action)
@@ -441,13 +443,15 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
                 text_color="#FF8787",
             ).pack(side="left", padx=4)
 
-            ctk.CTkLabel(
+            dup_lbl = ctk.CTkLabel(
                 dup_row,
                 text=dup_path,
                 font=ctk.CTkFont(family="Segoe UI", size=11),
                 text_color="#CED4DA",
                 anchor="w",
-            ).pack(side="left", fill="x", expand=True, padx=4)
+            )
+            dup_lbl.pack(side="left", fill="x", expand=True, padx=4)
+            dup_lbl.bind("<Double-Button-1>", lambda event, p=dup_path: self._open_file(p))
 
             ctk.CTkButton(
                 dup_row,
@@ -515,15 +519,21 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
         self._start_scan()  # Refresh
 
     def _open_file(self, filepath: str):
-        if not os.path.exists(filepath):
+        """Open file directly in the default system application (e.g. Windows Photos, Notepad, Acrobat)."""
+        if not filepath:
             return
+        target = os.path.abspath(filepath)
+        if not os.path.exists(target):
+            target = filepath
+            if not os.path.exists(target):
+                return
         try:
             if sys.platform == "win32":
-                os.startfile(filepath)
+                os.startfile(target)
             elif sys.platform == "darwin":
-                subprocess.Popen(["open", filepath])
+                subprocess.Popen(["open", target])
             else:
-                subprocess.Popen(["xdg-open", filepath])
+                subprocess.Popen(["xdg-open", target])
         except Exception as e:
             print(f"Could not open file: {e}")
 

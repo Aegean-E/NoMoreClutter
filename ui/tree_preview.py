@@ -257,7 +257,7 @@ class TreePreviewDialog(ctk.CTkToplevel):
                 )
                 lbl.pack(side="left", fill="x", expand=True)
 
-                # Action button to inspect/reveal original file
+                # Action button to preview/open original file directly in default system application
                 inspect_btn = ctk.CTkButton(
                     row,
                     text="👁️ Preview",
@@ -266,12 +266,12 @@ class TreePreviewDialog(ctk.CTkToplevel):
                     fg_color="#2C2E33",
                     hover_color="#373A40",
                     font=ctk.CTkFont(size=10, weight="bold"),
-                    command=lambda p=c.original: self._open_viewer(p),
+                    command=lambda p=c.original: self._open_file(p),
                 )
                 inspect_btn.pack(side="right", padx=(4, 8))
 
-                # Allow double clicking label to preview file
-                lbl.bind("<Double-Button-1>", lambda event, p=c.original: self._open_viewer(p))
+                # Allow double clicking label to open file directly in default system application
+                lbl.bind("<Double-Button-1>", lambda event, p=c.original: self._open_file(p))
 
                 # Keep references for live search filtering
                 self.file_row_widgets.append({
@@ -446,25 +446,27 @@ class TreePreviewDialog(ctk.CTkToplevel):
                 card.pack(fill="x", padx=4, pady=6)
 
     def _open_file(self, filepath: str):
-        """Open or reveal file using the system viewer."""
-        if not os.path.exists(filepath):
+        """Open file directly in the default system application (e.g. Windows Photos, Notepad, Acrobat)."""
+        if not filepath:
             return
+        target = os.path.abspath(filepath)
+        if not os.path.exists(target):
+            target = filepath
+            if not os.path.exists(target):
+                return
         try:
             if sys.platform == "win32":
-                os.startfile(filepath)
+                os.startfile(target)
             elif sys.platform == "darwin":
-                subprocess.Popen(["open", filepath])
+                subprocess.Popen(["open", target])
             else:
-                subprocess.Popen(["xdg-open", filepath])
+                subprocess.Popen(["xdg-open", target])
         except Exception as e:
             print(f"Could not open file: {e}")
 
     def _open_viewer(self, filepath: str):
-        """Open file inside the aesthetic in-app FileViewerDialog."""
-        if not os.path.exists(filepath):
-            return
-        from .file_viewer import FileViewerDialog
-        FileViewerDialog(parent=self, filepath=filepath)
+        """Open file directly in default system application."""
+        self._open_file(filepath)
 
     def _confirm_execution(self):
         """Extract checked files and dispatch to callback."""
