@@ -118,4 +118,27 @@ Implement a multi-path 1-Click Quick Deploy architecture:
 - **Positive**: Reorganize operations can be undone days or weeks later across reboots; semantic categorization accuracy is dramatically elevated; zero external pip dependencies added; token overhead is bounded and lean.
 - **Negative**: Incur negligible disk I/O when reading the first few bytes of documents during planning.
 
+---
+
+## ADR-008: Hardware Auto-Benchmark & Camera Timestamp Anti-Hallucination Guard
+
+### Context
+1. **Uncalibrated Batch Settings**: Users running different models (ultra-fast cloud like Groq vs. slower local CPU GGUF models) had to guess optimal batch sizes and processing limits. Setting batch sizes too high on slow hardware caused long UI freezes, while setting them too low on fast cloud models wasted roundtrip latency.
+2. **Camera Roll Photo Hallucinations**: When organizing photos with numeric timestamps (e.g. `20170926_112101.jpg`) with Vision disabled, models lacked semantic text context and hallucinated arbitrary categories (such as labeling an entire directory of photos as `Animals/`).
+
+### Decision
+1. **`BenchmarkService` (`services/benchmark_service.py`)**:
+   - Synthesizes realistic test files across invoices, code, documents, and photos.
+   - Measures actual latency and throughput against the active model.
+   - Probes Vision support and suggests provider-specific vision models (`llama-3.2-11b-vision-preview`, `gemini-1.5-flash`, `moondream`).
+   - Automatically calculates and applies optimal batch sizes (5 for slow local CPU, 10 for standard, 15 for fast cloud) and limits.
+2. **Camera Timestamp Anti-Hallucination Guard**:
+   - Added explicit prompt rules instructing the LLM to group numeric camera timestamps by date/year (e.g. `Photos/2017`) rather than guessing scene contents without Vision.
+   - Added post-processing validation in `RLMOrganizer`: if an image matches `YYYYMMDD_HHMMSS` and the model returned a generic or hallucinated tag without vision, the system safely routes it to `Photos/{year}` and preserves original timestamp filenames.
+
+### Consequences
+- **Positive**: Zero-guesswork tuning tailored to user hardware; prevents bizarre photo hallucinations; provides clear guidance on when to enable Vision.
+- **Negative**: Benchmark takes 1-3 seconds to run when explicitly triggered by the user.
+
+
 

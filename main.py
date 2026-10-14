@@ -50,6 +50,7 @@ class NoMoreClutterApp(ctk.CTk):
         self.ai_is_plugged: bool = False
         self.ai_status_badge: str = "Checking"
         self.ai_status_detail: str = "Checking AI status..."
+        self.last_benchmark_result = None
         
         self._load_settings()
         self._build_ui()
@@ -317,7 +318,34 @@ class NoMoreClutterApp(ctk.CTk):
         self.batch_size_entry = ctk.CTkEntry(scroll, width=120)
         self.batch_size_entry.insert(0, self.settings.get("batch_size", "15"))
         self.batch_size_entry.pack(padx=10, pady=4, anchor="w")
+
+        # Auto-Tune & Hardware Benchmark Card (Tests PC latency & finds optimal settings)
+        benchmark_card = ctk.CTkFrame(scroll, fg_color="#181B1F", corner_radius=8, border_width=1, border_color="#3B8ED0")
+        benchmark_card.pack(fill="x", padx=10, pady=(15, 10))
         
+        ctk.CTkLabel(benchmark_card, text="⚡ Auto-Tune Optimal Settings & Hardware Benchmark", font=ctk.CTkFont(weight="bold", size=13), text_color="#74C0FC").pack(padx=12, pady=(10, 2), anchor="w")
+        ctk.CTkLabel(benchmark_card, text="Automatically tests your PC and active AI model with realistic test files. Measures latency, evaluates Vision capabilities, and determines the most optimal batch size and limits for your hardware.", text_color="gray", font=ctk.CTkFont(size=11), wraplength=520, justify="left").pack(padx=12, pady=(0, 8), anchor="w")
+        
+        bench_btn_row = ctk.CTkFrame(benchmark_card, fg_color="transparent")
+        bench_btn_row.pack(fill="x", padx=12, pady=(0, 8))
+        
+        self.benchmark_run_btn = ctk.CTkButton(bench_btn_row, text="⚡ Run Auto-Benchmark & Tune", command=self._run_benchmark_action, height=32, fg_color="#1971C2", hover_color="#1864AB", font=ctk.CTkFont(weight="bold"))
+        self.benchmark_run_btn.pack(side="left")
+        
+        self.benchmark_apply_btn = ctk.CTkButton(bench_btn_row, text="✨ Apply Recommended Settings", command=self._apply_benchmark_settings, height=32, state="disabled", fg_color="#2B8A3E", hover_color="#237032", font=ctk.CTkFont(weight="bold"))
+        self.benchmark_apply_btn.pack(side="left", padx=(10, 0))
+        
+        self.benchmark_progress_bar = ctk.CTkProgressBar(benchmark_card, height=6)
+        self.benchmark_progress_bar.set(0.0)
+        self.benchmark_progress_bar.pack(fill="x", padx=12, pady=(4, 4))
+        
+        self.benchmark_status_label = ctk.CTkLabel(benchmark_card, text="Ready to benchmark active model.", text_color="gray", font=ctk.CTkFont(size=11))
+        self.benchmark_status_label.pack(padx=12, pady=(0, 4), anchor="w")
+        
+        self.benchmark_results_box = ctk.CTkTextbox(benchmark_card, height=130, wrap="word", font=ctk.CTkFont(family="Consolas", size=11))
+        self.benchmark_results_box.pack(fill="x", padx=12, pady=(0, 10))
+        self.benchmark_results_box.insert("end", "Click 'Run Auto-Benchmark' to measure PC latency and determine optimal settings.\n")
+
         # Action Buttons
         btn_row = ctk.CTkFrame(scroll, fg_color="transparent")
         btn_row.pack(fill="x", padx=10, pady=20)
@@ -503,6 +531,122 @@ class NoMoreClutterApp(ctk.CTk):
                 self._open_quick_deploy()
             else:
                 self._open_settings()
+
+    def _run_benchmark_action(self):
+        """Start asynchronous model benchmarking on synthetic test files (PRINCIPLE-007)."""
+        self.benchmark_run_btn.configure(state="disabled")
+        self.benchmark_apply_btn.configure(state="disabled")
+        self.benchmark_progress_bar.set(0.05)
+        self.benchmark_status_label.configure(text="Initializing test files & hardware probe...", text_color="yellow")
+        self.benchmark_results_box.delete("1.0", "end")
+        self.benchmark_results_box.insert("end", "⏳ Benchmarking in progress... Testing latency, compliance, and vision capability.\n")
+
+        thread = threading.Thread(target=self._benchmark_worker, daemon=True)
+        thread.start()
+
+    def _benchmark_worker(self):
+        try:
+            provider_name = (
+                self.provider_var.get()
+                if hasattr(self, "provider_var")
+                else self.settings.get("provider_name", "Groq (Free & Fastest - Zero Install)")
+            )
+            api_key = (
+                self.api_key_entry.get().strip()
+                if hasattr(self, "api_key_entry")
+                else self.settings.get("api_key", "")
+            )
+            base_url = (
+                self.llm_url.get().strip()
+                if hasattr(self, "llm_url")
+                else self.settings.get("llm_url", "")
+            )
+            model = (
+                self.llm_model.get().strip()
+                if hasattr(self, "llm_model")
+                else self.settings.get("llm_model", "")
+            )
+
+            LLMService, _ = get_LLMService()
+            llm = LLMService(base_url=base_url, api_key=api_key)
+
+            from services.benchmark_service import BenchmarkService
+
+            def prog_cb(msg: str, val: float):
+                self.after(0, self._update_benchmark_progress_ui, msg, val)
+
+            result = BenchmarkService.run_benchmark(
+                provider=llm.provider,
+                model=model,
+                provider_name=provider_name,
+                progress_callback=prog_cb,
+            )
+            self.after(0, self._on_benchmark_complete, result)
+        except Exception as e:
+            self.after(0, self._on_benchmark_error, str(e))
+
+    def _update_benchmark_progress_ui(self, msg: str, val: float):
+        if hasattr(self, "benchmark_progress_bar"):
+            self.benchmark_progress_bar.set(val)
+        if hasattr(self, "benchmark_status_label"):
+            self.benchmark_status_label.configure(text=msg, text_color="yellow")
+
+    def _on_benchmark_complete(self, result):
+        self.last_benchmark_result = result
+        self.benchmark_run_btn.configure(state="normal")
+        self.benchmark_apply_btn.configure(state="normal")
+        self.benchmark_progress_bar.set(1.0)
+        self.benchmark_status_label.configure(text="✅ Benchmark complete! Optimal settings ready to apply.", text_color="#51CF66")
+
+        self.benchmark_results_box.delete("1.0", "end")
+        self.benchmark_results_box.insert("end", f"📊 HARDWARE & MODEL BENCHMARK REPORT\n")
+        self.benchmark_results_box.insert("end", f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+        self.benchmark_results_box.insert("end", f"• Tier: {result.hardware_tier}\n")
+        self.benchmark_results_box.insert("end", f"• Latency: {result.latency_ms:.0f} ms (~{result.tokens_per_sec:.0f} tokens/sec)\n")
+        self.benchmark_results_box.insert("end", f"• Recommended Batch Size: {result.recommended_batch_size} files\n")
+        self.benchmark_results_box.insert("end", f"• Recommended File Limit: {result.recommended_limit} files\n")
+        self.benchmark_results_box.insert("end", f"\n💡 Actionable Insights:\n")
+        for rec in result.recommendations:
+            self.benchmark_results_box.insert("end", f"  {rec}\n")
+        self.benchmark_results_box.see("1.0")
+
+    def _on_benchmark_error(self, err_msg: str):
+        self.benchmark_run_btn.configure(state="normal")
+        self.benchmark_apply_btn.configure(state="disabled")
+        self.benchmark_progress_bar.set(0.0)
+        self.benchmark_status_label.configure(text=f"❌ Benchmark Error: {err_msg}", text_color="#FF6B6B")
+        self.benchmark_results_box.delete("1.0", "end")
+        self.benchmark_results_box.insert("end", f"❌ Failed to run benchmark: {err_msg}\n\nPlease check your provider configuration or connection.")
+
+    def _apply_benchmark_settings(self):
+        if not getattr(self, "last_benchmark_result", None):
+            return
+
+        res = self.last_benchmark_result
+        self.batch_size_entry.delete(0, "end")
+        self.batch_size_entry.insert(0, str(res.recommended_batch_size))
+
+        self.limit_entry.delete(0, "end")
+        self.limit_entry.insert(0, str(res.recommended_limit))
+
+        applied_msg = (
+            f"Applied Optimal Settings:\n"
+            f"• Batch Size: {res.recommended_batch_size}\n"
+            f"• File Limit: {res.recommended_limit}"
+        )
+
+        if res.is_vision_supported and not self.analyze_images_var.get():
+            enable_vision = messagebox.askyesno(
+                "Enable Vision?",
+                f"Your active model supports Vision!\n\n"
+                f"Would you like to enable 'Analyze image contents using AI Vision' so AI can inspect actual photo contents instead of relying on filenames?"
+            )
+            if enable_vision:
+                self.analyze_images_var.set(True)
+                applied_msg += "\n• Enabled AI Vision for images"
+
+        self._save_settings(silent=True)
+        messagebox.showinfo("Optimal Settings Applied", f"{applied_msg}\n\nSettings saved successfully!")
 
     def _open_settings(self):
         try:

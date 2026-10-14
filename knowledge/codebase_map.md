@@ -9,9 +9,10 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 1326 | 63666 | 1 | 0 |
+| `main.py` | 1470 | 71869 | 1 | 0 |
 | `models/__init__.py` | 44 | 1399 | 2 | 0 |
-| `services/__init__.py` | 34 | 1121 | 0 | 8 |
+| `services/__init__.py` | 39 | 1266 | 0 | 9 |
+| `services/benchmark_service.py` | 181 | 7724 | 2 | 0 |
 | `services/document_peeker.py` | 151 | 5969 | 1 | 0 |
 | `services/file_executor.py` | 232 | 8492 | 1 | 0 |
 | `services/file_scanner.py` | 40 | 1408 | 1 | 0 |
@@ -23,8 +24,9 @@
 | `services/providers/embedded.py` | 94 | 4160 | 1 | 0 |
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
 | `services/providers/registry.py` | 130 | 4668 | 1 | 3 |
-| `services/rlm_organizer.py` | 373 | 14704 | 2 | 0 |
+| `services/rlm_organizer.py` | 393 | 16216 | 2 | 0 |
 | `tests/test_ai_status.py` | 118 | 5346 | 1 | 0 |
+| `tests/test_benchmark_service.py` | 125 | 5140 | 3 | 0 |
 | `tests/test_deploy_manager.py` | 189 | 7764 | 4 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
 | `tests/test_file_executor.py` | 156 | 6060 | 1 | 0 |
@@ -56,6 +58,12 @@
   - Method `._ai_status_worker()`
   - Method `._apply_ai_status_ui(is_plugged, badge_label, detail_msg)`
   - Method `._on_ai_status_clicked()`
+  - Method `._run_benchmark_action()`
+  - Method `._benchmark_worker()`
+  - Method `._update_benchmark_progress_ui(msg, val)`
+  - Method `._on_benchmark_complete(result)`
+  - Method `._on_benchmark_error(err_msg)`
+  - Method `._apply_benchmark_settings()`
   - Method `._open_settings()`
   - Method `._hide_settings()`
   - Method `._open_quick_deploy()`
@@ -115,6 +123,19 @@
 - `def get_model_downloader()`
 - `def get_ollama_manager()`
 - `def get_document_peeker()`
+- `def get_benchmark_service()`
+
+### `services/benchmark_service.py`
+> Automatic Performance Benchmark & Settings Auto-Tuner (PRINCIPLE-007: Speed & Lean Architecture).
+Benchmarks active AI models on the user's PC using lightweight synthetic test files,
+measures latency, evaluates schema compliance and vision support, and calculates optimal settings.
+
+#### Classes
+- **`BenchmarkResult`**
+  - *Structured report card of hardware and model performance.*
+- **`BenchmarkService`**
+  - *Benchmark runner that probes latency, vision, and calculates optimal settings.*
+  - Method `.run_benchmark(cls, provider, model, provider_name, progress_callback)`
 
 ### `services/document_peeker.py`
 > Document Content Peeker (PRINCIPLE-007: Performance, PRINCIPLE-009: Token Frugality)
@@ -299,6 +320,27 @@ Tests plugged/unplugged evaluation across cloud zero-install, embedded GGUF, Oll
   - Method `.test_ollama_offline(mock_status)`
   - Method `.test_ollama_online(mock_status, mock_list)`
   - Method `.test_local_server_offline(mock_test)`
+
+### `tests/test_benchmark_service.py`
+> Unit tests for BenchmarkService & Camera Photo Anti-Hallucination Guard (PRINCIPLE-007, PRINCIPLE-011).
+Tests latency measurement, optimal batch calculation, vision detection, and camera date grouping.
+
+#### Classes
+- **`MockBenchProvider`**
+  - Method `.__init__(delay_sec, return_json)`
+  - Method `.test_connection(model)`
+  - Method `.complete(prompt, model, temperature, max_tokens)`
+  - Method `.analyze_image(image_path, prompt, model, max_tokens)`
+- **`MockAnimalsHallucinatingProvider`**
+  - *Simulates the bug where model assigns 'Animals' to all camera timestamps.*
+  - Method `.__init__()`
+  - Method `.test_connection(model)`
+  - Method `.complete(prompt, model, temperature, max_tokens)`
+  - Method `.analyze_image(image_path, prompt, model, max_tokens)`
+- **`TestBenchmarkService`**
+  - Method `.test_fast_cloud_benchmark()`
+  - Method `.test_vision_model_detection()`
+  - Method `.test_camera_photo_anti_hallucination_guard()`
 
 ### `tests/test_deploy_manager.py`
 > Unit tests for 1-Click AI Model Deployment (PRINCIPLE-003, PRINCIPLE-008, PRINCIPLE-011)

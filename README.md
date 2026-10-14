@@ -25,6 +25,7 @@ An intelligent AI-powered desktop application that automatically organizes your 
 ### 🧠 Recursive Language Model (RLM) Organization
 - **Hierarchical Decomposition**: Files are grouped into logical clusters before prompting, preventing token exhaustion and staying well within free-tier rate limits (TPM/RPM).
 - **📄 Intelligent Document Content Peeking**: Extracts compact, token-budgeted text snippets ($\le 200$ chars) from PDF documents, Word files (`.docx`), Markdown, and code/text files with zero third-party dependencies. Enables the AI to accurately classify invoices, meeting notes, and contracts even when filenames are cryptic (e.g., `Scan_001.pdf`).
+- **📷 Camera Photo Date-Grouping & Anti-Hallucination Guard**: Camera photos with numeric timestamps (e.g., `20170926_112101.jpg`, `IMG_20180401...`) are automatically organized into chronological albums (e.g., `Photos/2017/`) without hallucinating arbitrary scenes (like labeling all files "Animals") when Vision is not active.
 - **Token Frugality (~70% Savings)**: Ultra-dense JSON payloads eliminate repetitive path dumps and reduce prompt token overhead.
 - **Deterministic ID Mapping**: Protects against index-shift hallucinations so files are always mapped to their exact decisions.
 - **Single-Pass Vision Analysis**: Categorizes and renames images in a single call rather than multiple redundant round trips.
@@ -35,7 +36,8 @@ An intelligent AI-powered desktop application that automatically organizes your 
 - **Clean Destination Folders**: Rolling back automatically prunes newly created empty destination directories.
 - **Non-Destructive Operations**: Files are safely moved with zero data loss risk.
 
-### 🎨 Modern Dark UI
+### 🎨 Modern Dark UI & ⚡ Performance Auto-Tuning
+- **⚡ Hardware Auto-Tuner & Performance Benchmark**: Measure PC and model latency (ms) and throughput (tokens/sec) directly inside Settings > Performance & Limits. Automatically discovers your hardware tier and applies optimal batch sizes (5, 10, or 15) and file processing limits (25, 50, or 100) with 1 click.
 - **Sleek CustomTkinter Interface**: Designed with dark-mode aesthetic, real-time logging, and interactive controls.
 - **🔌 Real-Time AI Plugged/Unplugged Indicator**: Interactive status pill in the header displaying connection health (🟢 **AI Plugged: Groq Ready**, 🟢 **AI Plugged: Embedded**, 🔴 **AI Unplugged: No Key**, 🔴 **AI Unplugged: Offline**). Click the pill to test connection or launch 1-Click Quick Deploy.
 - **Provider Quick-Switching**: Dropdown selector with pre-configured API URLs, recommended models, and direct links to get free API keys.
@@ -143,6 +145,7 @@ NoMoreClutter/
 │   └── weights/               # Local GGUF model weights cache (auto-created, gitignored)
 ├── services/
 │   ├── __init__.py            # Service factories & lazy loaders
+│   ├── benchmark_service.py   # Automated hardware latency benchmark & settings auto-tuner
 │   ├── file_scanner.py        # File discovery and extension filtering
 │   ├── document_peeker.py     # Zero-dependency document content snippet extractor (PDF, DOCX, text)
 │   ├── rlm_organizer.py       # RLM hierarchical categorization & token optimizer
@@ -158,6 +161,7 @@ NoMoreClutter/
 │       └── openai_compatible.py # Standard OpenAI-compatible HTTP client
 ├── tests/                     # Automated unit test suite (PRINCIPLE-011)
 │   ├── test_ai_status.py      # AI plugged/unplugged indicator & health check tests
+│   ├── test_benchmark_service.py # Benchmark latency, vision probing & photo guard tests
 │   ├── test_providers.py      # Provider registry & creation tests
 │   ├── test_deploy_manager.py # Model downloader, Ollama manager & embedded provider tests
 │   ├── test_document_peeker.py # PDF, DOCX, and text snippet extraction tests

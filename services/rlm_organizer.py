@@ -164,6 +164,12 @@ class RLMOrganizer:
             else ""
         )
 
+        camera_photo_rule = (
+            "4. For photos or image files with numeric or camera timestamps (e.g. '20170926_112101.jpg', 'IMG_0001.jpg', 'DSC_100.jpg'): "
+            "do NOT guess or hallucinate specific animal, object, or scene contents (such as 'Animals' or 'Cars') unless explicit keywords exist in the filename. "
+            "Instead, organize them by year/date or general photo albums (e.g. 'Photos/2017', 'Photos/2018', 'Camera_Roll') based on the timestamp."
+        )
+
         prompt = f"""You are a fast, structured file organizer. Categorize these files:
 {items_json}
 
@@ -174,6 +180,7 @@ Rules:
 1. {folder_rule}
 2. {rename_rule}
 {peek_rule}
+{camera_photo_rule}
 Respond ONLY with a valid JSON array of objects:
 [{{"id": 0, "folder": "Folder_Name", "name": "descriptive_filename.ext"}}]"""
 
@@ -193,6 +200,19 @@ Respond ONLY with a valid JSON array of objects:
                         
                         folder_name = self._sanitize_folder_name(item.get("folder", "General"))
                         new_filename = self._sanitize_filename(item.get("name", os.path.basename(orig_path)), orig_path)
+
+                        # Camera timestamp anti-hallucination guard for images without vision
+                        ext = os.path.splitext(orig_path)[1].lower()
+                        basename = os.path.basename(orig_path)
+                        if ext in IMAGE_EXTENSIONS:
+                            date_match = re.search(r"\b(19\d{2}|20\d{2})(\d{2})\d{2}[-_]\d{4,6}", basename)
+                            if date_match:
+                                year = date_match.group(1)
+                                hallucinated_tags = {"animals", "animal", "pets", "pet", "general", "other", "random", "misc", "untitled", "images", "photos"}
+                                if folder_name.lower() in hallucinated_tags:
+                                    folder_name = f"Photos/{year}"
+                                if not new_filename or any(new_filename.lower().startswith(p) for p in ["animal", "image", "photo_1", "photo_2"]):
+                                    new_filename = basename
                         
                         # Preserve existing folder constraint if create_new_folders is False
                         if not create_new_folders and existing_folders:

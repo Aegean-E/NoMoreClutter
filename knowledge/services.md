@@ -155,4 +155,21 @@ Zero-dependency lightweight content extractor for intelligent semantic file orga
 - `peek(file_path: str, max_chars: int = 200) -> str`:
   Dispatches to format-specific readers based on file extension; returns a sanitized, token-budgeted text preview (or `""` if unsupported or unreadable).
 
+---
+
+## 9. `BenchmarkService` (`services/benchmark_service.py`)
+
+Automated hardware performance benchmarking and settings auto-tuner (PRINCIPLE-007).
+
+### Key Concepts
+- **Lightweight Synthetic Testing**: Tests the active AI model against realistic synthetic payloads (invoices, Python scripts, camera timestamps, markdown docs, and archives).
+- **Latency & Throughput Measurement**: Measures millisecond response latency and tokens-per-second throughput to classify hardware tiers (Ultra-Fast Cloud, Standard, Conservative).
+- **Vision Capability Probing**: Detects whether the active model or provider supports multimodal visual photo inspection.
+- **Optimal Parameter Tuning**: Calculates optimal RLM cluster batch sizes (5, 10, or 15) and processing limits to maximize speed while preventing rate-limit spikes or freezing.
+
+### Methods
+- `run_benchmark(provider, model: str, provider_name: str, progress_callback=None) -> BenchmarkResult`:
+  Runs the benchmark suite, measures latency and compliance, probes vision capability, and returns a structured `BenchmarkResult` with actionable recommendations.
+
+
 

@@ -32,3 +32,8 @@ def get_document_peeker():
     from .document_peeker import DocumentPeeker
     return DocumentPeeker
 
+def get_benchmark_service():
+    from .benchmark_service import BenchmarkService, BenchmarkResult
+    return BenchmarkService, BenchmarkResult
+
+
