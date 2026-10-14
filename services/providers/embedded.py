@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Tuple, Optional
 from .base import BaseAIProvider
 from ..model_downloader import ModelDownloader, GGUF_CATALOG
+from ..llama_server_manager import LlamaServerManager, is_server_installed
 
 
 class EmbeddedProvider(BaseAIProvider):
@@ -40,7 +41,7 @@ class EmbeddedProvider(BaseAIProvider):
         return ModelDownloader.get_model_path(target_name)
 
     def _get_llm(self, model: Optional[str] = None):
-        """Lazy load Llama instance when first needed."""
+        """Lazy load in-process Llama instance when llama-cpp-python is used."""
         model_path = self._get_model_path(model)
         if not model_path.exists():
             raise FileNotFoundError(
@@ -53,8 +54,8 @@ class EmbeddedProvider(BaseAIProvider):
                 from llama_cpp import Llama
             except ImportError:
                 raise RuntimeError(
-                    "llama-cpp-python is not installed. To run embedded models in-process, "
-                    "run `pip install llama-cpp-python` or use Ollama / Cloud providers."
+                    "Local engine not available. Please click '1-Click Quick Deploy' "
+                    "in NoMoreClutter to download the official standalone engine (zero Python dependencies)."
                 )
 
             self._llm_instance = Llama(
@@ -83,16 +84,27 @@ class EmbeddedProvider(BaseAIProvider):
             return False, f"Vision projector '{mmproj_path.name}' is missing. Re-download via '1-Click Quick Deploy'."
 
         badge = "[Vision Supported]" if self.has_vision else "[Text-Only]"
+        if is_server_installed():
+            return True, f"Embedded local engine ready (Official llama-server)! Model: {model_path.name} {badge} ({size_mb:.0f} MB)"
+
         try:
             import llama_cpp
-            return True, f"Embedded engine ready! Model: {model_path.name} {badge} ({size_mb:.0f} MB)"
+            return True, f"Embedded engine ready (in-process)! Model: {model_path.name} {badge} ({size_mb:.0f} MB)"
         except ImportError:
-            return True, f"Model weights ready {badge} ({size_mb:.0f} MB). Note: llama-cpp-python needed for in-process inference."
+            return False, f"Model weights ready {badge} ({size_mb:.0f} MB). Standalone engine missing. Click '1-Click Quick Deploy' to download official engine."
 
     def complete(self, prompt: str, model: str, temperature: float = 0.2, max_tokens: int = 1500) -> str:
-        """Run text completion using the in-process model."""
+        """Run text completion using the standalone llama-server or fallback in-process model."""
+        model_path = self._get_model_path(model)
+        if is_server_installed():
+            return LlamaServerManager.complete(
+                prompt=prompt,
+                model_path=model_path,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+
         llm = self._get_llm(model)
-        
         output = llm.create_chat_completion(
             messages=[
                 {"role": "system", "content": "You are a fast, structured JSON-only file organizer."},
@@ -126,14 +138,25 @@ class EmbeddedProvider(BaseAIProvider):
                 "Re-download via '1-Click Quick Deploy'."
             )
 
+        # 1. Primary engine: High-speed standalone official llama-server (zero Python C++ dependencies)
+        if is_server_installed() and mmproj_path and mmproj_path.exists():
+            return LlamaServerManager.analyze_image(
+                image_path=image_path,
+                prompt=prompt,
+                model_path=model_path,
+                mmproj_path=mmproj_path,
+                max_tokens=max_tokens,
+            )
+
+        # 2. Secondary fallback: in-process llama_cpp if installed
         try:
             import base64
             from llama_cpp import Llama
             from llama_cpp.llama_chat_format import MoondreamChatHandler, Llava15ChatHandler
         except ImportError as e:
             raise NotImplementedError(
-                "llama-cpp-python with multimodal support is required for local vision analysis. "
-                "Run `pip install llama-cpp-python` or switch to Groq / Gemini for instant free cloud vision."
+                "Local vision engine is not installed. Click '1-Click Quick Deploy' in NoMoreClutter "
+                "to download the official standalone engine (zero Python dependencies) or use Groq / Gemini."
             ) from e
 
         with open(image_path, "rb") as f:

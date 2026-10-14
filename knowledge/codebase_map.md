@@ -9,21 +9,22 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 2010 | 96011 | 1 | 0 |
+| `main.py` | 2095 | 100085 | 1 | 0 |
 | `models/__init__.py` | 97 | 2903 | 5 | 0 |
-| `services/__init__.py` | 47 | 1476 | 0 | 11 |
+| `services/__init__.py` | 51 | 1672 | 0 | 12 |
 | `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
 | `services/cleaner_service.py` | 211 | 8073 | 1 | 0 |
 | `services/deduplicator.py` | 259 | 10525 | 1 | 0 |
 | `services/document_peeker.py` | 151 | 5969 | 1 | 0 |
 | `services/file_executor.py` | 262 | 9889 | 1 | 0 |
 | `services/file_scanner.py` | 40 | 1408 | 1 | 0 |
-| `services/llm_service.py` | 211 | 8710 | 2 | 0 |
+| `services/llama_server_manager.py` | 410 | 15761 | 1 | 4 |
+| `services/llm_service.py` | 226 | 9504 | 2 | 0 |
 | `services/model_downloader.py` | 290 | 11524 | 2 | 0 |
 | `services/ollama_manager.py` | 171 | 6187 | 2 | 0 |
 | `services/providers/__init__.py` | 44 | 1198 | 0 | 1 |
 | `services/providers/base.py` | 48 | 1565 | 1 | 0 |
-| `services/providers/embedded.py` | 170 | 7339 | 1 | 0 |
+| `services/providers/embedded.py` | 193 | 8491 | 1 | 0 |
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
 | `services/providers/registry.py` | 135 | 4892 | 1 | 3 |
 | `services/rlm_organizer.py` | 481 | 20857 | 2 | 0 |
@@ -42,6 +43,7 @@
 | `tests/test_file_executor.py` | 223 | 8964 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
 | `tests/test_file_viewer.py` | 198 | 9071 | 2 | 0 |
+| `tests/test_llama_server_manager.py` | 229 | 8419 | 1 | 0 |
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
 | `tests/test_providers.py` | 73 | 2626 | 1 | 0 |
 | `tests/test_rlm_organizer.py` | 178 | 8278 | 2 | 0 |
@@ -91,6 +93,9 @@
   - Method `._build_quick_deploy_window()`
   - Method `._on_embed_catalog_changed(choice)`
   - Method `._update_embed_status_ui()`
+  - Method `._download_engine_action()`
+  - Method `._download_engine_worker()`
+  - Method `._on_engine_download_success()`
   - Method `._download_embedded_action()`
   - Method `._cancel_embedded_download()`
   - Method `._download_embedded_worker(model_id)`
@@ -157,6 +162,7 @@
 - `def get_benchmark_service()`
 - `def get_deduplicator()`
 - `def get_cleaner_service()`
+- `def get_llama_server_manager()`
 
 ### `services/benchmark_service.py`
 > Automatic Performance Benchmark & Settings Auto-Tuner (PRINCIPLE-007: Speed & Lean Architecture).
@@ -236,6 +242,37 @@ and multi-session rollback capabilities that survive application restarts.
   - Method `.scan_folder(folder_path, extensions, include_subfolders)`
   - Method `.get_extension(filename)`
   - Method `.get_category(extension, categories)`
+
+### `services/llama_server_manager.py`
+> Standalone llama-server.exe Manager & Local Inference Engine (PRINCIPLE-003, PRINCIPLE-007, PRINCIPLE-008)
+Provides 1-click download, process lifecycle management, and high-performance local inference
+via the official precompiled llama.cpp server binary (zero Python C++ dependencies).
+
+#### Classes
+- **`LlamaServerManager`**
+  - *Manages the background execution, lifecycle, and inference requests for llama-server.exe.*
+  - Method `.get_effective_exe_path(cls)`
+  - Method `.is_server_running(cls, port)`
+  - Method `.start_server(cls, model_path, mmproj_path, port, threads, timeout)`
+  - Method `.stop_server(cls)`
+  - Method `.complete(cls, prompt, model_path, temperature, max_tokens, port)`
+  - Method `.analyze_image(cls, image_path, prompt, model_path, mmproj_path, max_tokens, port)`
+#### Functions
+- `def get_bin_dir()`
+  - *Return the directory path where standalone binaries are stored.*
+- `def get_server_exe_path()`
+  - *Return the absolute path to llama-server.exe.*
+- `def is_server_installed()`
+  - *Return True if the standalone server executable is present and valid.*
+- `def download_server(progress_callback, cancel_event)`
+  - *Download and extract the official standalone llama-server release.
+
+Args:
+    progress_callback: Optional function(status_text, bytes_read, total_bytes, pct)
+    cancel_event: Optional threading.Event to signal cancellation
+
+Returns:
+    Path to the installed llama-server.exe*
 
 ### `services/llm_service.py`
 > LLM Service Facade (PRINCIPLE-001, PRINCIPLE-003, PRINCIPLE-009)
@@ -673,6 +710,24 @@ without initializing GUI/Tkinter widgets (preventing headless memory exhaustion)
   - Method `.test_image_color_mode_conversion()`
 - **`TestDuplicatePaginationLogic`**
   - Method `.test_selection_across_unrendered_groups()`
+
+### `tests/test_llama_server_manager.py`
+> Unit tests for Standalone llama-server.exe Manager (PRINCIPLE-003, PRINCIPLE-008, PRINCIPLE-011).
+Validates path resolution, installation detection, mock download & zip extraction,
+process lifecycle, and OpenAI-compatible HTTP communication.
+Zero GUI dependencies (runs 100% headless).
+
+#### Classes
+- **`TestLlamaServerManager`**
+  - Method `.setUp()`
+  - Method `.tearDown()`
+  - Method `.test_paths()`
+  - Method `.test_is_server_installed_detection()`
+  - Method `.test_download_server_mock()`
+  - Method `.test_start_server_missing_model()`
+  - Method `.test_start_server_success_and_reuse()`
+  - Method `.test_complete_mock()`
+  - Method `.test_analyze_image_mock()`
 
 ### `tests/test_llm_service.py`
 > Unit tests for LLMService Facade (PRINCIPLE-011).

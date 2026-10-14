@@ -155,7 +155,19 @@ Provides 1-click Ollama discovery and streaming model pulling via local REST API
 
 ---
 
-## 8. `DocumentPeeker` (`services/document_peeker.py`)
+## 8. `LlamaServerManager` (`services/llama_server_manager.py`)
+
+Provides 1-click download, process lifecycle management, and high-performance local inference via the official standalone precompiled `llama-server.exe` binary (PRINCIPLE-003, PRINCIPLE-007, PRINCIPLE-008).
+- **Zero Python Dependencies**: Operates completely independently of Python C++ bindings (eliminates MSVC and `llama-cpp-python` installation hurdles).
+- **Official Pinned & Dynamic Releases**: Streams official Windows CPU (AVX2-optimized) releases directly from `ggml-org/llama.cpp` GitHub releases into `models/bin/` with live percentage progress and atomic extraction.
+- **Process Lifecycle Management**: Spawns `llama-server.exe` as a lightweight background subprocess with hidden console (`CREATE_NO_WINDOW`), non-blocking health polling (`/health`), and automatic exit cleanup (`atexit.register`).
+- **Text & Multimodal Vision Inference**:
+  - `complete(prompt, model_path, ...)`: Dispatches prompt to `/v1/chat/completions` using standard OpenAI JSON schema over local HTTP.
+  - `analyze_image(image_path, prompt, model_path, mmproj_path, ...)`: Dispatches native base64 image payloads to `/completion` (or `/v1/chat/completions`) with multimodal projector support for 100% offline vision inspection.
+
+---
+
+## 9. `DocumentPeeker` (`services/document_peeker.py`)
 
 Zero-dependency lightweight content extractor for intelligent semantic file organization (PRINCIPLE-007, PRINCIPLE-009).
 
@@ -175,7 +187,7 @@ Zero-dependency lightweight content extractor for intelligent semantic file orga
 
 ---
 
-## 9. `BenchmarkService` (`services/benchmark_service.py`)
+## 10. `BenchmarkService` (`services/benchmark_service.py`)
 
 Automated hardware performance benchmarking and continuous settings auto-tuner (PRINCIPLE-007).
 
@@ -195,7 +207,7 @@ Automated hardware performance benchmarking and continuous settings auto-tuner (
 
 ---
 
-## 10. `DeduplicationService` (`services/deduplicator.py`)
+## 11. `DeduplicationService` (`services/deduplicator.py`)
 
 Zero-dependency, high-speed $O(N)$ two-stage duplicate file finder and storage reclaimer (PRINCIPLE-007).
 
@@ -211,7 +223,7 @@ Zero-dependency, high-speed $O(N)$ two-stage duplicate file finder and storage r
 
 ---
 
-## 11. `CleanerService` (`services/cleaner_service.py`)
+## 12. `CleanerService` (`services/cleaner_service.py`)
 
 Safe, recursive orphan folder pruner and operating system debris cleaner (PRINCIPLE-003, PRINCIPLE-007).
 

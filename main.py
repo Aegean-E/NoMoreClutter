@@ -1119,6 +1119,28 @@ class NoMoreClutterApp(ctk.CTk):
         ModelDownloader, GGUF_CATALOG = get_model_downloader()
         catalog_names = [f"{item.capability_badge} {item.name}" for item in GGUF_CATALOG.values()]
 
+        # Standalone Local Engine Banner (Official llama-server.exe)
+        self.embed_engine_frame = ctk.CTkFrame(tab_embed, fg_color="#1E1E24", corner_radius=8)
+        self.embed_engine_frame.pack(fill="x", padx=10, pady=(6, 8))
+
+        self.embed_engine_label = ctk.CTkLabel(
+            self.embed_engine_frame,
+            text="⚡ Local Engine (llama-server.exe): Checking...",
+            font=ctk.CTkFont(weight="bold", size=12)
+        )
+        self.embed_engine_label.pack(side="left", padx=12, pady=8)
+
+        self.embed_engine_dl_btn = ctk.CTkButton(
+            self.embed_engine_frame,
+            text="⬇️ Download Engine (~18 MB)",
+            width=180,
+            height=28,
+            command=self._download_engine_action,
+            fg_color="#D9480F",
+            hover_color="#C92A2A"
+        )
+        self.embed_engine_dl_btn.pack(side="right", padx=12, pady=8)
+
         ctk.CTkLabel(tab_embed, text="Select Model:", font=ctk.CTkFont(weight="bold")).pack(padx=10, pady=(5, 2), anchor="w")
         self.embed_model_var = ctk.StringVar(value=catalog_names[0])
         self.embed_model_menu = ctk.CTkOptionMenu(
@@ -1347,6 +1369,25 @@ class NoMoreClutterApp(ctk.CTk):
 
         self.embed_desc_label.configure(text=cap_text)
 
+        # Update engine status
+        try:
+            from services import get_llama_server_manager
+            _, is_server_installed, _ = get_llama_server_manager()
+            if is_server_installed():
+                self.embed_engine_label.configure(
+                    text="⚡ Standalone Local Engine: Ready (Official llama.cpp)",
+                    text_color="#51CF66"
+                )
+                self.embed_engine_dl_btn.configure(text="✅ Engine Installed", state="disabled", fg_color="#2B8A3E")
+            else:
+                self.embed_engine_label.configure(
+                    text="⚡ Standalone Engine: Missing (~18 MB, Zero Python dependencies)",
+                    text_color="#FFA94D"
+                )
+                self.embed_engine_dl_btn.configure(text="⬇️ Download Engine (~18 MB)", state="normal", fg_color="#D9480F")
+        except Exception:
+            pass
+
         is_dl = ModelDownloader.is_model_downloaded(selected_item.filename)
         if is_dl:
             model_path = ModelDownloader.get_model_path(selected_item.filename)
@@ -1363,6 +1404,41 @@ class NoMoreClutterApp(ctk.CTk):
             self.embed_download_btn.configure(text="⬇️ Download & Activate Model", state="normal")
             self.embed_activate_btn.configure(state="disabled")
 
+    def _download_engine_action(self):
+        self.embed_cancel_event.clear()
+        self.embed_download_btn.configure(state="disabled")
+        self.embed_engine_dl_btn.configure(state="disabled")
+        self.embed_activate_btn.configure(state="disabled")
+        self.embed_cancel_btn.configure(state="normal")
+        self.embed_progress_bar.set(0.0)
+        self.embed_progress_label.configure(text="Connecting to official llama.cpp release...", text_color="yellow")
+
+        thread = threading.Thread(target=self._download_engine_worker, daemon=True)
+        thread.start()
+
+    def _download_engine_worker(self):
+        try:
+            from services import get_llama_server_manager
+            _, _, download_server = get_llama_server_manager()
+
+            def progress_cb(status_text, downloaded, total, pct):
+                val = (pct / 100.0) if pct > 0 else 0.0
+                self.after(0, self._update_embed_progress_ui, val, status_text)
+
+            download_server(progress_callback=progress_cb, cancel_event=self.embed_cancel_event)
+            self.after(0, self._on_engine_download_success)
+        except InterruptedError:
+            self.after(0, self._on_embedded_download_cancelled)
+        except Exception as e:
+            self.after(0, self._on_embedded_download_error, str(e))
+
+    def _on_engine_download_success(self):
+        self.embed_progress_bar.set(1.0)
+        self.embed_progress_label.configure(text="✅ Official standalone engine installed successfully!", text_color="#51CF66")
+        self.embed_download_btn.configure(state="normal")
+        self.embed_cancel_btn.configure(state="disabled")
+        self._update_embed_status_ui()
+
     def _download_embedded_action(self):
         choice = self.embed_model_var.get()
         ModelDownloader, GGUF_CATALOG = get_model_downloader()
@@ -1377,7 +1453,7 @@ class NoMoreClutterApp(ctk.CTk):
         self.embed_activate_btn.configure(state="disabled")
         self.embed_cancel_btn.configure(state="normal")
         self.embed_progress_bar.set(0.0)
-        self.embed_progress_label.configure(text="Connecting to HuggingFace repository...", text_color="yellow")
+        self.embed_progress_label.configure(text="Connecting to repository...", text_color="yellow")
 
         thread = threading.Thread(target=self._download_embedded_worker, args=(selected_id,), daemon=True)
         thread.start()
@@ -1390,14 +1466,23 @@ class NoMoreClutterApp(ctk.CTk):
         ModelDownloader, GGUF_CATALOG = get_model_downloader()
         item = GGUF_CATALOG.get(model_id)
 
-        def progress_cb(downloaded, total, speed, percent):
-            val = (percent / 100.0) if percent > 0 else 0.0
-            mb_down = downloaded / (1024 * 1024)
-            mb_tot = total / (1024 * 1024)
-            txt = f"Downloading: {percent:.1f}% ({mb_down:.0f}/{mb_tot:.0f} MB) - {speed:.1f} MB/s"
-            self.after(0, self._update_embed_progress_ui, val, txt)
-
         try:
+            # 1-Click Auto: Ensure standalone engine is installed first if missing
+            from services import get_llama_server_manager
+            _, is_server_installed, download_server = get_llama_server_manager()
+            if not is_server_installed():
+                def eng_cb(status_text, downloaded, total, pct):
+                    val = (pct / 200.0)
+                    self.after(0, self._update_embed_progress_ui, val, f"[1/2] {status_text}")
+                download_server(progress_callback=eng_cb, cancel_event=self.embed_cancel_event)
+
+            def progress_cb(downloaded, total, speed, percent):
+                val = (percent / 100.0) if percent > 0 else 0.0
+                mb_down = downloaded / (1024 * 1024)
+                mb_tot = total / (1024 * 1024)
+                txt = f"Downloading model: {percent:.1f}% ({mb_down:.0f}/{mb_tot:.0f} MB) - {speed:.1f} MB/s"
+                self.after(0, self._update_embed_progress_ui, val, txt)
+
             dest_path = ModelDownloader.download_model(
                 model_id=model_id,
                 progress_callback=progress_cb,

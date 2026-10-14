@@ -30,6 +30,7 @@ htmlcov/
 
 # Local Model Weights & Binaries
 models/weights/
+models/bin/
 *.gguf
 *.bin
 

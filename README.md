@@ -13,7 +13,8 @@ An intelligent AI-powered desktop application that automatically organizes your 
 ## 🎯 Features
 
 ### 🚀 1-Click AI Quick-Deploy (Automated Model Setup)
-- **📦 Built-In Embedded Local AI**: Single-click streaming download of compact, quantized GGUF models (`Qwen 2.5 1.5B`, `Qwen 2.5 0.5B`, `SmolLM2 1.7B`) from HuggingFace with live progress tracking and atomic file caching. Runs 100% offline in-process without needing LM Studio, Ollama, or API keys.
+- **⚡ Standalone Official Local Engine (`llama-server.exe`)**: 1-Click download of the official precompiled `llama-server.exe` portable binary (~18 MB download) directly from `ggml-org/llama.cpp` releases. Operates with **zero Python C++ dependencies** (no MSVC or `llama-cpp-python` compilation errors), high-speed AVX2 CPU optimization, and built-in multimodal vision projector support (`--mmproj`) for 100% offline text and image organization.
+- **📦 Built-In Embedded Local AI Weights**: Single-click streaming download of compact, quantized GGUF models (`Qwen 2.5 1.5B`, `Moondream 2 Vision`, `Qwen 2.5 0.5B`, `SmolLM2 1.7B`) from HuggingFace with live progress tracking and atomic file caching. Runs 100% offline without needing external software (LM Studio, Ollama) or API keys.
 - **🦙 1-Click Ollama Auto-Pilot**: Automatically connects to your local Ollama daemon on `localhost:11434`, checks installed models, and pulls recommended models (`llama3.2:1b`, `qwen2.5:1.5b`, `moondream:latest`) with live progress streaming inside the UI.
 - **⚡ 1-Click Free Cloud Connect**: Direct key generator links and instant connection verification for Groq and Google Gemini free tiers.
 

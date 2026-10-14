@@ -80,13 +80,15 @@ NoMoreClutter follows a clean separation of concerns:
   - Atomic rename and cancellation support via standard library `urllib`.
 - **`ollama_manager.py`**:
   - 1-click discovery, connection check, and streaming model pull via local Ollama REST API.
+- **`llama_server_manager.py`**:
+  - 1-click streaming download, process management, and local OpenAI-compatible inference via the official standalone `llama-server.exe` portable binary (zero Python C++ dependencies).
 - **`llm_service.py`**:
   - Backward-compatible facade bridging existing scripts and tests to the new RLM and Provider engine.
 
 ### 2.3 Provider Layer (`services/providers/`)
 - **`base.py`**: Abstract interface (`BaseAIProvider`) defining `complete()`, `analyze_image()`, and `test_connection()`.
 - **`registry.py`**: Factory and catalog storing configurations for all supported cloud, local, and embedded providers.
-- **`embedded.py`**: In-process GGUF inference provider executing downloaded models offline via `llama-cpp-python`.
+- **`embedded.py`**: Local GGUF inference provider executing models offline via the standalone official `llama-server.exe` engine (or in-process `llama-cpp-python` fallback).
 - **`openai_compatible.py`**: Robust client using the official `openai` SDK with timeout handling, base URL redirection, and error sanitization.
 
 ---

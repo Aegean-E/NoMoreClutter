@@ -107,19 +107,34 @@ class LLMService:
 
         # 3. Check: Embedded local model (zero network latency)
         if provider_id == "embedded" or effective_base_url == "local://embedded":
+            from .llama_server_manager import is_server_installed
             target_model = effective_model or (preset.default_model if preset else "qwen2.5-1.5b-instruct-q4_k_m.gguf")
             if ModelDownloader.is_model_downloaded(target_model):
                 model_stem = target_model.split(".")[0].replace("-instruct", "").replace("-q4_k_m", "")
-                return (
-                    True,
-                    f"Embedded: {model_stem}",
-                    f"Embedded model '{target_model}' is downloaded and ready for 100% offline organization."
-                )
+                if is_server_installed():
+                    return (
+                        True,
+                        f"Embedded: {model_stem}",
+                        f"Embedded model '{target_model}' is ready for 100% offline organization (official standalone engine)."
+                    )
+                try:
+                    import llama_cpp
+                    return (
+                        True,
+                        f"Embedded: {model_stem}",
+                        f"Embedded model '{target_model}' is ready for 100% offline organization (in-process engine)."
+                    )
+                except ImportError:
+                    return (
+                        False,
+                        "Embedded: No Engine",
+                        f"Model weights '{target_model}' are ready, but standalone engine is not installed yet. Click '1-Click Quick Deploy' to download the engine (~18 MB)."
+                    )
             else:
                 return (
                     False,
                     "Embedded: No Model",
-                    f"Embedded model '{target_model}' is not downloaded yet. Click '1-Click AI Deploy' to download offline weights."
+                    f"Embedded model '{target_model}' is not downloaded yet. Click '1-Click Quick Deploy' to download offline weights."
                 )
 
         # 4. Check: Ollama server

@@ -1,11 +1,11 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "principle-014-015-sync",
-    "last_phase": "planning",
+    "task_id": "llama-server-portable-binary",
+    "last_phase": "implementation",
     "status": "completed",
-    "updated_at": 1792017983.2617698,
-    "completed_at": 1792018153.491407
+    "updated_at": 1792018573.9201615,
+    "completed_at": 1792018993.4962401
   },
   "checkpoints": [
     {
@@ -24,6 +24,23 @@
       "status": "completed",
       "timestamp": 1792018153.491408,
       "timestamp_str": "2026-10-15 01:49:13"
+    },
+    {
+      "task_id": "llama-server-portable-binary",
+      "phase": "implementation",
+      "description": "Implementing official standalone llama-server manager",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792018573.9201615,
+      "timestamp_str": "2026-10-15 01:56:13"
+    },
+    {
+      "task_id": "llama-server-portable-binary",
+      "phase": "completed",
+      "description": "Task 'llama-server-portable-binary' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792018993.4962413,
+      "timestamp_str": "2026-10-15 02:03:13"
     }
   ]
 }

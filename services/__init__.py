@@ -44,4 +44,8 @@ def get_cleaner_service():
     from .cleaner_service import CleanerService
     return CleanerService
 
+def get_llama_server_manager():
+    from .llama_server_manager import LlamaServerManager, is_server_installed, download_server
+    return LlamaServerManager, is_server_installed, download_server
+
 
