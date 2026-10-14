@@ -66,12 +66,18 @@ NoMoreClutter follows a clean separation of concerns:
   - Moves files safely to target directories.
   - Dynamically prevents collisions using `stem (n).ext`.
   - Maintains an undo operation history stack enabling batch rollback.
+- **`model_downloader.py`**:
+  - 1-click model streaming utility downloading compact GGUF weights directly from HuggingFace.
+  - Atomic rename and cancellation support via standard library `urllib`.
+- **`ollama_manager.py`**:
+  - 1-click discovery, connection check, and streaming model pull via local Ollama REST API.
 - **`llm_service.py`**:
   - Backward-compatible facade bridging existing scripts and tests to the new RLM and Provider engine.
 
 ### 2.3 Provider Layer (`services/providers/`)
-- **`base.py`**: Abstract interface (`BaseAIProvider`) defining `chat()`, `chat_vision()`, and `test_connection()`.
-- **`registry.py`**: Factory and catalog storing configurations for all supported cloud and local providers.
+- **`base.py`**: Abstract interface (`BaseAIProvider`) defining `complete()`, `analyze_image()`, and `test_connection()`.
+- **`registry.py`**: Factory and catalog storing configurations for all supported cloud, local, and embedded providers.
+- **`embedded.py`**: In-process GGUF inference provider executing downloaded models offline via `llama-cpp-python`.
 - **`openai_compatible.py`**: Robust client using the official `openai` SDK with timeout handling, base URL redirection, and error sanitization.
 
 ---

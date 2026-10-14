@@ -32,6 +32,17 @@ PROVIDER_PRESETS: Dict[str, ProviderPreset] = {
         description="Free tier available, ultra-fast (hundreds tokens/sec), vision supported.",
         recommended_pacing_sec=0.2,
     ),
+    "embedded": ProviderPreset(
+        id="embedded",
+        name="Built-In Embedded AI (100% Offline GGUF)",
+        base_url="local://embedded",
+        default_model="qwen2.5-1.5b-instruct-q4_k_m.gguf",
+        vision_model="",
+        requires_api_key=False,
+        signup_url="",
+        description="Runs 100% offline inside the application using embedded GGUF weights without external software.",
+        recommended_pacing_sec=0.0,
+    ),
     "gemini": ProviderPreset(
         id="gemini",
         name="Google Gemini (Free Tier - Zero Install)",

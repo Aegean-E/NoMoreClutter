@@ -96,3 +96,23 @@ Discovers and filters files from source folders.
 ## 5. `LLMService` (`services/llm_service.py`)
 
 Facade maintaining backward compatibility for existing scripts, tests, and UI components while delegating to the new `RLMOrganizer` and `ProviderRegistry`.
+
+---
+
+## 6. `ModelDownloader` (`services/model_downloader.py`)
+
+Provides 1-click model weight streaming, tracking, and atomic storage for embedded offline AI models.
+- **`GGUF_CATALOG`**: Curated catalog of compact quantized models (`qwen2.5-0.5b`, `qwen2.5-1.5b`, `smollm2-1.7b`).
+- **`download_model(...)`**: Chunked streaming download from HuggingFace with progress callbacks, atomic `.part` replacement, and `threading.Event` cancellation.
+- **`is_model_downloaded(...)`**: Verifies presence and valid size of local weights in `models/weights/`.
+
+---
+
+## 7. `OllamaManager` (`services/ollama_manager.py`)
+
+Provides 1-click Ollama discovery and streaming model pulling via local REST API (`http://localhost:11434`).
+- **`check_status(...)`**: Non-blocking ping of `GET /api/tags`.
+- **`list_installed_models(...)`**: Inspects tags of locally installed models in Ollama.
+- **`pull_model(...)`**: Sends `POST /api/pull` with `stream: true`, parsing streaming progress updates.
+- **`RECOMMENDED_OLLAMA_MODELS`**: Curated recommendations (`llama3.2:1b`, `qwen2.5:1.5b`, `llama3.2:3b`, `moondream:latest`).
+

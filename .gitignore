@@ -24,3 +24,9 @@ settings.json
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Local Model Weights & Binaries
+models/weights/
+*.gguf
+*.bin
+

@@ -9,17 +9,21 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 601 | 28849 | 1 | 0 |
+| `main.py` | 1149 | 55898 | 1 | 0 |
 | `models/__init__.py` | 43 | 1366 | 2 | 0 |
-| `services/__init__.py` | 21 | 732 | 0 | 5 |
+| `services/__init__.py` | 29 | 1018 | 0 | 7 |
 | `services/file_executor.py` | 114 | 3956 | 1 | 0 |
 | `services/file_scanner.py` | 40 | 1408 | 1 | 0 |
-| `services/llm_service.py` | 68 | 2425 | 2 | 0 |
-| `services/providers/__init__.py` | 38 | 941 | 0 | 1 |
+| `services/llm_service.py` | 69 | 2425 | 2 | 0 |
+| `services/model_downloader.py` | 181 | 6535 | 2 | 0 |
+| `services/ollama_manager.py` | 158 | 5646 | 2 | 0 |
+| `services/providers/__init__.py` | 44 | 1198 | 0 | 1 |
 | `services/providers/base.py` | 43 | 1407 | 1 | 0 |
+| `services/providers/embedded.py` | 94 | 4160 | 1 | 0 |
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
-| `services/providers/registry.py` | 119 | 4218 | 1 | 3 |
+| `services/providers/registry.py` | 130 | 4668 | 1 | 3 |
 | `services/rlm_organizer.py` | 355 | 13935 | 2 | 0 |
+| `tests/test_deploy_manager.py` | 189 | 7764 | 4 | 0 |
 | `tests/test_file_executor.py` | 82 | 2915 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
@@ -36,7 +40,7 @@
 - **`NoMoreClutterApp`**
   - Method `.__init__()`
   - Method `._load_settings()`
-  - Method `._save_settings()`
+  - Method `._save_settings(silent)`
   - Method `._build_ui()`
   - Method `._build_settings_window()`
   - Method `._on_provider_changed(choice)`
@@ -47,6 +51,32 @@
   - Method `._test_connection()`
   - Method `._open_settings()`
   - Method `._hide_settings()`
+  - Method `._open_quick_deploy()`
+  - Method `._hide_quick_deploy()`
+  - Method `._build_quick_deploy_window()`
+  - Method `._on_embed_catalog_changed(choice)`
+  - Method `._update_embed_status_ui()`
+  - Method `._download_embedded_action()`
+  - Method `._cancel_embedded_download()`
+  - Method `._download_embedded_worker(model_id)`
+  - Method `._update_embed_progress_ui(val, txt)`
+  - Method `._on_embedded_download_success(filename)`
+  - Method `._on_embedded_download_cancelled()`
+  - Method `._on_embedded_download_error(err)`
+  - Method `._activate_selected_embedded_model()`
+  - Method `._activate_embedded_model(filename)`
+  - Method `._refresh_ollama_status()`
+  - Method `._pull_ollama_action()`
+  - Method `._cancel_ollama_pull()`
+  - Method `._pull_ollama_worker(model_tag)`
+  - Method `._update_ollama_progress_ui(val, txt)`
+  - Method `._on_ollama_pull_success(model_tag)`
+  - Method `._on_ollama_pull_cancelled()`
+  - Method `._on_ollama_pull_error(err)`
+  - Method `._activate_ollama_model(model_tag)`
+  - Method `._on_cloud_provider_changed(choice)`
+  - Method `._open_cloud_key_url()`
+  - Method `._activate_cloud_action()`
   - Method `._select_source()`
   - Method `._select_output()`
   - Method `._update_folder_info()`
@@ -75,6 +105,8 @@
 - `def get_RLMOrganizer()`
 - `def get_FileExecutor()`
 - `def get_provider_registry()`
+- `def get_model_downloader()`
+- `def get_ollama_manager()`
 
 ### `services/file_executor.py`
 > Safe File Operations & Undo Management (PRINCIPLE-007: Performance & Reliability)
@@ -109,6 +141,36 @@ Adapts the pluggable AI provider and RLM Organizer for backward compatibility an
   - Method `.test_connection(model)`
   - Method `.analyze_files(files, model, create_new_folders, existing_folders, analyze_images, numbered_rename, ai_rename, target_folder, output_folder, progress_callback)`
 
+### `services/model_downloader.py`
+> Model Downloader Utility (PRINCIPLE-003, PRINCIPLE-007, PRINCIPLE-008)
+Provides 1-click streaming download of compact, quantized GGUF models from HuggingFace
+with visual progress reporting, atomic writes, and cancellation support.
+Zero external dependencies (uses standard library urllib).
+
+#### Classes
+- **`ModelCatalogItem`**
+- **`ModelDownloader`**
+  - *Manages downloading, caching, and verification of embedded model weights.*
+  - Method `.get_weights_dir()`
+  - Method `.get_model_path(cls, filename)`
+  - Method `.is_model_downloaded(cls, filename)`
+  - Method `.get_downloaded_models(cls)`
+  - Method `.download_model(cls, model_id, progress_callback, cancel_event)`
+
+### `services/ollama_manager.py`
+> Ollama Auto-Manager & Model Deployer (PRINCIPLE-003, PRINCIPLE-008)
+Provides 1-click discovery, connection verification, and streaming model pulling
+via Ollama's local REST API (http://localhost:11434).
+Zero external dependencies (uses standard library urllib and json).
+
+#### Classes
+- **`OllamaRecommendedModel`**
+- **`OllamaManager`**
+  - *Manages interactions with local Ollama daemon for 1-click model deployment.*
+  - Method `.check_status(base_url)`
+  - Method `.list_installed_models(base_url)`
+  - Method `.pull_model(cls, model_name, base_url, progress_callback, cancel_event)`
+
 ### `services/providers/__init__.py`
 > Services Provider Module (PRINCIPLE-003: Modularity)
 
@@ -124,6 +186,20 @@ Defines the standard abstraction for all AI providers (Cloud, Embedded, and Loca
 - **`BaseAIProvider`**
   - *Abstract base class for all AI model providers.*
   - Method `.__init__(base_url, api_key)`
+  - Method `.test_connection(model)`
+  - Method `.complete(prompt, model, temperature, max_tokens)`
+  - Method `.analyze_image(image_path, prompt, model, max_tokens)`
+
+### `services/providers/embedded.py`
+> Embedded Local AI Provider (PRINCIPLE-003: Modularity, PRINCIPLE-008: Zero-Friction)
+Runs 100% offline in-process using downloaded GGUF weights via llama-cpp-python.
+
+#### Classes
+- **`EmbeddedProvider`**
+  - *Provider running local quantized GGUF models directly within the application.*
+  - Method `.__init__(model_filename)`
+  - Method `._get_model_path(model)`
+  - Method `._get_llm(model)`
   - Method `.test_connection(model)`
   - Method `.complete(prompt, model, temperature, max_tokens)`
   - Method `.analyze_image(image_path, prompt, model, max_tokens)`
@@ -178,6 +254,32 @@ and PRINCIPLE-009 (Token Frugality & Context Budgeting).
   - Method `._sanitize_folder_name(name)`
   - Method `._sanitize_filename(name, original_path)`
   - Method `._extract_json(text)`
+
+### `tests/test_deploy_manager.py`
+> Unit tests for 1-Click AI Model Deployment (PRINCIPLE-003, PRINCIPLE-008, PRINCIPLE-011)
+Tests ModelDownloader, OllamaManager, and EmbeddedProvider with mock streaming.
+
+#### Classes
+- **`TestModelDownloader`**
+  - Method `.test_catalog_integrity()`
+  - Method `.test_weights_dir()`
+  - Method `.test_is_model_downloaded_nonexistent()`
+  - Method `.test_download_model_mock_success(mock_urlopen)`
+  - Method `.test_download_model_cancellation(mock_urlopen)`
+- **`TestOllamaManager`**
+  - Method `.test_recommended_catalog()`
+  - Method `.test_check_status_online(mock_urlopen)`
+  - Method `.test_check_status_offline(mock_urlopen)`
+  - Method `.test_list_installed_models(mock_urlopen)`
+  - Method `.test_pull_model_streaming(mock_urlopen)`
+- **`TestEmbeddedProvider`**
+  - Method `.test_preset_exists()`
+  - Method `.test_factory_instantiation()`
+  - Method `.test_test_connection_not_downloaded()`
+  - Method `.test_analyze_image_not_implemented()`
+- **`TestAppDeploymentLogic`**
+  - Method `.test_service_accessors()`
+  - Method `.test_embedded_model_activation_updates_preset()`
 
 ### `tests/test_file_executor.py`
 > Unit tests for FileExecutor (PRINCIPLE-007)

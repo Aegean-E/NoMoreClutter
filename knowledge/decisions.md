@@ -76,3 +76,21 @@ Codify `PRINCIPLE-011: Automated Test Verification & Continuous Test Coverage`. 
 ### Consequences
 - **Positive**: Complete regression protection, rapid feedback cycle (<0.1s run time), clean CI-ready test baseline.
 - **Negative**: Requires writing unit test fixtures for each new feature or refactor.
+
+---
+
+## ADR-006: 1-Click AI Model Quick-Deploy (Embedded GGUF, Ollama Auto-Pilot, and Cloud Connect)
+
+### Context
+New users often find setting up local LLM servers (LM Studio, Ollama CLI) or obtaining cloud API keys to be friction-heavy. To make AI organization truly "one-click", the application needed an automated way to download, stream, and deploy AI models.
+
+### Decision
+Implement a multi-path 1-Click Quick Deploy architecture:
+1. **Embedded Local GGUF**: Downloads quantized weights (`Qwen 2.5 1.5B/0.5B`, `SmolLM2 1.7B`) from HuggingFace via `urllib.request` with streaming progress bars, cancellation, and atomic writes. Runs offline via `EmbeddedProvider`.
+2. **Ollama Auto-Pilot**: Interacts with local Ollama daemon via REST API to pull models (`llama3.2:1b`, etc.) without terminal commands.
+3. **Instant Free Cloud**: Streamlined 1-click wizard to activate free Groq or Google Gemini keys.
+
+### Consequences
+- **Positive**: True zero-friction onboarding (PRINCIPLE-008); users can deploy an AI model in a single click with visual progress.
+- **Negative**: Model weights require disk space (~400MB to ~1GB), managed safely outside git via `.gitignore`.
+

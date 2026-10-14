@@ -12,7 +12,12 @@ An intelligent AI-powered desktop application that automatically organizes your 
 
 ## 🎯 Features
 
-### ⚡ One-Click Zero-Install Cloud AI & Local Servers
+### 🚀 1-Click AI Quick-Deploy (Automated Model Setup)
+- **📦 Built-In Embedded Local AI**: Single-click streaming download of compact, quantized GGUF models (`Qwen 2.5 1.5B`, `Qwen 2.5 0.5B`, `SmolLM2 1.7B`) from HuggingFace with live progress tracking and atomic file caching. Runs 100% offline in-process without needing LM Studio, Ollama, or API keys.
+- **🦙 1-Click Ollama Auto-Pilot**: Automatically connects to your local Ollama daemon on `localhost:11434`, checks installed models, and pulls recommended models (`llama3.2:1b`, `qwen2.5:1.5b`, `moondream:latest`) with live progress streaming inside the UI.
+- **⚡ 1-Click Free Cloud Connect**: Direct key generator links and instant connection verification for Groq and Google Gemini free tiers.
+
+### ⚡ Zero-Install Cloud AI & Local Servers
 - **Zero-Friction Cloud Access**: Use ultra-fast free-tier providers (**Groq**, **Google Gemini**, **OpenAI**, **OpenRouter**) with zero desktop software installation required.
 - **Local Server Freedom**: 100% offline local AI support for **LM Studio** and **Ollama** whenever you want total privacy and self-hosting.
 - **⚡ Quick Organize (No AI)**: One-click instant heuristic organization based on file extensions and metadata without requiring an LLM or network connection.
@@ -97,19 +102,21 @@ python -m unittest discover tests
 | Provider | Type | Default Model | URL / Endpoint | Setup Required |
 |----------|------|---------------|----------------|----------------|
 | **Groq** *(Recommended)* | Cloud (Zero-Install) | `llama-3.3-70b-versatile` | `https://api.groq.com/openai/v1` | Free API Key |
+| **Built-In Embedded AI** | Embedded (100% Offline) | `qwen2.5-1.5b-instruct-q4_k_m.gguf` | `local://embedded` | 1-Click in-app download |
 | **Google Gemini** | Cloud (Zero-Install) | `gemini-2.0-flash` | `https://generativelanguage.googleapis.com/v1beta/openai/` | Free API Key |
 | **OpenAI** | Cloud (Zero-Install) | `gpt-4o-mini` | `https://api.openai.com/v1` | API Key |
 | **OpenRouter** | Cloud (Zero-Install) | `meta-llama/llama-3.3-70b-instruct` | `https://openrouter.ai/api/v1` | API Key |
 | **LM Studio** | Local Server | `local-model` | `http://localhost:1234/v1` | Start server on port 1234 |
-| **Ollama** | Local Server | `llama3` | `http://localhost:11434/v1` | Run `ollama serve` |
+| **Ollama** | Local Server | `llama3.2:1b` | `http://localhost:11434/v1` | 1-Click auto-pull or `ollama serve` |
 | **Custom** | Any | Custom | User-defined | Varies |
 
 ### Step-by-Step Usage
 
 1. **Select Source Directory**: Click **Browse** and choose the messy folder you want to organize.
 2. **Choose Organization Mode**:
+   - **🚀 1-Click AI Deploy**: Click the orange header button to auto-download an offline GGUF model, auto-pull into Ollama, or connect a free cloud API.
    - **⚡ Quick Organize (No AI)**: Immediately sorts files by type and extension without calling an LLM.
-   - **🚀 Organize with AI**: Select your AI provider in the dropdown, paste your API key (or start LM Studio/Ollama), and click **🚀 Organize Files**.
+   - **🚀 Organize with AI**: Select your active provider, and click **🚀 Organize Files**.
 3. **Inspect Progress**: Watch real-time logs in the bottom console area.
 4. **Undo If Needed**: Click **↩ Undo Moves** at any time to reverse the previous batch of moves.
 
@@ -129,20 +136,25 @@ NoMoreClutter/
 │   ├── decisions.md           # Architecture Decision Records (ADRs)
 │   └── codebase_map.md        # AST-generated module & symbol registry
 ├── models/
-│   └── __init__.py            # Data models (FileInfo, FileCategory, ScanResult)
+│   ├── __init__.py            # Data models (FileInfo, FileCategory, ScanResult)
+│   └── weights/               # Local GGUF model weights cache (auto-created, gitignored)
 ├── services/
 │   ├── __init__.py            # Service factories & lazy loaders
 │   ├── file_scanner.py        # File discovery and extension filtering
 │   ├── rlm_organizer.py       # RLM hierarchical categorization & token optimizer
+│   ├── model_downloader.py    # 1-Click HuggingFace model weight streaming & verification
+│   ├── ollama_manager.py      # 1-Click Ollama API discovery & streaming pull
 │   ├── llm_service.py         # AI facade delegating to RLM and Providers
 │   ├── file_executor.py       # Collision-safe file execution & batch undo history
 │   └── providers/             # Pluggable AI provider system
 │       ├── __init__.py        # Provider package exports
 │       ├── base.py            # BaseAIProvider abstract interface
-│       ├── registry.py        # Provider presets (Groq, Gemini, OpenAI, LM Studio, Ollama)
+│       ├── embedded.py        # In-process GGUF inference provider
+│       ├── registry.py        # Provider presets (Groq, Embedded, Gemini, OpenAI, Ollama)
 │       └── openai_compatible.py # Standard OpenAI-compatible HTTP client
 ├── tests/                     # Automated unit test suite (PRINCIPLE-011)
 │   ├── test_providers.py      # Provider registry & creation tests
+│   ├── test_deploy_manager.py # Model downloader, Ollama manager & embedded provider tests
 │   ├── test_rlm_organizer.py  # RLM engine & token payload tests
 │   ├── test_file_executor.py  # Safe move, collision avoidance, and undo tests
 │   ├── test_file_scanner.py   # Shallow/recursive scan & extension filter tests

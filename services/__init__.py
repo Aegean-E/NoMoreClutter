@@ -19,3 +19,11 @@ def get_FileExecutor():
 def get_provider_registry():
     from .providers import PROVIDER_PRESETS, get_preset, get_preset_by_name, list_provider_names, get_provider
     return PROVIDER_PRESETS, get_preset, get_preset_by_name, list_provider_names, get_provider
+
+def get_model_downloader():
+    from .model_downloader import ModelDownloader, GGUF_CATALOG
+    return ModelDownloader, GGUF_CATALOG
+
+def get_ollama_manager():
+    from .ollama_manager import OllamaManager, RECOMMENDED_OLLAMA_MODELS
+    return OllamaManager, RECOMMENDED_OLLAMA_MODELS

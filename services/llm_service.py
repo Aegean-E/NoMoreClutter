@@ -6,7 +6,7 @@ Adapts the pluggable AI provider and RLM Organizer for backward compatibility an
 import os
 from typing import List, Optional, Tuple
 from models import FileChange
-from .providers.openai_compatible import OpenAICompatibleProvider
+from .providers import get_provider
 from .rlm_organizer import RLMOrganizer, RLMOrganizerError
 
 
@@ -23,7 +23,8 @@ class LLMService:
         self.api_key = api_key
         self.provider_id = provider_id
         
-        self.provider = OpenAICompatibleProvider(
+        self.provider = get_provider(
+            provider_id=self.provider_id,
             base_url=self.base_url,
             api_key=self.api_key,
             **kwargs
