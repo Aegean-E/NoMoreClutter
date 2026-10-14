@@ -26,10 +26,19 @@ An intelligent AI-powered desktop application that automatically organizes your 
 - **Detailed Logging**: Every file move is logged to the output area
 - **Settings Persistence**: Your preferences are saved automatically
 
-### Privacy-First
-- **Local AI Processing**: All AI analysis happens on your machine
-- **No Cloud Services**: Your files never leave your computer
-- **OpenAI Compatible**: Works with Ollama, LM Studio, or any OpenAI-compatible local server
+### Privacy & Flexibility
+- **Flexible AI Integration**: Works with local servers (Ollama, LM Studio), embedded models, or direct cloud APIs (Groq, Gemini, OpenAI)
+- **RLM-Compatible**: Designed for Recursive Language Model decomposition
+- **Strict Guidelines**: Governed by automated AI principles ([GUIDELINES.md](GUIDELINES.md))
+
+## 📜 Project Principles & Guidelines
+This project adheres to strict architectural and workflow principles:
+- **[PRINCIPLE-001: RLM Compatibility](GUIDELINES.md#principle-001-rlm-compatibility-recursive-language-model)**: Hierarchical recursive decomposition for complex directory structures.
+- **[PRINCIPLE-002: Automatic Git Workflow](GUIDELINES.md#principle-002-automatic-git-workflow-commit--push)**: AI assistants automatically stage, commit, and push updates.
+- **[PRINCIPLE-003: Modularity & Pluggable Architecture](GUIDELINES.md#principle-003-modularity--pluggable-architecture)**: Decoupled AI providers, engines, and UI layers.
+- **[PRINCIPLE-004: Living Principles System](GUIDELINES.md#principle-004-living-principles-system)**: Extensible guidelines that adapt as the project grows.
+
+For the full specification, see [GUIDELINES.md](GUIDELINES.md) and [AGENTS.md](AGENTS.md).
 
 ## 🚀 Getting Started
 
