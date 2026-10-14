@@ -58,6 +58,7 @@ class DeduplicationService:
         recursive: bool = True,
         min_size_bytes: int = 1,
         progress_callback: Optional[Callable[[str, float], None]] = None,
+        on_group_found: Optional[Callable[[DuplicateGroup], None]] = None,
     ) -> List[DuplicateGroup]:
         """Scan directory and return list of duplicate groups.
         
@@ -66,6 +67,7 @@ class DeduplicationService:
             recursive: Whether to scan subdirectories recursively.
             min_size_bytes: Minimum file size to consider (defaults to 1 byte, ignoring empty files).
             progress_callback: Optional callback receiving (status_message, progress_fraction).
+            on_group_found: Optional real-time callback invoked immediately when a duplicate group is verified.
             
         Returns:
             List[DuplicateGroup]: Duplicate clusters sorted by reclaimable size descending.
@@ -145,16 +147,24 @@ class DeduplicationService:
         full_hash_candidates = sum(len(paths) for paths in confirmed_header_groups.values())
 
         # -------------------------------------------------------------
-        # Stage 3: Full SHA-256 Hash Matching
+        # Stage 3: Full SHA-256 Hash Matching & Real-Time Discovery
         # -------------------------------------------------------------
-        exact_duplicate_groups: Dict[Tuple[int, str], List[str]] = defaultdict(list)
+        results: List[DuplicateGroup] = []
         hashed_files = 0
 
+        def sort_key(filepath: str):
+            try:
+                mtime = os.path.getmtime(filepath)
+            except (OSError, PermissionError):
+                mtime = float("inf")
+            return (mtime, len(filepath), filepath)
+
         for (sz, _), paths in confirmed_header_groups.items():
+            bucket_exact_groups: Dict[str, List[str]] = defaultdict(list)
             for p in paths:
                 try:
                     full_hash = cls.compute_full_hash(p)
-                    exact_duplicate_groups[(sz, full_hash)].append(p)
+                    bucket_exact_groups[full_hash].append(p)
                 except (OSError, PermissionError):
                     continue
                 hashed_files += 1
@@ -162,31 +172,24 @@ class DeduplicationService:
                     frac = 0.60 + 0.35 * (hashed_files / full_hash_candidates)
                     progress_callback(f"Verifying exact hashes ({hashed_files}/{full_hash_candidates})...", frac)
 
-        # Build clean DuplicateGroup records
-        results: List[DuplicateGroup] = []
+            # Instantly materialize confirmed duplicate groups for this bucket
+            for full_hash, exact_paths in bucket_exact_groups.items():
+                if len(exact_paths) > 1:
+                    sorted_paths = sorted(exact_paths, key=sort_key)
+                    group = DuplicateGroup(
+                        file_size=sz,
+                        sha256=full_hash,
+                        original=sorted_paths[0],
+                        duplicates=sorted_paths[1:],
+                    )
+                    results.append(group)
+                    if on_group_found:
+                        try:
+                            on_group_found(group)
+                        except Exception:
+                            pass
 
-        for (sz, full_hash), paths in exact_duplicate_groups.items():
-            if len(paths) > 1:
-                # Pick original: oldest file by mtime, or shortest path if mtimes identical
-                def sort_key(filepath: str):
-                    try:
-                        mtime = os.path.getmtime(filepath)
-                    except (OSError, PermissionError):
-                        mtime = float("inf")
-                    return (mtime, len(filepath), filepath)
-
-                sorted_paths = sorted(paths, key=sort_key)
-                original = sorted_paths[0]
-                duplicates = sorted_paths[1:]
-
-                results.append(DuplicateGroup(
-                    file_size=sz,
-                    sha256=full_hash,
-                    original=original,
-                    duplicates=duplicates,
-                ))
-
-        # Sort groups by total reclaimable bytes descending
+        # Sort groups by total reclaimable bytes descending for final return
         results.sort(key=lambda g: g.reclaimable_bytes, reverse=True)
 
         if progress_callback:

@@ -67,6 +67,8 @@ class AppSettings:
     auto_execute: bool = False
     limit: str = "50"
     batch_size: str = "15"
+    peek_length: int = 180
+    pacing_delay: float = 0.2
     
     def __post_init__(self):
         if self.selected_types is None:

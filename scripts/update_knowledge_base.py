@@ -27,7 +27,7 @@ CORE_DOCS = [
     "codebase_map.md",
 ]
 
-TARGET_DIRS = ["models", "services", "tests"]
+TARGET_DIRS = ["models", "services", "ui", "tests"]
 TARGET_FILES = ["main.py"]
 
 

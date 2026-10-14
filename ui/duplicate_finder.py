@@ -5,6 +5,7 @@ and isolate or safely delete duplicate files.
 """
 
 import os
+import queue
 import subprocess
 import sys
 import threading
@@ -30,6 +31,10 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
 
         # Mapping: duplicate_filepath -> ctk.BooleanVar
         self.dup_checkbox_vars: Dict[str, ctk.BooleanVar] = {}
+        self.total_reclaimable: int = 0
+        self.total_dup_files: int = 0
+        self._group_queue = queue.Queue()
+        self._drain_scheduled: bool = False
 
         self._build_ui()
 
@@ -205,12 +210,27 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
 
         self.scan_btn.configure(state="disabled", text="Scanning...")
         self.progress_bar.set(0.05)
-        self.status_label.configure(text="Scanning directory for duplicate candidates...")
+        self.status_label.configure(text="Scanning directory for duplicate candidates...", text_color="#ADB5BD")
+        self.reclaim_badge.configure(text="Reclaimable: 0 B")
 
-        # Clear existing view
+        # Clear existing view and reset state
         for child in self.scroll_results.winfo_children():
             child.destroy()
         self.dup_checkbox_vars.clear()
+        self.duplicate_groups.clear()
+        self.total_reclaimable = 0
+        self.total_dup_files = 0
+        while not self._group_queue.empty():
+            try:
+                self._group_queue.get_nowait()
+            except queue.Empty:
+                break
+        self._drain_scheduled = False
+
+        self.isolate_btn.configure(state="disabled")
+        self.delete_btn.configure(state="disabled")
+        self.select_all_btn.configure(state="disabled")
+        self.deselect_btn.configure(state="disabled")
 
         thread = threading.Thread(target=self._scan_worker, args=(folder, self.recursive_var.get()), daemon=True)
         thread.start()
@@ -219,42 +239,103 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
         def progress_cb(msg: str, frac: float):
             self.after(0, lambda m=msg, f=frac: self._update_progress(m, f))
 
+        def group_found_cb(group: DuplicateGroup):
+            self._group_queue.put(group)
+            self.after(0, self._schedule_drain)
+
         try:
             groups = DeduplicationService.scan_duplicates(
                 folder=folder,
                 recursive=recursive,
                 progress_callback=progress_cb,
+                on_group_found=group_found_cb,
             )
             self.after(0, lambda g=groups: self._on_scan_complete(g))
         except Exception as e:
             self.after(0, lambda err=str(e): self._on_scan_error(err))
 
     def _update_progress(self, msg: str, frac: float):
+        if not self.winfo_exists():
+            return
         self.progress_bar.set(frac)
-        self.status_label.configure(text=msg)
+        # Only overwrite status label if we aren't showing live duplicate count
+        if not self.duplicate_groups:
+            self.status_label.configure(text=msg)
+        else:
+            self.status_label.configure(
+                text=f"⚡ Live: Found {len(self.duplicate_groups)} sets ({self.total_dup_files} files) • {msg}",
+                text_color="#74C0FC",
+            )
+
+    def _schedule_drain(self):
+        if not self._drain_scheduled:
+            self._drain_scheduled = True
+            self.after(0, self._drain_discovered_groups)
+
+    def _drain_discovered_groups(self):
+        self._drain_scheduled = False
+        if not self.winfo_exists():
+            return
+
+        batch_count = 0
+        MAX_PER_TICK = 4
+
+        while batch_count < MAX_PER_TICK and not self._group_queue.empty():
+            try:
+                group = self._group_queue.get_nowait()
+            except queue.Empty:
+                break
+
+            self.duplicate_groups.append(group)
+            self.total_reclaimable += group.reclaimable_bytes
+            self.total_dup_files += len(group.duplicates)
+            self._render_group_card(group, len(self.duplicate_groups))
+            batch_count += 1
+
+        if batch_count > 0:
+            self.reclaim_badge.configure(
+                text=f"💾 Reclaimable: {DeduplicationService.format_bytes(self.total_reclaimable)}"
+            )
+            self.status_label.configure(
+                text=f"⚡ Live: Found {len(self.duplicate_groups)} duplicate sets ({self.total_dup_files} redundant files)...",
+                text_color="#74C0FC",
+            )
+            self.isolate_btn.configure(state="normal")
+            self.delete_btn.configure(state="normal")
+            self.select_all_btn.configure(state="normal")
+            self.deselect_btn.configure(state="normal")
+
+        if not self._group_queue.empty():
+            self._drain_scheduled = True
+            self.after(10, self._drain_discovered_groups)
 
     def _on_scan_error(self, err_msg: str):
+        if not self.winfo_exists():
+            return
         self.scan_btn.configure(state="normal", text="🔍 Scan for Duplicates")
         self.status_label.configure(text=f"Scan error: {err_msg}", text_color="#FFA94D")
         messagebox.showerror("Scan Error", f"An error occurred while scanning:\n{err_msg}")
 
     def _on_scan_complete(self, groups: List[DuplicateGroup]):
-        self.duplicate_groups = groups
+        if not self.winfo_exists():
+            return
+
+        # Drain any remaining items in queue immediately
+        while not self._group_queue.empty():
+            try:
+                group = self._group_queue.get_nowait()
+                self.duplicate_groups.append(group)
+                self.total_reclaimable += group.reclaimable_bytes
+                self.total_dup_files += len(group.duplicates)
+                self._render_group_card(group, len(self.duplicate_groups))
+            except queue.Empty:
+                break
+
         self.scan_btn.configure(state="normal", text="🔍 Scan for Duplicates")
         self.progress_bar.set(1.0)
 
-        total_reclaimable = sum(g.reclaimable_bytes for g in groups)
-        total_dup_files = sum(len(g.duplicates) for g in groups)
-
-        self.reclaim_badge.configure(
-            text=f"💾 Reclaimable: {DeduplicationService.format_bytes(total_reclaimable)}"
-        )
-        self.status_label.configure(
-            text=f"✅ Found {len(groups)} duplicate sets ({total_dup_files} redundant files).",
-            text_color="#69DB7C",
-        )
-
-        if not groups:
+        if not self.duplicate_groups:
+            self.reclaim_badge.configure(text="Reclaimable: 0 B")
             empty_lbl = ctk.CTkLabel(
                 self.scroll_results,
                 text="🎉 No duplicate files found in this directory! Everything is unique.",
@@ -262,112 +343,122 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
                 text_color="#69DB7C",
             )
             empty_lbl.pack(pady=40)
+            self.status_label.configure(
+                text="🎉 No duplicates found. All files are unique.",
+                text_color="#69DB7C",
+            )
             self.isolate_btn.configure(state="disabled")
             self.delete_btn.configure(state="disabled")
             self.select_all_btn.configure(state="disabled")
             self.deselect_btn.configure(state="disabled")
             return
 
+        self.reclaim_badge.configure(
+            text=f"💾 Reclaimable: {DeduplicationService.format_bytes(self.total_reclaimable)}"
+        )
+        self.status_label.configure(
+            text=f"✅ Scan Complete! Found {len(self.duplicate_groups)} duplicate sets ({self.total_dup_files} redundant files).",
+            text_color="#69DB7C",
+        )
         self.isolate_btn.configure(state="normal")
         self.delete_btn.configure(state="normal")
         self.select_all_btn.configure(state="normal")
         self.deselect_btn.configure(state="normal")
 
-        # Render each duplicate cluster
-        for idx, group in enumerate(groups):
-            card = ctk.CTkFrame(self.scroll_results, fg_color="#1E1E24", corner_radius=8, border_width=1, border_color="#2C2E33")
-            card.pack(fill="x", padx=4, pady=6)
-            card.grid_columnconfigure(0, weight=1)
+    def _render_group_card(self, group: DuplicateGroup, set_index: int):
+        card = ctk.CTkFrame(self.scroll_results, fg_color="#1E1E24", corner_radius=8, border_width=1, border_color="#2C2E33")
+        card.pack(fill="x", padx=4, pady=6)
+        card.grid_columnconfigure(0, weight=1)
 
-            # Cluster header
-            hdr = ctk.CTkFrame(card, fg_color="#25262B", corner_radius=6, height=32)
-            hdr.pack(fill="x", padx=4, pady=4)
-            hdr.pack_propagate(False)
+        # Cluster header
+        hdr = ctk.CTkFrame(card, fg_color="#25262B", corner_radius=6, height=32)
+        hdr.pack(fill="x", padx=4, pady=4)
+        hdr.pack_propagate(False)
 
-            sz_text = DeduplicationService.format_bytes(group.file_size)
-            reclaim_grp = DeduplicationService.format_bytes(group.reclaimable_bytes)
+        sz_text = DeduplicationService.format_bytes(group.file_size)
+        reclaim_grp = DeduplicationService.format_bytes(group.reclaimable_bytes)
+        ctk.CTkLabel(
+            hdr,
+            text=f"Set #{set_index}: {sz_text} each  •  {len(group.all_files)} identical files  •  Saves {reclaim_grp}",
+            font=ctk.CTkFont(weight="bold", size=12),
+            text_color="#74C0FC",
+        ).pack(side="left", padx=10)
+
+        ctk.CTkLabel(
+            hdr,
+            text=f"SHA: {group.sha256[:12]}...",
+            font=ctk.CTkFont(family="Consolas", size=10),
+            text_color="gray",
+        ).pack(side="right", padx=10)
+
+        # Original Row (Preserved)
+        orig_row = ctk.CTkFrame(card, fg_color="#182A1B", corner_radius=4, height=30)
+        orig_row.pack(fill="x", padx=8, pady=(2, 2))
+        orig_row.pack_propagate(False)
+
+        ctk.CTkLabel(
+            orig_row,
+            text="🟢 ORIGINAL (Keep)",
+            font=ctk.CTkFont(size=10, weight="bold"),
+            text_color="#69DB7C",
+        ).pack(side="left", padx=8)
+
+        ctk.CTkLabel(
+            orig_row,
+            text=group.original,
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color="#E9ECEF",
+            anchor="w",
+        ).pack(side="left", fill="x", expand=True, padx=4)
+
+        ctk.CTkButton(
+            orig_row,
+            text="👁️ Open",
+            width=50,
+            height=20,
+            font=ctk.CTkFont(size=9),
+            fg_color="#2C2E33",
+            hover_color="#373A40",
+            command=lambda p=group.original: self._open_file(p),
+        ).pack(side="right", padx=6)
+
+        # Duplicate Rows (Selected for action)
+        for dup_path in group.duplicates:
+            dup_var = ctk.BooleanVar(value=True)
+            self.dup_checkbox_vars[dup_path] = dup_var
+
+            dup_row = ctk.CTkFrame(card, fg_color="#2B1D1D", corner_radius=4, height=30)
+            dup_row.pack(fill="x", padx=8, pady=2)
+            dup_row.pack_propagate(False)
+
+            cb = ctk.CTkCheckBox(dup_row, text="", variable=dup_var, width=20)
+            cb.pack(side="left", padx=(8, 4))
+
             ctk.CTkLabel(
-                hdr,
-                text=f"Set #{idx+1}: {sz_text} each  •  {len(group.all_files)} identical files  •  Saves {reclaim_grp}",
-                font=ctk.CTkFont(weight="bold", size=12),
-                text_color="#74C0FC",
-            ).pack(side="left", padx=10)
-
-            ctk.CTkLabel(
-                hdr,
-                text=f"SHA: {group.sha256[:12]}...",
-                font=ctk.CTkFont(family="Consolas", size=10),
-                text_color="gray",
-            ).pack(side="right", padx=10)
-
-            # Original Row (Preserved)
-            orig_row = ctk.CTkFrame(card, fg_color="#182A1B", corner_radius=4, height=30)
-            orig_row.pack(fill="x", padx=8, pady=(2, 2))
-            orig_row.pack_propagate(False)
-
-            ctk.CTkLabel(
-                orig_row,
-                text="🟢 ORIGINAL (Keep)",
+                dup_row,
+                text="🔴 DUPLICATE",
                 font=ctk.CTkFont(size=10, weight="bold"),
-                text_color="#69DB7C",
-            ).pack(side="left", padx=8)
+                text_color="#FF8787",
+            ).pack(side="left", padx=4)
 
             ctk.CTkLabel(
-                orig_row,
-                text=group.original,
+                dup_row,
+                text=dup_path,
                 font=ctk.CTkFont(family="Segoe UI", size=11),
-                text_color="#E9ECEF",
+                text_color="#CED4DA",
                 anchor="w",
             ).pack(side="left", fill="x", expand=True, padx=4)
 
             ctk.CTkButton(
-                orig_row,
+                dup_row,
                 text="👁️ Open",
                 width=50,
                 height=20,
                 font=ctk.CTkFont(size=9),
                 fg_color="#2C2E33",
                 hover_color="#373A40",
-                command=lambda p=group.original: self._open_file(p),
+                command=lambda p=dup_path: self._open_file(p),
             ).pack(side="right", padx=6)
-
-            # Duplicate Rows (Selected for action)
-            for dup_path in group.duplicates:
-                dup_var = ctk.BooleanVar(value=True)
-                self.dup_checkbox_vars[dup_path] = dup_var
-
-                dup_row = ctk.CTkFrame(card, fg_color="#2B1D1D", corner_radius=4, height=30)
-                dup_row.pack(fill="x", padx=8, pady=2)
-                dup_row.pack_propagate(False)
-
-                cb = ctk.CTkCheckBox(dup_row, text="", variable=dup_var, width=20)
-                cb.pack(side="left", padx=(8, 4))
-
-                ctk.CTkLabel(
-                    dup_row,
-                    text="🔴 DUPLICATE",
-                    font=ctk.CTkFont(size=10, weight="bold"),
-                    text_color="#FF8787",
-                ).pack(side="left", padx=4)
-
-                ctk.CTkLabel(
-                    dup_row,
-                    text=dup_path,
-                    font=ctk.CTkFont(family="Segoe UI", size=11),
-                    text_color="#CED4DA",
-                    anchor="w",
-                ).pack(side="left", fill="x", expand=True, padx=4)
-
-                ctk.CTkButton(
-                    dup_row,
-                    text="👁️ Open",
-                    width=50,
-                    height=20,
-                    font=ctk.CTkFont(size=9),
-                    fg_color="#2C2E33",
-                    hover_color="#373A40",
-                    command=lambda p=dup_path: self._open_file(p),
-                ).pack(side="right", padx=6)
 
     def _select_all_dups(self):
         for var in self.dup_checkbox_vars.values():

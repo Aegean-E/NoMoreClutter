@@ -10,11 +10,11 @@
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
 | `main.py` | 1913 | 92036 | 1 | 0 |
-| `models/__init__.py` | 85 | 2389 | 5 | 0 |
+| `models/__init__.py` | 87 | 2446 | 5 | 0 |
 | `services/__init__.py` | 47 | 1476 | 0 | 11 |
 | `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
 | `services/cleaner_service.py` | 211 | 8073 | 1 | 0 |
-| `services/deduplicator.py` | 256 | 10231 | 1 | 0 |
+| `services/deduplicator.py` | 259 | 10525 | 1 | 0 |
 | `services/document_peeker.py` | 151 | 5969 | 1 | 0 |
 | `services/file_executor.py` | 232 | 8492 | 1 | 0 |
 | `services/file_scanner.py` | 40 | 1408 | 1 | 0 |
@@ -27,10 +27,14 @@
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
 | `services/providers/registry.py` | 135 | 4862 | 1 | 3 |
 | `services/rlm_organizer.py` | 432 | 18699 | 2 | 0 |
+| `ui/__init__.py` | 9 | 285 | 0 | 0 |
+| `ui/duplicate_finder.py` | 528 | 20422 | 1 | 0 |
+| `ui/junk_cleaner.py` | 360 | 13874 | 1 | 0 |
+| `ui/tree_preview.py` | 470 | 17758 | 1 | 0 |
 | `tests/test_ai_status.py` | 118 | 5346 | 1 | 0 |
 | `tests/test_benchmark_service.py` | 152 | 6518 | 3 | 0 |
 | `tests/test_cleaner_service.py` | 85 | 3024 | 1 | 0 |
-| `tests/test_deduplicator.py` | 110 | 4140 | 1 | 0 |
+| `tests/test_deduplicator.py` | 138 | 5268 | 1 | 0 |
 | `tests/test_deploy_manager.py` | 189 | 7764 | 4 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
 | `tests/test_file_executor.py` | 156 | 6060 | 1 | 0 |
@@ -184,7 +188,7 @@ with zero external dependencies.
   - Method `.format_bytes(size_bytes)`
   - Method `.compute_header_hash(cls, file_path)`
   - Method `.compute_full_hash(cls, file_path)`
-  - Method `.scan_duplicates(cls, folder, recursive, min_size_bytes, progress_callback)`
+  - Method `.scan_duplicates(cls, folder, recursive, min_size_bytes, progress_callback, on_group_found)`
   - Method `.isolate_duplicates(cls, duplicate_paths, base_folder, isolate_folder_name)`
   - Method `.delete_duplicates(cls, duplicate_paths)`
 
@@ -359,6 +363,79 @@ and PRINCIPLE-009 (Token Frugality & Context Budgeting).
   - Method `._sanitize_filename(name, original_path)`
   - Method `._extract_json(text)`
 
+### `ui/__init__.py`
+> UI Modules for NoMoreClutter (PRINCIPLE-003: Modularity)
+
+
+### `ui/duplicate_finder.py`
+> Smart Duplicate File Finder & Storage Reclaimer UI Dialog
+Allows users to scan for identical duplicates, view reclaimable space,
+and isolate or safely delete duplicate files.
+
+#### Classes
+- **`DuplicateFinderDialog`**
+  - *Interactive Duplicate File Finder & Storage Reclaimer.*
+  - Method `.__init__(parent, initial_folder)`
+  - Method `._build_ui()`
+  - Method `._browse_folder()`
+  - Method `._start_scan()`
+  - Method `._scan_worker(folder, recursive)`
+  - Method `._update_progress(msg, frac)`
+  - Method `._schedule_drain()`
+  - Method `._drain_discovered_groups()`
+  - Method `._on_scan_error(err_msg)`
+  - Method `._on_scan_complete(groups)`
+  - Method `._render_group_card(group, set_index)`
+  - Method `._select_all_dups()`
+  - Method `._deselect_all_dups()`
+  - Method `._get_selected_duplicate_paths()`
+  - Method `._isolate_selected()`
+  - Method `._delete_selected()`
+  - Method `._open_file(filepath)`
+
+### `ui/junk_cleaner.py`
+> Orphan Folder & Junk Pruner UI Dialog (Option 4)
+Allows users to recursively detect and safely prune empty subdirectories,
+zero-byte orphaned files, and OS debris (Thumbs.db, .DS_Store).
+
+#### Classes
+- **`JunkCleanerDialog`**
+  - *Interactive Orphan Folder & Junk Pruner Dialog.*
+  - Method `.__init__(parent, initial_folder)`
+  - Method `._build_ui()`
+  - Method `._browse_folder()`
+  - Method `._start_scan()`
+  - Method `._scan_worker(folder, empty_dirs, zero_byte, os_debris)`
+  - Method `._update_progress(msg, frac)`
+  - Method `._on_scan_error(err_msg)`
+  - Method `._on_scan_complete(items)`
+  - Method `._select_all()`
+  - Method `._deselect_all()`
+  - Method `._execute_prune()`
+
+### `ui/tree_preview.py`
+> Interactive Tree Preview & Per-File Checkboxes (Pre-Execution Visualizer)
+Allows users to visually review, selectively filter, expand/collapse,
+and inspect proposed AI file moves before execution.
+
+#### Classes
+- **`TreePreviewDialog`**
+  - *Interactive visual tree preview dialog with hierarchical folder grouping and checkboxes.*
+  - Method `.__init__(parent, changes, output_base_folder, on_confirm)`
+  - Method `._group_changes()`
+  - Method `._build_ui()`
+  - Method `._toggle_folder(folder_name)`
+  - Method `._expand_all()`
+  - Method `._collapse_all()`
+  - Method `._on_folder_checkbox_toggled(folder_name)`
+  - Method `._on_file_checkbox_toggled(folder_name)`
+  - Method `._select_all()`
+  - Method `._deselect_all()`
+  - Method `._update_selection_counts()`
+  - Method `._on_search_changed()`
+  - Method `._open_file(filepath)`
+  - Method `._confirm_execution()`
+
 ### `tests/test_ai_status.py`
 > Unit tests for AI Status Indicator & Health Checks (PRINCIPLE-007, PRINCIPLE-008, PRINCIPLE-011).
 Tests plugged/unplugged evaluation across cloud zero-install, embedded GGUF, Ollama, and local servers.
@@ -421,6 +498,7 @@ Tests latency measurement, optimal batch calculation, vision detection, and came
   - Method `.test_same_size_different_content_not_flagged()`
   - Method `.test_isolate_duplicates()`
   - Method `.test_delete_duplicates()`
+  - Method `.test_realtime_on_group_found_callback()`
 
 ### `tests/test_deploy_manager.py`
 > Unit tests for 1-Click AI Model Deployment (PRINCIPLE-003, PRINCIPLE-008, PRINCIPLE-011)

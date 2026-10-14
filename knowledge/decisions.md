@@ -240,6 +240,48 @@ Implement a multi-path 1-Click Quick Deploy architecture:
 ### Consequences
 - **Positive**: Complete visual confidence before file moves; instant recovery of duplicate disk space; clean directory trees.
 
+---
+
+## ADR-013: Spacious Two-Column Dashboard Layout and Window Zooming
+
+### Context
+1. **Vertical Congestion**: In earlier UI layouts, configuration decks, action buttons, and logging were stacked vertically, causing excessive scrolling and cramped cards on widescreen displays.
+2. **Suboptimal Space Utilization**: Starting in standard window dimensions failed to leverage modern high-resolution screens.
+
+### Decision
+1. **Two-Column Master-Detail Dashboard (`main.py`)**:
+   - Top Header Bar: Full-width bar housing branding identity, utility tools (`🔍 Duplicates`, `🧹 Clean Junk`), interactive real-time AI status pill button, 1-Click AI deploy, and Settings.
+   - Left Column: Scrollable control center containing Directory Paths, 2-column Categories to Include with `All`/`None` quick toggles, and Organization Control Center buttons.
+   - Right Column: Dedicated full-height live activity stream and terminal console with Consolas font and clear button.
+2. **Startup Window Zooming**:
+   - Automatically maximizes (`self.state("zoomed")`) with a 1340x880 minimum geometry for an expansive desktop workspace.
+
+### Consequences
+- **Positive**: Spacious, modern layout; zero scrolling friction; clear separation between configuration and live execution streams.
+
+---
+
+## ADR-014: Real-Time Progressive Duplicate Card Streaming and Non-Blocking UI Rendering
+
+### Context
+1. **Post-Scan Synchronous UI Freeze**: Previously, `DuplicateFinderDialog._on_scan_complete` received all duplicate groups at once after the full filesystem scan completed. It then created hundreds or thousands of compound CustomTkinter widgets (`CTkFrame`, `CTkLabel`, `CTkButton`, `CTkCheckBox`) in a single synchronous loop on the Tkinter main thread, locking the UI for several seconds.
+2. **Zero In-Progress Feedback**: Users had to wait for the entire scan to complete before seeing any duplicate files.
+
+### Decision
+1. **Real-Time Group Callback (`DeduplicationService.scan_duplicates`)**:
+   - Added `on_group_found: Optional[Callable[[DuplicateGroup], None]]` callback parameter.
+   - Stage 3 processes each `(sz, header_hash)` collision bucket independently. As soon as full SHA-256 hashes are computed for a bucket, any confirmed duplicate group is immediately emitted via `on_group_found(group)`.
+2. **Micro-Batched Event Loop Draining (`ui/duplicate_finder.py`)**:
+   - Discovered groups are enqueued in a thread-safe queue (`_group_queue`).
+   - `_drain_discovered_groups` renders up to 4 cards per frame interval (`after(10)`), interleaving with Tkinter's window painter.
+   - Action buttons (`Isolate`, `Delete`, `Select All`) and live metrics (`💾 Reclaimable: XX MB`, `⚡ Live: Found N sets`) activate and update dynamically in real time.
+3. **Instant Zero-Freeze Completion**:
+   - When the background scan finishes, cards are already rendered in the scroll frame. `_on_scan_complete` simply finalizes the progress bar and displays final summary counts with 0ms UI delay.
+
+### Consequences
+- **Positive**: 100% fluid, responsive UI with zero post-scan freezing; instant visual feedback as duplicates are discovered in real time.
+
+
 
 
 

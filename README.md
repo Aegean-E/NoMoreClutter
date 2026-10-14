@@ -35,6 +35,7 @@ An intelligent AI-powered desktop application that automatically organizes your 
 - **Live Search & Direct File Inspection**: Instant search bar auto-expands and filters matching files. Double-click any row or click `👁️ Open` to inspect the original file before moving.
 
 ### 🔍 Smart Duplicate File Finder & Storage Reclaimer
+- **Real-Time Progressive Streaming & Zero-Freeze UI**: Confirmed duplicate clusters are streamed and rendered in real time into the UI as files are hashed. The window remains fluid and responsive with live updating reclaimable space counters, completely eliminating post-scan freezing.
 - **Zero-Dependency $O(N)$ Two-Stage Hashing**: Fast file size indexing ($O(1)$ disk reads) followed by 8KB header checks and 64KB chunked full SHA-256 for identical byte-for-byte matching.
 - **Storage Metrics & Cluster Cards**: Displays total reclaimable space (e.g., `💾 Reclaimable: 1.45 GB`) and visual clusters marking the canonical 🟢 `ORIGINAL` alongside 🔴 `DUPLICATES`.
 - **1-Click Safety Actions**: Move duplicates safely into `_Duplicates/` with collision-safe names (`file (1).ext`) or permanently trash selected duplicates.

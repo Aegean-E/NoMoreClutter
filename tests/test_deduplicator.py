@@ -105,6 +105,34 @@ class TestDeduplicationService(unittest.TestCase):
         self.assertFalse(os.path.exists(groups[0].duplicates[0]))
         self.assertTrue(os.path.exists(groups[0].original))
 
+    def test_realtime_on_group_found_callback(self):
+        """DeduplicationService must invoke on_group_found in real-time as duplicate clusters are identified."""
+        content1 = "Alpha duplicate payload" * 10
+        content2 = "Beta duplicate payload with different size" * 15
+
+        # Group 1 (3 identical files)
+        for i in range(3):
+            with open(os.path.join(self.test_dir, f"grp1_{i}.txt"), "w", encoding="utf-8") as f:
+                f.write(content1)
+
+        # Group 2 (2 identical files)
+        for i in range(2):
+            with open(os.path.join(self.test_dir, f"grp2_{i}.txt"), "w", encoding="utf-8") as f:
+                f.write(content2)
+
+        discovered_groups = []
+        def on_group(group):
+            discovered_groups.append(group)
+
+        returned_groups = DeduplicationService.scan_duplicates(
+            self.test_dir,
+            on_group_found=on_group,
+        )
+
+        self.assertEqual(len(returned_groups), 2)
+        self.assertEqual(len(discovered_groups), 2)
+        self.assertEqual({g.sha256 for g in returned_groups}, {g.sha256 for g in discovered_groups})
+
 
 if __name__ == "__main__":
     unittest.main()
