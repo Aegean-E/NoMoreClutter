@@ -9,13 +9,13 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 1163 | 56859 | 1 | 0 |
+| `main.py` | 1326 | 63666 | 1 | 0 |
 | `models/__init__.py` | 44 | 1399 | 2 | 0 |
 | `services/__init__.py` | 34 | 1121 | 0 | 8 |
 | `services/document_peeker.py` | 151 | 5969 | 1 | 0 |
 | `services/file_executor.py` | 232 | 8492 | 1 | 0 |
 | `services/file_scanner.py` | 40 | 1408 | 1 | 0 |
-| `services/llm_service.py` | 71 | 2512 | 2 | 0 |
+| `services/llm_service.py` | 204 | 8385 | 2 | 0 |
 | `services/model_downloader.py` | 181 | 6535 | 2 | 0 |
 | `services/ollama_manager.py` | 158 | 5646 | 2 | 0 |
 | `services/providers/__init__.py` | 44 | 1198 | 0 | 1 |
@@ -24,6 +24,7 @@
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
 | `services/providers/registry.py` | 130 | 4668 | 1 | 3 |
 | `services/rlm_organizer.py` | 373 | 14704 | 2 | 0 |
+| `tests/test_ai_status.py` | 118 | 5346 | 1 | 0 |
 | `tests/test_deploy_manager.py` | 189 | 7764 | 4 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
 | `tests/test_file_executor.py` | 156 | 6060 | 1 | 0 |
@@ -51,6 +52,10 @@
   - Method `._toggle_show_key()`
   - Method `._open_signup_url()`
   - Method `._test_connection()`
+  - Method `._refresh_ai_status_async()`
+  - Method `._ai_status_worker()`
+  - Method `._apply_ai_status_ui(is_plugged, badge_label, detail_msg)`
+  - Method `._on_ai_status_clicked()`
   - Method `._open_settings()`
   - Method `._hide_settings()`
   - Method `._open_quick_deploy()`
@@ -162,6 +167,7 @@ Adapts the pluggable AI provider and RLM Organizer for backward compatibility an
   - *Unified service facade interfacing with Pluggable AI Providers and RLM Engine.*
   - Method `.__init__(base_url, api_key, provider_id)`
   - Method `.test_connection(model)`
+  - Method `.check_ai_status(cls, provider_name, base_url, api_key, model)`
   - Method `.analyze_files(files, model, create_new_folders, existing_folders, analyze_images, numbered_rename, ai_rename, content_peeking, target_folder, output_folder, progress_callback)`
 
 ### `services/model_downloader.py`
@@ -277,6 +283,22 @@ and PRINCIPLE-009 (Token Frugality & Context Budgeting).
   - Method `._sanitize_folder_name(name)`
   - Method `._sanitize_filename(name, original_path)`
   - Method `._extract_json(text)`
+
+### `tests/test_ai_status.py`
+> Unit tests for AI Status Indicator & Health Checks (PRINCIPLE-007, PRINCIPLE-008, PRINCIPLE-011).
+Tests plugged/unplugged evaluation across cloud zero-install, embedded GGUF, Ollama, and local servers.
+
+#### Classes
+- **`TestAIStatus`**
+  - Method `.test_cloud_missing_api_key()`
+  - Method `.test_gemini_missing_api_key()`
+  - Method `.test_cloud_valid_connection(mock_test)`
+  - Method `.test_cloud_invalid_key_error(mock_test)`
+  - Method `.test_embedded_not_downloaded(mock_is_dl)`
+  - Method `.test_embedded_downloaded_and_ready(mock_is_dl)`
+  - Method `.test_ollama_offline(mock_status)`
+  - Method `.test_ollama_online(mock_status, mock_list)`
+  - Method `.test_local_server_offline(mock_test)`
 
 ### `tests/test_deploy_manager.py`
 > Unit tests for 1-Click AI Model Deployment (PRINCIPLE-003, PRINCIPLE-008, PRINCIPLE-011)

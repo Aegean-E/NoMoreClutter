@@ -46,9 +46,13 @@ class NoMoreClutterApp(ctk.CTk):
         self.embed_cancel_event = threading.Event()
         self.ollama_cancel_event = threading.Event()
         
+        # AI Connection State Tracking
+        self.ai_is_plugged: bool = False
+        self.ai_status_badge: str = "Checking"
+        self.ai_status_detail: str = "Checking AI status..."
+        
         self._load_settings()
         self._build_ui()
-        self._build_settings_window()
     
     def _load_settings(self):
         try:
@@ -77,6 +81,7 @@ class NoMoreClutterApp(ctk.CTk):
         }
         with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
             json.dump(self.settings, f, indent=2)
+        self._refresh_ai_status_async()
         if not silent:
             messagebox.showinfo("Saved", "Settings saved successfully!")
     
@@ -88,8 +93,26 @@ class NoMoreClutterApp(ctk.CTk):
         top_frame.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
         top_frame.grid_columnconfigure(1, weight=1)
         
-        ctk.CTkLabel(top_frame, text="NoMoreClutter 🗂️", font=ctk.CTkFont(size=24, weight="bold")).grid(row=0, column=0, padx=20, pady=(10, 0), sticky="w")
-        ctk.CTkLabel(top_frame, text="Intelligent, RLM-compatible file organizer", text_color="gray").grid(row=1, column=0, padx=20, pady=(0, 10), sticky="w")
+        title_box = ctk.CTkFrame(top_frame, fg_color="transparent")
+        title_box.grid(row=0, rowspan=2, column=0, padx=(15, 10), pady=10, sticky="w")
+        ctk.CTkLabel(title_box, text="NoMoreClutter 🗂️", font=ctk.CTkFont(size=24, weight="bold")).pack(anchor="w")
+        ctk.CTkLabel(title_box, text="Intelligent, RLM-compatible file organizer", text_color="gray").pack(anchor="w")
+        
+        # Interactive AI Status Badge / Pill (Option to see plugged/unplugged state at a glance)
+        self.ai_status_btn = ctk.CTkButton(
+            top_frame,
+            text="🟡 Checking AI...",
+            command=self._on_ai_status_clicked,
+            height=34,
+            corner_radius=17,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            fg_color="#2B2D31",
+            hover_color="#3E4249",
+            text_color="#FCC419",
+            border_width=1,
+            border_color="#5C5F66",
+        )
+        self.ai_status_btn.grid(row=0, rowspan=2, column=1, padx=(10, 15), pady=10, sticky="e")
         
         deploy_btn = ctk.CTkButton(
             top_frame,
@@ -100,7 +123,7 @@ class NoMoreClutterApp(ctk.CTk):
             command=self._open_quick_deploy,
             font=ctk.CTkFont(size=13, weight="bold"),
         )
-        deploy_btn.grid(row=0, rowspan=2, column=2, padx=(10, 5), pady=10)
+        deploy_btn.grid(row=0, rowspan=2, column=2, padx=(0, 5), pady=10)
 
         settings_btn = ctk.CTkButton(top_frame, text="⚙ Settings", width=110, command=self._open_settings)
         settings_btn.grid(row=0, rowspan=2, column=3, padx=(5, 20), pady=10)
@@ -144,19 +167,27 @@ class NoMoreClutterApp(ctk.CTk):
         actions_frame.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
         
         self.analyze_btn = ctk.CTkButton(actions_frame, text="🔍 AI Organize", command=self._analyze, height=42, font=ctk.CTkFont(size=13, weight="bold"))
-        self.analyze_btn.pack(side="left", padx=8, pady=12)
+        self.analyze_btn.pack(side="left", padx=(8, 4), pady=12)
         
         self.quick_btn = ctk.CTkButton(actions_frame, text="⚡ Quick Organize (No AI)", command=self._quick_organize, height=42, fg_color="#3B8ED0", font=ctk.CTkFont(size=13))
-        self.quick_btn.pack(side="left", padx=8, pady=12)
+        self.quick_btn.pack(side="left", padx=4, pady=12)
         
         self.execute_btn = ctk.CTkButton(actions_frame, text="▶ Execute Moves", command=self._execute, height=42, state="disabled", fg_color="green", font=ctk.CTkFont(size=13, weight="bold"))
-        self.execute_btn.pack(side="left", padx=8, pady=12)
+        self.execute_btn.pack(side="left", padx=4, pady=12)
         
         self.undo_btn = ctk.CTkButton(actions_frame, text="↩ Undo Moves", command=self._undo_moves, height=42, state="disabled", fg_color="#6C757D", font=ctk.CTkFont(size=13))
-        self.undo_btn.pack(side="left", padx=8, pady=12)
+        self.undo_btn.pack(side="left", padx=4, pady=12)
+
+        self.ai_plug_indicator = ctk.CTkLabel(
+            actions_frame,
+            text="⚪ Checking AI",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color="gray"
+        )
+        self.ai_plug_indicator.pack(side="left", padx=(10, 5), pady=12)
         
         self.status_label = ctk.CTkLabel(actions_frame, text="Select source folder to begin", text_color="gray", font=ctk.CTkFont(size=12))
-        self.status_label.pack(side="left", padx=15)
+        self.status_label.pack(side="left", padx=10)
         
         # 5. Output Frame
         output_frame = ctk.CTkFrame(self)
@@ -179,6 +210,7 @@ class NoMoreClutterApp(ctk.CTk):
                 self.output_text.insert("end", f"ℹ️ Multi-session Undo: {last_batch['count']} files from previous run ({last_batch['timestamp_str']}) can be undone with '↩ Undo Moves'.\n\n")
 
         self._build_settings_window()
+        self._refresh_ai_status_async()
 
     def _build_settings_window(self):
         _, _, _, list_names, _ = get_provider_registry()
@@ -301,6 +333,7 @@ class NoMoreClutterApp(ctk.CTk):
 
     def _on_provider_changed(self, choice):
         self._update_provider_ui(choice)
+        self._refresh_ai_status_async()
 
     def _update_provider_ui(self, provider_name: str):
         _, _, get_by_name, _, _ = get_provider_registry()
@@ -332,6 +365,7 @@ class NoMoreClutterApp(ctk.CTk):
             model_to_use = preset.vision_model if self.analyze_images_var.get() else preset.default_model
             self.llm_model.delete(0, "end")
             self.llm_model.insert(0, model_to_use)
+            self._refresh_ai_status_async()
 
     def _toggle_show_key(self):
         show_char = "" if self.show_key_var.get() else "*"
@@ -361,6 +395,114 @@ class NoMoreClutterApp(ctk.CTk):
                 self.connection_status.configure(text=f"❌ {msg}", text_color="#FF6B6B")
         except Exception as e:
             self.connection_status.configure(text=f"❌ Error: {str(e)}", text_color="#FF6B6B")
+        finally:
+            self._refresh_ai_status_async()
+
+    def _refresh_ai_status_async(self):
+        """Non-blocking background check of whether current AI provider is plugged in (PRINCIPLE-007)."""
+        if hasattr(self, "ai_status_btn"):
+            self.ai_status_btn.configure(
+                text="🟡 Checking AI...",
+                fg_color="#2B2514",
+                hover_color="#3D351D",
+                text_color="#FCC419",
+                border_color="#FAB005",
+            )
+        if hasattr(self, "ai_plug_indicator"):
+            self.ai_plug_indicator.configure(text="🟡 Checking AI", text_color="#FCC419")
+
+        thread = threading.Thread(target=self._ai_status_worker, daemon=True)
+        thread.start()
+
+    def _ai_status_worker(self):
+        try:
+            provider_name = (
+                self.provider_var.get()
+                if hasattr(self, "provider_var")
+                else self.settings.get("provider_name", "Groq (Free & Fastest - Zero Install)")
+            )
+            api_key = (
+                self.api_key_entry.get().strip()
+                if hasattr(self, "api_key_entry")
+                else self.settings.get("api_key", "")
+            )
+            base_url = (
+                self.llm_url.get().strip()
+                if hasattr(self, "llm_url")
+                else self.settings.get("llm_url", "")
+            )
+            model = (
+                self.llm_model.get().strip()
+                if hasattr(self, "llm_model")
+                else self.settings.get("llm_model", "")
+            )
+
+            LLMService, _ = get_LLMService()
+            is_plugged, badge_label, detail_msg = LLMService.check_ai_status(
+                provider_name=provider_name,
+                base_url=base_url,
+                api_key=api_key,
+                model=model,
+            )
+            self.after(0, self._apply_ai_status_ui, is_plugged, badge_label, detail_msg)
+        except Exception as e:
+            self.after(0, self._apply_ai_status_ui, False, "Check Failed", str(e))
+
+    def _apply_ai_status_ui(self, is_plugged: bool, badge_label: str, detail_msg: str):
+        self.ai_is_plugged = is_plugged
+        self.ai_status_badge = badge_label
+        self.ai_status_detail = detail_msg
+
+        if not hasattr(self, "ai_status_btn"):
+            return
+
+        if is_plugged:
+            self.ai_status_btn.configure(
+                text=f"🟢 AI Plugged: {badge_label}",
+                fg_color="#142B1A",
+                hover_color="#1E3F27",
+                text_color="#51CF66",
+                border_color="#2B8A3E",
+            )
+            if hasattr(self, "ai_plug_indicator"):
+                self.ai_plug_indicator.configure(text=f"🟢 {badge_label}", text_color="#51CF66")
+        else:
+            self.ai_status_btn.configure(
+                text=f"🔴 AI Unplugged ({badge_label})",
+                fg_color="#2B1414",
+                hover_color="#421E1E",
+                text_color="#FF8787",
+                border_color="#E03131",
+            )
+            if hasattr(self, "ai_plug_indicator"):
+                self.ai_plug_indicator.configure(text="🔴 AI Unplugged", text_color="#FF8787")
+
+    def _on_ai_status_clicked(self):
+        """Handle user clicks on the interactive AI status indicator pill."""
+        if self.ai_is_plugged:
+            msg = (
+                f"✅ AI Connection Status: PLUGGED & READY\n\n"
+                f"Provider: {self.ai_status_badge}\n"
+                f"Details: {self.ai_status_detail}\n\n"
+                "Would you like to re-test the AI connection now?"
+            )
+            retest = messagebox.askyesno("AI Status - Plugged & Online", msg)
+            if retest:
+                self._refresh_ai_status_async()
+        else:
+            msg = (
+                f"⚠️ AI Connection Status: UNPLUGGED\n\n"
+                f"Reason: {self.ai_status_detail}\n\n"
+                "To organize files using AI, choose one of these options:\n"
+                "• Click 'Yes' to open 1-Click AI Deploy (download offline GGUF, pull Ollama, or get free Groq/Gemini key).\n"
+                "• Click 'No' to open Settings and manually enter API keys or endpoint URLs.\n"
+                "• Or use '⚡ Quick Organize (No AI)' on the main screen to organize without AI."
+            )
+            choice = messagebox.askyesno("AI Status - Unplugged", msg)
+            if choice:
+                self._open_quick_deploy()
+            else:
+                self._open_settings()
 
     def _open_settings(self):
         try:
@@ -999,6 +1141,27 @@ class NoMoreClutterApp(ctk.CTk):
         if not self.source_folder:
             messagebox.showwarning("Warning", "Please select a source folder")
             return
+
+        if not getattr(self, "ai_is_plugged", False):
+            badge = getattr(self, "ai_status_badge", "Unplugged")
+            detail = getattr(self, "ai_status_detail", "No active AI provider is connected.")
+            msg = (
+                f"AI is currently unplugged ({badge}).\n\n"
+                f"{detail}\n\n"
+                "Would you like to open '1-Click AI Deploy' to set up a model or free key?\n\n"
+                "• Click 'Yes' to open 1-Click AI Deploy.\n"
+                "• Click 'No' to organize files instantly with '⚡ Quick Organize (No AI)'.\n"
+                "• Click 'Cancel' to abort."
+            )
+            choice = messagebox.askyesnocancel("AI Unplugged", msg)
+            if choice is True:
+                self._open_quick_deploy()
+                return
+            elif choice is False:
+                self._quick_organize()
+                return
+            else:
+                return
 
         files = get_FileScanner().scan_folder(self.source_folder, extensions, include_subfolders=False)
         if not files:

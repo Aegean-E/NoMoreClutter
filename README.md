@@ -37,6 +37,7 @@ An intelligent AI-powered desktop application that automatically organizes your 
 
 ### 🎨 Modern Dark UI
 - **Sleek CustomTkinter Interface**: Designed with dark-mode aesthetic, real-time logging, and interactive controls.
+- **🔌 Real-Time AI Plugged/Unplugged Indicator**: Interactive status pill in the header displaying connection health (🟢 **AI Plugged: Groq Ready**, 🟢 **AI Plugged: Embedded**, 🔴 **AI Unplugged: No Key**, 🔴 **AI Unplugged: Offline**). Click the pill to test connection or launch 1-Click Quick Deploy.
 - **Provider Quick-Switching**: Dropdown selector with pre-configured API URLs, recommended models, and direct links to get free API keys.
 - **Configurable Peeking & Settings Persistence**: Toggle document peeking, customize scan filters, and save provider preferences automatically.
 
@@ -156,6 +157,7 @@ NoMoreClutter/
 │       ├── registry.py        # Provider presets (Groq, Embedded, Gemini, OpenAI, Ollama)
 │       └── openai_compatible.py # Standard OpenAI-compatible HTTP client
 ├── tests/                     # Automated unit test suite (PRINCIPLE-011)
+│   ├── test_ai_status.py      # AI plugged/unplugged indicator & health check tests
 │   ├── test_providers.py      # Provider registry & creation tests
 │   ├── test_deploy_manager.py # Model downloader, Ollama manager & embedded provider tests
 │   ├── test_document_peeker.py # PDF, DOCX, and text snippet extraction tests

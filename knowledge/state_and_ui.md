@@ -61,3 +61,24 @@ Tkinter is not thread-safe. To prevent UI freezing during file system walks, LLM
 - When the user changes providers in the dropdown, default values (API URL, recommended model) are auto-populated.
 - Whenever settings are modified, they are saved automatically to `settings.json`.
 - `settings.json` is gitignored to protect user API keys.
+
+---
+
+## 4. Real-Time AI Plugged/Unplugged Indicator
+
+The application displays an interactive real-time status pill in the top header and a companion indicator next to the organization action buttons:
+- **`PLUGGED` State (🟢)**:
+  - Header Pill: `🟢 AI Plugged: {Provider} Ready` (emerald green border `#2B8A3E`, dark green bg `#142B1A`).
+  - Action Indicator: `🟢 AI Plugged`.
+  - Triggered when cloud API keys are verified, local embedded GGUF weights are detected on disk, or local Ollama daemons respond.
+- **`UNPLUGGED` State (🔴)**:
+  - Header Pill: `🔴 AI Unplugged ({Reason})` (crimson border `#E03131`, dark red bg `#2B1414`).
+  - Action Indicator: `🔴 AI Unplugged`.
+  - Triggered when API keys are missing, model weights are not downloaded, or local servers are unreachable.
+- **`CHECKING` State (🟡)**:
+  - Header Pill: `🟡 Checking AI...` (amber border `#FAB005`, dark slate bg `#2B2514`).
+  - Evaluated in a background daemon thread (`_refresh_ai_status_async`) without blocking the Tkinter event loop.
+- **Interactive Click Actions**:
+  - Clicking the pill when plugged shows connection details and offers a one-click connection re-test.
+  - Clicking the pill when unplugged opens a guided dialog directing the user to 1-Click AI Deploy or Settings.
+  - Clicking "🔍 AI Organize" when unplugged prompts the user to deploy AI or run "⚡ Quick Organize (No AI)" instead.

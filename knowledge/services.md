@@ -103,6 +103,19 @@ Discovers and filters files from source folders.
 
 Facade maintaining backward compatibility for existing scripts, tests, and UI components while delegating to the new `RLMOrganizer` and `ProviderRegistry`.
 
+### Methods
+- `test_connection(model: Optional[str] = None) -> Tuple[bool, str]`:
+  Delegates connection test to the underlying active AI provider.
+- `check_ai_status(provider_name: Optional[str], base_url: Optional[str], api_key: Optional[str], model: Optional[str]) -> Tuple[bool, str, str]`:
+  Evaluates whether an AI provider is plugged in (ready/connected) or unplugged:
+  - Validates API key presence for cloud presets without latency.
+  - Verifies local GGUF model presence on disk for embedded offline inference.
+  - Pings local Ollama/LM Studio daemons with status checks.
+  - Runs safe, non-blocking connection tests against configured endpoints.
+  - Returns `(is_plugged, badge_label, detailed_description)`.
+- `analyze_files(...) -> List[FileChange]`:
+  Dispatches files to the `RLMOrganizer` hierarchical engine with token budgeting, content peeking, and image analysis.
+
 ---
 
 ## 6. `ModelDownloader` (`services/model_downloader.py`)
