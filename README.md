@@ -39,12 +39,13 @@ An intelligent AI-powered desktop application that automatically organizes your 
 - **Lag-Free Paginated Scrolling (Zero Stutter)**: Automatically paginates duplicate clusters in smooth 25-set increments (`PAGE_SIZE = 25`) with dynamic `[ ⬇️ Load Next 25 ]` and `[ ⚡ Load All ]` controls, preventing CustomTkinter canvas redraw lag across hundreds of duplicate files while preserving selection across all items.
 - **Zero-Dependency $O(N)$ Two-Stage Hashing**: Fast file size indexing ($O(1)$ disk reads) followed by 8KB header checks and 64KB chunked full SHA-256 for identical byte-for-byte matching.
 - **Storage Metrics & Cluster Cards**: Displays total reclaimable space (e.g., `💾 Reclaimable: 1.45 GB`) and visual clusters marking the canonical 🟢 `ORIGINAL` alongside 🔴 `DUPLICATES`.
+- **⭐ 1-Click "Set as Original" Selection**: Instantly swap which file is preserved and which is deleted. Click `⭐ Set as Original` on any duplicate row or in the comparison dialog to designate it as the canonical original to keep—automatically transferring the prior original to the duplicate pool marked for deletion/isolation with zero scroll jump.
 - **1-Click Safety Actions**: Move duplicates safely into `_Duplicates/` with collision-safe names (`file (1).ext`) or permanently trash selected duplicates.
 
 ### 👁️ In-App File Viewer & Visual Duplicate Comparator
 - **Universal Multi-Format In-App Preview**: Preview images (proportional aspect scaling, automatic RGBA/RGB mode safety), text & source code files (auto-encoding detection), extracted documents (PDF / Word text snippets via `DocumentPeeker`), or binary files (512-byte hex dump) directly in the app.
 - **Guaranteed Foreground Focus & Modal Grab Protection**: Dialog automatically transfers modal grab from parent dialogs, pulses to the top, and lifts to the foreground so image and document previews are immediately visible without getting hidden behind parent windows.
-- **Side-by-Side Duplicate Inspector**: Compare canonical original files against redundant duplicate candidates side-by-side with 100% byte-for-byte verification banners, metadata comparison, and one-click `🗑️ Delete Duplicate` or `📦 Isolate` buttons.
+- **Side-by-Side Duplicate Inspector**: Compare canonical original files against redundant duplicate candidates side-by-side with 100% byte-for-byte verification banners, metadata comparison, one-click `⭐ Set as Original`, `🗑️ Delete Duplicate`, or `📦 Isolate` buttons.
 - **Quick Inspection Hotkeys & Buttons**: Available anywhere via the `👁️ Preview` and `👥 Compare` buttons on cards, or double-clicking any file row.
 
 ### 🧹 Orphan Folder & Junk Pruner (One-Click Deep Clean)

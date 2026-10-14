@@ -133,6 +133,40 @@ class TestDeduplicationService(unittest.TestCase):
         self.assertEqual(len(discovered_groups), 2)
         self.assertEqual({g.sha256 for g in returned_groups}, {g.sha256 for g in discovered_groups})
 
+    def test_duplicate_group_set_as_original(self):
+        from models import DuplicateGroup
+        grp = DuplicateGroup(
+            file_size=2048,
+            sha256="fake_sha256",
+            original="/path/to/original.jpg",
+            duplicates=["/path/to/dup1.jpg", "/path/to/dup2.jpg"],
+        )
+
+        # 1. Successful swap
+        success = grp.set_as_original("/path/to/dup1.jpg")
+        self.assertTrue(success)
+        self.assertEqual(grp.original, "/path/to/dup1.jpg")
+        self.assertIn("/path/to/original.jpg", grp.duplicates)
+        self.assertIn("/path/to/dup2.jpg", grp.duplicates)
+        self.assertNotIn("/path/to/dup1.jpg", grp.duplicates)
+        self.assertEqual(len(grp.duplicates), 2)
+        self.assertEqual(len(grp.all_files), 3)
+
+        # 2. Swap again to the other duplicate
+        success2 = grp.set_as_original("/path/to/dup2.jpg")
+        self.assertTrue(success2)
+        self.assertEqual(grp.original, "/path/to/dup2.jpg")
+        self.assertIn("/path/to/dup1.jpg", grp.duplicates)
+        self.assertIn("/path/to/original.jpg", grp.duplicates)
+
+        # 3. Setting current original returns False and makes no change
+        self.assertFalse(grp.set_as_original("/path/to/dup2.jpg"))
+        self.assertEqual(grp.original, "/path/to/dup2.jpg")
+
+        # 4. Setting non-existent file returns False and makes no change
+        self.assertFalse(grp.set_as_original("/path/to/nonexistent.jpg"))
+        self.assertEqual(grp.original, "/path/to/dup2.jpg")
+
 
 if __name__ == "__main__":
     unittest.main()

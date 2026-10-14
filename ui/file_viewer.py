@@ -450,6 +450,16 @@ class FileViewerDialog(ctk.CTkToplevel):
             command=self._isolate_duplicate_action,
         ).pack(side="right", padx=4)
 
+        ctk.CTkButton(
+            right_actions,
+            text="⭐ Set as Original",
+            height=28,
+            font=ctk.CTkFont(size=11, weight="bold"),
+            fg_color="#2B8A3E",
+            hover_color="#237032",
+            command=self._set_as_original_action,
+        ).pack(side="right", padx=4)
+
     # =========================================================================
     # CORE PREVIEW DISPATCHER
     # =========================================================================
@@ -675,3 +685,23 @@ class FileViewerDialog(ctk.CTkToplevel):
             self.destroy()
         else:
             messagebox.showerror("Error", f"Failed to isolate duplicate:\n{errors}")
+
+    def _set_as_original_action(self):
+        if not self.compare_filepath:
+            return
+        confirm = messagebox.askyesno(
+            "Set as Original",
+            f"Designate this file as the canonical original to KEEP:\n{self.filepath}\n\n"
+            f"The previous original:\n{self.compare_filepath}\nwill become a duplicate marked for deletion/isolation.",
+        )
+        if not confirm:
+            return
+
+        if self.on_action_performed:
+            self.on_action_performed("set_original", self.filepath)
+        messagebox.showinfo(
+            "Original Designated",
+            f"'{os.path.basename(self.filepath)}' is now designated as the original to keep.\n"
+            f"The previous original was marked as duplicate in the list.",
+        )
+        self.destroy()

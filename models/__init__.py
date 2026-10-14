@@ -25,6 +25,16 @@ class DuplicateGroup:
     def all_files(self) -> List[str]:
         return [self.original] + self.duplicates
 
+    def set_as_original(self, new_original: str) -> bool:
+        """Designate a duplicate as the canonical original to keep, moving prior original to duplicates."""
+        if new_original == self.original or new_original not in self.duplicates:
+            return False
+        old_original = self.original
+        self.duplicates.remove(new_original)
+        self.duplicates.append(old_original)
+        self.original = new_original
+        return True
+
 
 @dataclass
 class CleanupItem:

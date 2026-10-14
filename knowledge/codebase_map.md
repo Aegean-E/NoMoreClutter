@@ -10,7 +10,7 @@
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
 | `main.py` | 2010 | 96011 | 1 | 0 |
-| `models/__init__.py` | 87 | 2446 | 5 | 0 |
+| `models/__init__.py` | 97 | 2903 | 5 | 0 |
 | `services/__init__.py` | 47 | 1476 | 0 | 11 |
 | `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
 | `services/cleaner_service.py` | 211 | 8073 | 1 | 0 |
@@ -28,14 +28,14 @@
 | `services/providers/registry.py` | 135 | 4892 | 1 | 3 |
 | `services/rlm_organizer.py` | 481 | 20857 | 2 | 0 |
 | `ui/__init__.py` | 10 | 347 | 0 | 0 |
-| `ui/duplicate_finder.py` | 680 | 26799 | 1 | 0 |
-| `ui/file_viewer.py` | 677 | 26082 | 1 | 5 |
+| `ui/duplicate_finder.py` | 738 | 29589 | 1 | 0 |
+| `ui/file_viewer.py` | 707 | 27209 | 1 | 5 |
 | `ui/junk_cleaner.py` | 360 | 13874 | 1 | 0 |
 | `ui/tree_preview.py` | 492 | 18589 | 1 | 0 |
 | `tests/test_ai_status.py` | 118 | 5346 | 1 | 0 |
 | `tests/test_benchmark_service.py` | 152 | 6518 | 3 | 0 |
 | `tests/test_cleaner_service.py` | 85 | 3024 | 1 | 0 |
-| `tests/test_deduplicator.py` | 138 | 5268 | 1 | 0 |
+| `tests/test_deduplicator.py` | 172 | 6773 | 1 | 0 |
 | `tests/test_deploy_manager.py` | 241 | 10685 | 4 | 0 |
 | `tests/test_disruption_recovery.py` | 114 | 4682 | 1 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
@@ -137,6 +137,7 @@
 - **`DuplicateGroup`**
   - Method `.reclaimable_bytes()`
   - Method `.all_files()`
+  - Method `.set_as_original(new_original)`
 - **`CleanupItem`**
 - **`CleanupReport`**
   - Method `.__post_init__()`
@@ -400,6 +401,8 @@ and isolate or safely delete duplicate files.
   - Method `._load_all_cards()`
   - Method `._update_load_more_bar()`
   - Method `._render_group_card(group, set_index)`
+  - Method `._populate_group_card(card, group, set_index)`
+  - Method `._set_as_original(group, new_orig, card, set_index)`
   - Method `._select_all_dups()`
   - Method `._deselect_all_dups()`
   - Method `._get_selected_duplicate_paths()`
@@ -433,6 +436,7 @@ and binary files with side-by-side duplicate comparison support.
   - Method `._open_system_default(filepath)`
   - Method `._delete_duplicate_action()`
   - Method `._isolate_duplicate_action()`
+  - Method `._set_as_original_action()`
 #### Functions
 - `def get_category_badge(ext)`
   - *Return a visual category badge for a given file extension.*
@@ -552,6 +556,7 @@ Tests latency measurement, optimal batch calculation, vision detection, and came
   - Method `.test_isolate_duplicates()`
   - Method `.test_delete_duplicates()`
   - Method `.test_realtime_on_group_found_callback()`
+  - Method `.test_duplicate_group_set_as_original()`
 
 ### `tests/test_deploy_manager.py`
 > Unit tests for 1-Click AI Model Deployment (PRINCIPLE-003, PRINCIPLE-008, PRINCIPLE-011)

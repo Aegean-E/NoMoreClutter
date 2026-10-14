@@ -43,6 +43,7 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
         self._load_more_frame: Optional[ctk.CTkFrame] = None
         self._load_info_lbl: Optional[ctk.CTkLabel] = None
         self._unrendered_dup_vars: Dict[str, bool] = {}
+        self._card_frames: Dict[int, ctk.CTkFrame] = {}
 
         self._build_ui()
 
@@ -233,6 +234,7 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
         self._load_more_frame = None
         self._load_info_lbl = None
         self._unrendered_dup_vars.clear()
+        self._card_frames.clear()
 
         while not self._group_queue.empty():
             try:
@@ -477,7 +479,10 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
         card = ctk.CTkFrame(self.scroll_results, fg_color="#1E1E24", corner_radius=8, border_width=1, border_color="#2C2E33")
         card.pack(fill="x", padx=4, pady=6)
         card.grid_columnconfigure(0, weight=1)
+        self._card_frames[set_index - 1] = card
+        self._populate_group_card(card, group, set_index)
 
+    def _populate_group_card(self, card: ctk.CTkFrame, group: DuplicateGroup, set_index: int):
         # Cluster header
         hdr = ctk.CTkFrame(card, fg_color="#25262B", corner_radius=6, height=32)
         hdr.pack(fill="x", padx=4, pady=4)
@@ -560,8 +565,9 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
                 anchor="w",
             )
             dup_lbl.pack(side="left", fill="x", expand=True, padx=4)
-            dup_lbl.bind("<Double-Button-1>", lambda event, p=dup_path: self._open_viewer(p))
+            dup_lbl.bind("<Double-Button-1>", lambda event, p=dup_path, orig=group.original: self._open_viewer(p, compare_filepath=orig))
 
+            # Action buttons on duplicate row
             ctk.CTkButton(
                 dup_row,
                 text="👥 Compare",
@@ -571,7 +577,47 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
                 fg_color="#1971C2",
                 hover_color="#1864AB",
                 command=lambda p=dup_path, orig=group.original: self._open_viewer(p, compare_filepath=orig),
-            ).pack(side="right", padx=6)
+            ).pack(side="right", padx=(2, 6))
+
+            ctk.CTkButton(
+                dup_row,
+                text="⭐ Set as Original",
+                width=105,
+                height=20,
+                font=ctk.CTkFont(size=9, weight="bold"),
+                fg_color="#2B8A3E",
+                hover_color="#237032",
+                command=lambda g=group, p=dup_path, c=card, idx=set_index: self._set_as_original(g, p, c, idx),
+            ).pack(side="right", padx=2)
+
+    def _set_as_original(self, group: DuplicateGroup, new_orig: str, card: ctk.CTkFrame, set_index: int):
+        """Designate a duplicate as the canonical original (Keep) and relegate previous original to duplicate."""
+        old_orig = group.original
+        success = group.set_as_original(new_orig)
+        if not success:
+            return
+
+        # 1. Update selection variables
+        # The new original is kept (remove from deletion/isolation selection)
+        if new_orig in self.dup_checkbox_vars:
+            del self.dup_checkbox_vars[new_orig]
+        self._unrendered_dup_vars.pop(new_orig, None)
+
+        # The prior original is now a duplicate (select by default for deletion/isolation)
+        self.dup_checkbox_vars[old_orig] = ctk.BooleanVar(value=True)
+        self._unrendered_dup_vars[old_orig] = True
+
+        # 2. Re-populate card in place
+        for child in card.winfo_children():
+            child.destroy()
+        self._populate_group_card(card, group, set_index)
+
+        # 3. Status update
+        base_name = os.path.basename(new_orig)
+        self.status_label.configure(
+            text=f"⭐ Set as original: '{base_name}' in Set #{set_index}. Prior original is now marked for action.",
+            text_color="#69DB7C",
+        )
 
     def _select_all_dups(self):
         for var in self.dup_checkbox_vars.values():
@@ -666,6 +712,18 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             if action in ("delete", "isolate"):
                 # Automatically refresh duplicate list after removing a file
                 self.after(300, self._start_scan)
+            elif action == "set_original":
+                for idx, grp in enumerate(self.duplicate_groups):
+                    if target_file in grp.duplicates:
+                        card = self._card_frames.get(idx)
+                        if card and card.winfo_exists():
+                            self._set_as_original(grp, target_file, card, idx + 1)
+                        else:
+                            old_orig = grp.original
+                            if grp.set_as_original(target_file):
+                                self._unrendered_dup_vars.pop(target_file, None)
+                                self._unrendered_dup_vars[old_orig] = True
+                        break
 
         dlg = FileViewerDialog(
             parent=self,
