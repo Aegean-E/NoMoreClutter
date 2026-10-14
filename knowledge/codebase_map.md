@@ -9,10 +9,12 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 1696 | 83584 | 1 | 0 |
-| `models/__init__.py` | 44 | 1399 | 2 | 0 |
-| `services/__init__.py` | 39 | 1266 | 0 | 9 |
+| `main.py` | 1737 | 85462 | 1 | 0 |
+| `models/__init__.py` | 85 | 2389 | 5 | 0 |
+| `services/__init__.py` | 47 | 1476 | 0 | 11 |
 | `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
+| `services/cleaner_service.py` | 211 | 8073 | 1 | 0 |
+| `services/deduplicator.py` | 256 | 10231 | 1 | 0 |
 | `services/document_peeker.py` | 151 | 5969 | 1 | 0 |
 | `services/file_executor.py` | 232 | 8492 | 1 | 0 |
 | `services/file_scanner.py` | 40 | 1408 | 1 | 0 |
@@ -27,6 +29,8 @@
 | `services/rlm_organizer.py` | 432 | 18699 | 2 | 0 |
 | `tests/test_ai_status.py` | 118 | 5346 | 1 | 0 |
 | `tests/test_benchmark_service.py` | 152 | 6518 | 3 | 0 |
+| `tests/test_cleaner_service.py` | 85 | 3024 | 1 | 0 |
+| `tests/test_deduplicator.py` | 110 | 4140 | 1 | 0 |
 | `tests/test_deploy_manager.py` | 189 | 7764 | 4 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
 | `tests/test_file_executor.py` | 156 | 6060 | 1 | 0 |
@@ -36,6 +40,7 @@
 | `tests/test_rlm_organizer.py` | 121 | 5209 | 2 | 0 |
 | `tests/test_settings_functionality.py` | 234 | 9382 | 1 | 0 |
 | `tests/test_sync_and_knowledge.py` | 87 | 3297 | 1 | 0 |
+| `tests/test_tree_preview_model.py` | 56 | 2344 | 1 | 0 |
 
 ---
 
@@ -110,11 +115,20 @@
   - Method `._analysis_complete(results)`
   - Method `._show_error(error)`
   - Method `._execute()`
+  - Method `._execute_confirmed(selected_changes)`
+  - Method `._open_duplicate_finder()`
+  - Method `._open_junk_cleaner()`
   - Method `._undo_moves()`
 
 ### `models/__init__.py`
 #### Classes
 - **`FileChange`**
+- **`DuplicateGroup`**
+  - Method `.reclaimable_bytes()`
+  - Method `.all_files()`
+- **`CleanupItem`**
+- **`CleanupReport`**
+  - Method `.__post_init__()`
 - **`AppSettings`**
   - Method `.__post_init__()`
 
@@ -129,6 +143,8 @@
 - `def get_ollama_manager()`
 - `def get_document_peeker()`
 - `def get_benchmark_service()`
+- `def get_deduplicator()`
+- `def get_cleaner_service()`
 
 ### `services/benchmark_service.py`
 > Automatic Performance Benchmark & Settings Auto-Tuner (PRINCIPLE-007: Speed & Lean Architecture).
@@ -141,6 +157,33 @@ measures latency, evaluates schema compliance and vision support, and calculates
 - **`BenchmarkService`**
   - *Benchmark runner that probes latency, vision, and calculates continuous optimal settings.*
   - Method `.run_benchmark(cls, provider, model, provider_name, progress_callback)`
+
+### `services/cleaner_service.py`
+> Orphan Folder & Junk Pruner Service (PRINCIPLE-003: Modularity, PRINCIPLE-007: Speed & Safety)
+Recursively identifies and safely removes empty directories, zero-byte junk files,
+and OS debris (Thumbs.db, .DS_Store, desktop.ini) with zero external dependencies.
+
+#### Classes
+- **`CleanerService`**
+  - *Safely cleans empty folders, zero-byte artifacts, and system junk.*
+  - Method `.is_os_debris(cls, filename)`
+  - Method `.scan(cls, folder, scan_empty_dirs, scan_zero_byte, scan_os_debris, progress_callback)`
+  - Method `.prune(cls, items, progress_callback)`
+
+### `services/deduplicator.py`
+> Smart Duplicate File Finder & Storage Reclaimer (PRINCIPLE-007: Speed & Lean Architecture)
+Performs fast O(N) two-stage deduplication (file size match + partial/full SHA-256 chunk hashing)
+with zero external dependencies.
+
+#### Classes
+- **`DeduplicationService`**
+  - *High-performance file deduplication engine.*
+  - Method `.format_bytes(size_bytes)`
+  - Method `.compute_header_hash(cls, file_path)`
+  - Method `.compute_full_hash(cls, file_path)`
+  - Method `.scan_duplicates(cls, folder, recursive, min_size_bytes, progress_callback)`
+  - Method `.isolate_duplicates(cls, duplicate_paths, base_folder, isolate_folder_name)`
+  - Method `.delete_duplicates(cls, duplicate_paths)`
 
 ### `services/document_peeker.py`
 > Document Content Peeker (PRINCIPLE-007: Performance, PRINCIPLE-009: Token Frugality)
@@ -351,6 +394,31 @@ Tests latency measurement, optimal batch calculation, vision detection, and came
   - Method `.test_vision_model_detection()`
   - Method `.test_camera_photo_anti_hallucination_guard()`
 
+### `tests/test_cleaner_service.py`
+> Unit tests for CleanerService (PRINCIPLE-003, PRINCIPLE-007, PRINCIPLE-011)
+
+#### Classes
+- **`TestCleanerService`**
+  - Method `.setUp()`
+  - Method `.tearDown()`
+  - Method `.test_detect_empty_folders()`
+  - Method `.test_detect_zero_byte_and_os_debris()`
+  - Method `.test_prune_removes_debris_and_empty_dirs()`
+
+### `tests/test_deduplicator.py`
+> Unit tests for DeduplicationService (PRINCIPLE-007, PRINCIPLE-011)
+
+#### Classes
+- **`TestDeduplicationService`**
+  - Method `.setUp()`
+  - Method `.tearDown()`
+  - Method `.test_format_bytes()`
+  - Method `.test_no_duplicates()`
+  - Method `.test_exact_duplicates_detected()`
+  - Method `.test_same_size_different_content_not_flagged()`
+  - Method `.test_isolate_duplicates()`
+  - Method `.test_delete_duplicates()`
+
 ### `tests/test_deploy_manager.py`
 > Unit tests for 1-Click AI Model Deployment (PRINCIPLE-003, PRINCIPLE-008, PRINCIPLE-011)
 Tests ModelDownloader, OllamaManager, and EmbeddedProvider with mock streaming.
@@ -497,3 +565,11 @@ Tests principle parsing, guideline content generation, and AST symbol extraction
   - Method `.test_parse_principles()`
   - Method `.test_generate_gemini_content()`
   - Method `.test_extract_python_symbols()`
+
+### `tests/test_tree_preview_model.py`
+> Unit tests for Tree Preview Data Grouping and Selection Logic (PRINCIPLE-011)
+
+#### Classes
+- **`TestTreePreviewLogic`**
+  - Method `.test_group_changes_by_destination_subfolder()`
+  - Method `.test_selective_execution_filtering()`

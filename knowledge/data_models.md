@@ -50,6 +50,40 @@ class FileMoveRecord:
     timestamp: float     # Epoch time of move
 ```
 
+### `DuplicateGroup` (Dataclass)
+Stores cluster of identical duplicate files:
+```python
+@dataclass
+class DuplicateGroup:
+    file_size: int
+    sha256: str
+    original: str
+    duplicates: List[str]
+
+    @property
+    def reclaimable_bytes(self) -> int:
+        return self.file_size * len(self.duplicates)
+```
+
+### `CleanupItem` & `CleanupReport` (Dataclass)
+Represents proposed cleanup candidates and execution summaries:
+```python
+@dataclass
+class CleanupItem:
+    path: str
+    item_type: str  # 'empty_dir', 'zero_byte_file', 'os_debris'
+    size_bytes: int = 0
+    reason: str = ""
+
+@dataclass
+class CleanupReport:
+    scanned_items: int = 0
+    empty_dirs_removed: List[str] = None
+    zero_byte_files_removed: List[str] = None
+    os_debris_removed: List[str] = None
+    reclaimed_bytes: int = 0
+```
+
 ---
 
 ## 2. Provider Models (`services/providers/base.py` & `registry.py`)

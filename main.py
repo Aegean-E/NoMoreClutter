@@ -19,8 +19,11 @@ from services import (
     get_provider_registry,
     get_model_downloader,
     get_ollama_manager,
+    get_deduplicator,
+    get_cleaner_service,
 )
 from models import FILE_TYPE_CATEGORIES, FileChange
+from ui import TreePreviewDialog, DuplicateFinderDialog, JunkCleanerDialog
 
 
 SETTINGS_FILE = "settings.json"
@@ -183,11 +186,17 @@ class NoMoreClutterApp(ctk.CTk):
         self.quick_btn = ctk.CTkButton(actions_frame, text="⚡ Quick Organize (No AI)", command=self._quick_organize, height=42, fg_color="#3B8ED0", font=ctk.CTkFont(size=13))
         self.quick_btn.pack(side="left", padx=4, pady=12)
         
-        self.execute_btn = ctk.CTkButton(actions_frame, text="▶ Execute Moves", command=self._execute, height=42, state="disabled", fg_color="green", font=ctk.CTkFont(size=13, weight="bold"))
+        self.execute_btn = ctk.CTkButton(actions_frame, text="🗂️ Preview & Execute", command=self._execute, height=42, state="disabled", fg_color="green", font=ctk.CTkFont(size=13, weight="bold"))
         self.execute_btn.pack(side="left", padx=4, pady=12)
         
         self.undo_btn = ctk.CTkButton(actions_frame, text="↩ Undo Moves", command=self._undo_moves, height=42, state="disabled", fg_color="#6C757D", font=ctk.CTkFont(size=13))
         self.undo_btn.pack(side="left", padx=4, pady=12)
+
+        self.dup_btn = ctk.CTkButton(actions_frame, text="🔍 Duplicates", command=self._open_duplicate_finder, height=42, fg_color="#495057", hover_color="#343A40", font=ctk.CTkFont(size=12))
+        self.dup_btn.pack(side="left", padx=4, pady=12)
+
+        self.clean_btn = ctk.CTkButton(actions_frame, text="🧹 Clean Junk", command=self._open_junk_cleaner, height=42, fg_color="#495057", hover_color="#343A40", font=ctk.CTkFont(size=12))
+        self.clean_btn.pack(side="left", padx=4, pady=12)
 
         self.ai_plug_indicator = ctk.CTkLabel(
             actions_frame,
@@ -1652,23 +1661,55 @@ class NoMoreClutterApp(ctk.CTk):
         if not self.analysis_results:
             return
 
+        output_dir = self.output_entry.get().strip() or self.source_entry.get().strip()
+
         if not self.auto_execute_var.get():
-            if not messagebox.askyesno("Confirm", f"Execute {len(self.analysis_results)} file operations?"):
-                return
+            # Open interactive Tree Preview Dialog with per-file checkboxes
+            TreePreviewDialog(
+                self,
+                changes=self.analysis_results,
+                output_base_folder=output_dir,
+                on_confirm=self._execute_confirmed,
+            )
+        else:
+            self._execute_confirmed(self.analysis_results)
+
+    def _execute_confirmed(self, selected_changes: list):
+        if not selected_changes:
+            return
+
+        total_proposed = len(self.analysis_results)
+        skipped_count = total_proposed - len(selected_changes)
 
         self.execute_btn.configure(state="disabled")
 
         FileExecutor = get_FileExecutor()
-        success, errors = FileExecutor.execute(self.analysis_results)
+        success, errors = FileExecutor.execute(selected_changes)
 
-        self.status_label.configure(text=f"✅ Done! {success} moved, {errors} errors", text_color="#51CF66")
+        status_text = f"✅ Done! {success} moved"
+        if skipped_count > 0:
+            status_text += f", {skipped_count} skipped"
+        if errors:
+            status_text += f", {errors} errors"
+        self.status_label.configure(text=status_text, text_color="#51CF66")
+
         self.output_text.insert("end", f"\n🎉 Successfully moved {success} files (collision-safe)!\n")
+        if skipped_count > 0:
+            self.output_text.insert("end", f"ℹ️ Skipped {skipped_count} file(s) as unchecked in Tree Preview.\n")
         if errors:
             self.output_text.insert("end", f"⚠️ Errors encountered: {errors}\n")
 
         self.undo_btn.configure(state="normal")
         self.analysis_results = []
         self._update_folder_info()
+
+    def _open_duplicate_finder(self):
+        folder = self.source_entry.get().strip() or self.output_entry.get().strip() or os.getcwd()
+        DuplicateFinderDialog(self, initial_folder=folder)
+
+    def _open_junk_cleaner(self):
+        folder = self.source_entry.get().strip() or self.output_entry.get().strip() or os.getcwd()
+        JunkCleanerDialog(self, initial_folder=folder)
 
     def _undo_moves(self):
         """Revert last batch of moves safely (PRINCIPLE-007)."""

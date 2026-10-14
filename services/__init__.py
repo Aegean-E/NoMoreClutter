@@ -36,4 +36,12 @@ def get_benchmark_service():
     from .benchmark_service import BenchmarkService, BenchmarkResult
     return BenchmarkService, BenchmarkResult
 
+def get_deduplicator():
+    from .deduplicator import DeduplicationService
+    return DeduplicationService
+
+def get_cleaner_service():
+    from .cleaner_service import CleanerService
+    return CleanerService
+
 

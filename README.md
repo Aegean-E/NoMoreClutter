@@ -29,6 +29,21 @@ An intelligent AI-powered desktop application that automatically organizes your 
 - **Token Frugality (~70% Savings)**: Ultra-dense JSON payloads eliminate repetitive path dumps and reduce prompt token overhead.
 - **Single-Pass Vision Analysis & Text Fallback**: Categorizes and renames images in a single call when using vision-capable models (e.g. Groq Llama-Vision, Google Gemini). Automatically checks provider capabilities (`has_vision`) and gracefully routes images into text RLM and chronological date albums (`Photos/YYYY/`) on text-only models (like in-process Embedded GGUF), completely eliminating terminal errors and folder dumping.
 
+### 🗂️ Interactive Tree Preview & Per-File Checkboxes
+- **Hierarchical Visualizer**: Replaces blind all-or-nothing moves with an expandable, interactive Tree Preview window (`TreePreviewDialog`).
+- **Selective Move Execution**: Files are grouped by destination subfolders (`Photos/2018`, `Invoices`). Toggle individual files or entire folders with `[☑ Select All]` to skip files you don't want moved.
+- **Live Search & Direct File Inspection**: Instant search bar auto-expands and filters matching files. Double-click any row or click `👁️ Open` to inspect the original file before moving.
+
+### 🔍 Smart Duplicate File Finder & Storage Reclaimer
+- **Zero-Dependency $O(N)$ Two-Stage Hashing**: Fast file size indexing ($O(1)$ disk reads) followed by 8KB header checks and 64KB chunked full SHA-256 for identical byte-for-byte matching.
+- **Storage Metrics & Cluster Cards**: Displays total reclaimable space (e.g., `💾 Reclaimable: 1.45 GB`) and visual clusters marking the canonical 🟢 `ORIGINAL` alongside 🔴 `DUPLICATES`.
+- **1-Click Safety Actions**: Move duplicates safely into `_Duplicates/` with collision-safe names (`file (1).ext`) or permanently trash selected duplicates.
+
+### 🧹 Orphan Folder & Junk Pruner (One-Click Deep Clean)
+- **Bottom-Up Leaf Pruning**: Recursively prunes abandoned empty directory branches from deepest leaves upward using safe `os.rmdir()` (which never deletes non-empty folders).
+- **Zero-Byte File Clean**: Eliminates 0-byte leftover files and incomplete downloads.
+- **OS Debris Removal**: Purges annoying Windows and macOS artifacts (`Thumbs.db`, `.DS_Store`, `desktop.ini`, `ehthumbs.db`, `.Spotlight-V100`).
+
 ### 🛡️ File Safety & ↩ Persistent Multi-Session Undo
 - **Collision Avoidance**: Never overwrites existing files; intelligently renames colliding filenames to `name (1).ext`.
 - **Persistent Multi-Session Undo**: Operation history is atomically committed to `history.json`. Revert past reorganization batches across app restarts and reboots with a single click of the `↩ Undo Moves` button.

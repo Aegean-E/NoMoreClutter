@@ -11,6 +11,47 @@ class FileChange:
 
 
 @dataclass
+class DuplicateGroup:
+    file_size: int
+    sha256: str
+    original: str
+    duplicates: List[str]
+
+    @property
+    def reclaimable_bytes(self) -> int:
+        return self.file_size * len(self.duplicates)
+
+    @property
+    def all_files(self) -> List[str]:
+        return [self.original] + self.duplicates
+
+
+@dataclass
+class CleanupItem:
+    path: str
+    item_type: str  # 'empty_dir', 'zero_byte_file', 'os_debris'
+    size_bytes: int = 0
+    reason: str = ""
+
+
+@dataclass
+class CleanupReport:
+    scanned_items: int = 0
+    empty_dirs_removed: List[str] = None
+    zero_byte_files_removed: List[str] = None
+    os_debris_removed: List[str] = None
+    reclaimed_bytes: int = 0
+
+    def __post_init__(self):
+        if self.empty_dirs_removed is None:
+            self.empty_dirs_removed = []
+        if self.zero_byte_files_removed is None:
+            self.zero_byte_files_removed = []
+        if self.os_debris_removed is None:
+            self.os_debris_removed = []
+
+
+@dataclass
 class AppSettings:
     provider: str = "groq"
     api_key: str = ""

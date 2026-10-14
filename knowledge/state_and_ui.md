@@ -82,3 +82,35 @@ The application displays an interactive real-time status pill in the top header 
   - Clicking the pill when plugged shows connection details and offers a one-click connection re-test.
   - Clicking the pill when unplugged opens a guided dialog directing the user to 1-Click AI Deploy or Settings.
   - Clicking "🔍 AI Organize" when unplugged prompts the user to deploy AI or run "⚡ Quick Organize (No AI)" instead.
+
+---
+
+## 5. Interactive Tree Preview & Selective Execution (`ui/tree_preview.py`)
+
+- **Hierarchical Visualizer**: Replaces blind all-or-nothing move execution with an interactive expandable tree window (`TreePreviewDialog`).
+- **Destination Folder Grouping**: Files are partitioned by relative destination directories (`Invoices`, `Photos/2018`).
+- **Selective Per-File Checkboxes**:
+  - Folder-level `[☑ Select All]` and individual file-level checkboxes.
+  - Skips unchecked files from physical moves, leaving them safely in place.
+- **Search & Live Filtering**: Instant search bar dynamically hides/shows matching file rows and auto-expands parent cards.
+- **Direct File Inspection**: Double-clicking any file row or clicking `👁️ Open` opens the original file via the system viewer.
+
+---
+
+## 6. Smart Duplicate File Finder Dialog (`ui/duplicate_finder.py`)
+
+- **Interactive Deduplication Center**: Launched via the `🔍 Duplicates` button in the actions bar.
+- **Storage Metrics**: Displays live reclaimed space badges (`💾 Reclaimable: 1.45 GB`) and redundant file counts.
+- **Cluster Breakdown**: Displays canonical original files (marked 🟢 `ORIGINAL`) alongside duplicates (marked 🔴 `DUPLICATE` with pre-checked boxes).
+- **Execution Safeguards**:
+  - **`📦 Isolate Duplicates`**: Moves duplicates into `_Duplicates/` preserving originals.
+  - **`🗑️ Delete Selected`**: Permanently removes selected duplicates after confirmation.
+
+---
+
+## 7. Orphan Folder & Junk Pruner Dialog (`ui/junk_cleaner.py`)
+
+- **Deep Cleaning Center**: Launched via the `🧹 Clean Junk` button in the actions bar.
+- **Triple-Scan Matrix**: Configurable checkboxes for empty subdirectories, zero-byte orphan files, and OS debris (`Thumbs.db`, `.DS_Store`).
+- **Safe Leaf Pruning**: Utilizes bottom-up traversal with `os.rmdir()` to prune empty directories without risking non-empty folders.
+

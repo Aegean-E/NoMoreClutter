@@ -182,5 +182,38 @@ Automated hardware performance benchmarking and continuous settings auto-tuner (
 - `run_benchmark(provider, model: str, provider_name: str, progress_callback=None) -> BenchmarkResult`:
   Runs the benchmark suite, measures latency and compliance, probes vision capability, and returns a structured `BenchmarkResult` with continuous slider recommendations.
 
+---
+
+## 10. `DeduplicationService` (`services/deduplicator.py`)
+
+Zero-dependency, high-speed $O(N)$ two-stage duplicate file finder and storage reclaimer (PRINCIPLE-007).
+
+### Key Concepts
+- **Two-Stage Hashing Algorithm**:
+  - **Stage 1 (Size Indexing)**: Groups files by exact file size. Files with unique sizes are skipped without reading any bytes ($O(1)$).
+  - **Stage 2 (Chunked Hashing)**: For files sharing exact byte counts, reads an initial 8KB header hash to filter out false positives. Only matching headers are subjected to full streaming SHA-256 (64KB chunks).
+- **Cluster Hierarchy**:
+  - Automatically identifies the canonical original (oldest modification time `mtime` or shortest path) and marks the rest as redundant duplicates.
+- **Safety Actions**:
+  - `isolate_duplicates(duplicates, base_folder)`: Moves duplicates safely into `_Duplicates/` with collision-safe names (`file (1).ext`) without data loss.
+  - `delete_duplicates(duplicates)`: Permanently deletes redundant copies while leaving originals intact.
+
+---
+
+## 11. `CleanerService` (`services/cleaner_service.py`)
+
+Safe, recursive orphan folder pruner and operating system debris cleaner (PRINCIPLE-003, PRINCIPLE-007).
+
+### Key Concepts
+- **Bottom-Up Leaf Traversal**:
+  - Identifies empty directory branches from the deepest leaf folders upward (`os.walk(..., topdown=False)`).
+  - Uses `os.rmdir()` which strictly refuses to delete directories containing files, preventing accidental data loss.
+- **Zero-Byte File Pruning**:
+  - Identifies 0-byte abandoned temporary files (`.tmp`, incomplete downloads).
+- **Operating System Debris**:
+  - Detects Windows and macOS metadata artifacts (`Thumbs.db`, `.DS_Store`, `desktop.ini`, `ehthumbs.db`, `.Spotlight-V100`).
+- **Structured Report**:
+  - Returns a `CleanupReport` detailing empty folders pruned, zero-byte files removed, OS debris removed, and total bytes reclaimed.
+
 
 

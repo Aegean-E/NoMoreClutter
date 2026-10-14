@@ -213,6 +213,34 @@ Implement a multi-path 1-Click Quick Deploy architecture:
 ### Consequences
 - **Positive**: Zero terminal error spam, zero dropped images, seamless date-based grouping for camera rolls, and clear UI feedback.
 
+---
+
+## ADR-012: Interactive Tree Preview, Two-Stage Deduplication & Orphan Pruner
+
+### Context
+1. **All-or-Nothing Move Execution**: In earlier versions, users only had an all-or-nothing choice upon AI analysis completion (move all 50 files or cancel). Users lacked visual confidence, couldn't inspect individual items, and couldn't selectively exclude files.
+2. **Duplicate File Waste**: Messy download and photo folders accumulate identical duplicate files under varying names (`invoice (1).pdf`, `photo_copy.jpg`), consuming gigabytes of disk space.
+3. **Orphan Folder & Debris Clutter**: Moving files leaves behind empty directory shells and OS metadata junk (`Thumbs.db`, `.DS_Store`).
+
+### Decision
+1. **Interactive Tree Preview Dialog (`ui/tree_preview.py`)**:
+   - Hierarchically groups proposed moves by target destination subfolder (`Photos/2018`, `Invoices`).
+   - Collapsible folder cards with per-folder `[☑ Select All]` and per-file checkboxes.
+   - Real-time search/filter, double-click to open/reveal original file.
+   - Selective execution: unchecking a file cleanly excludes it from disk operations while executing the remainder.
+2. **Fast $O(N)$ Two-Stage Deduplication (`services/deduplicator.py` & `ui/duplicate_finder.py`)**:
+   - Zero external dependencies (`os`, `hashlib`, `shutil`).
+   - Stage 1: Fast file size grouping (files with unique sizes are skipped with 0 disk reads).
+   - Stage 2: 8KB header hash filter followed by 64KB chunked full SHA-256 for collision sets.
+   - One-click actions: Isolate duplicates safely into `_Duplicates/` or permanently delete them.
+3. **Bottom-Up Orphan Pruning & Junk Cleaner (`services/cleaner_service.py` & `ui/junk_cleaner.py`)**:
+   - Detects and removes zero-byte files, OS debris (`Thumbs.db`, `.DS_Store`, `desktop.ini`).
+   - Bottom-up directory traversal leaves-first using `os.rmdir()` (which safely refuses to delete non-empty directories).
+
+### Consequences
+- **Positive**: Complete visual confidence before file moves; instant recovery of duplicate disk space; clean directory trees.
+
+
 
 
 
