@@ -107,12 +107,24 @@
 
 ---
 
+### PRINCIPLE-009: Token Frugality & Lean Code Architecture (Context Budgeting)
+- **Concept**: Code must be concise, expressive, and devoid of unnecessary bloat. All interactions with LLMs must be strictly budgeted for tokens—leveraging RLM decomposition, compact representations, and hierarchical batching so requests never exhaust context windows, exceed rate limits (TPM), or waste user tokens.
+- **Rules**:
+  1. **Concise, High-Leverage Code**: Avoid gratuitous verbosity, bloated helper chains, or repetitive boilerplate. Write clean, modular, and concise implementations.
+  2. **Strict Token Budgeting**: Prompts must never blindly dump raw, unbounded file lists into a single context. Enforce strict batch size caps and character limits.
+  3. **Compact Serialization**: Use dense, compact payload formats (e.g., relative filenames instead of repeated multi-line absolute paths, terse JSON schemas) to cut prompt token consumption by 50–70%.
+  4. **RLM Hierarchical Workarounds**: For large directories, partition files into small conceptual clusters before prompting. Resolve categorization recursively at the cluster level rather than prompting file-by-file when unnecessary.
+  5. **Rate-Limit & TPM Guardrails**: Implement token-aware pacing and exponential backoff to seamlessly operate within free-tier limits (e.g., Groq's TPM caps).
+
+---
+
 ## 🛠️ AI Task Checklists
 
 ### 🛫 Pre-Flight Checklist (Run at Cold Start / Before Coding)
-- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-008`) and repo state?
+- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-009`) and repo state?
 - [ ] **Necessity Assessment**: Why is this change needed, and what specific problem does it address?
 - [ ] **Benefit Projection**: How will this directly enhance user value, modularity, or RLM architecture?
+- [ ] **Code Conciseness & Token Budget Plan**: Is the code concise, and are LLM prompts token-budgeted and compact (**PRINCIPLE-009**)?
 - [ ] **Performance & Resource Plan**: Is the solution designed for optimal speed, minimal latency, and lean dependencies (**PRINCIPLE-007**)?
 - [ ] **Friction & Accessibility Check**: Does the solution maintain "one-click start" without forcing external app installs (**PRINCIPLE-008**)?
 - [ ] **Risk / Harm Analysis**: What could break, regress, or introduce latency/fragility, and how will I prevent it?
@@ -121,6 +133,7 @@
 ### 🛬 Post-Flight Checklist (Run Before Completion)
 - [ ] Have I adhered to **RLM compatibility** (recursive decomposition where applicable)?
 - [ ] Is the architecture **modular** and decoupled?
+- [ ] Is the code **concise, lean, and token-frugal** without context waste (**PRINCIPLE-009**)?
 - [ ] Are code paths **optimized for speed, responsiveness, and lean resource consumption** (**PRINCIPLE-007**)?
 - [ ] Does the app maintain **one-click zero-install accessibility** while preserving local servers (**PRINCIPLE-008**)?
 - [ ] Have all changes been verified for functionality and correctness?

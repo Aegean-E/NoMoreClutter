@@ -22,3 +22,5 @@ This rule is automatically loaded from the workspace customizations root (`.agen
    - Every code change, architectural modification, and dependency choice must be optimized for execution speed, low latency, optimal algorithmic complexity, and lean resource utilization (CPU, memory, disk I/O, and LLM token budget).
 8. **PRINCIPLE-008: Zero-Friction Onboarding & Hybrid AI Access (One-Click Start)**:
    - The application must be instantly usable out of the box ("one-click and start") without forcing users to download, install, or configure heavy external desktop applications (like LM Studio or Ollama). At the same time, the system must retain first-class support for local self-hosted servers (Ollama, LM Studio) for users who demand total local control.
+9. **PRINCIPLE-009: Token Frugality & Lean Code Architecture (Context Budgeting)**:
+   - Code must be concise, expressive, and devoid of unnecessary bloat. All interactions with LLMs must be strictly budgeted for tokens—leveraging RLM decomposition, compact representations, and hierarchical batching so requests never exhaust context windows, exceed rate limits (TPM), or waste user tokens.

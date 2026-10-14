@@ -16,6 +16,7 @@ This document defines the architectural guidelines and design principles for **N
 | **[PRINCIPLE-006](#principle-006-pre-flight-impact--quality-checklist-cold-start-gate)** | Impact & Quality Checklist | Pre-flight cold-start checklist evaluating why, benefits, risks, and quality preservation. |
 | **[PRINCIPLE-007](#principle-007-performance--resource-optimization-speed--lean-architecture)** | Speed & Lean Optimization | Maximum execution speed, non-blocking async operations, and lean dependency footprint. |
 | **[PRINCIPLE-008](#principle-008-zero-friction-onboarding--hybrid-ai-access-one-click-start)** | One-Click Zero-Install & Hybrid Access | Zero mandatory external apps; one-click cloud AI with full local server preservation. |
+| **[PRINCIPLE-009](#principle-009-token-frugality--lean-code-architecture-context-budgeting)** | Token Frugality & Lean Code | Concise code, strict token budgets, compact payloads, and RLM cluster workarounds. |
 
 ---
 
@@ -85,12 +86,21 @@ This document defines the architectural guidelines and design principles for **N
   - **Preserve Local Freedom**: Retain full first-class support for Ollama, LM Studio, and custom local servers.
   - **One-Click Provider Switching**: Provide an intuitive UI dropdown with prepopulated settings for both zero-install cloud and local server choices.
 
+### PRINCIPLE-009: Token Frugality & Lean Code Architecture (Context Budgeting)
+- **Problem**: Careless token usage exhausts context windows, triggers rate-limit (TPM) failures on free tiers, increases latency, and bloats costs. Overly verbose code impedes maintainability.
+- **Guideline**:
+  - **Lean, High-Leverage Code**: Keep code concise, elegant, and modular. Eliminate boilerplate and unnecessary verbosity.
+  - **Strict Token Budgeting**: Never dump raw, unbounded file lists into a single prompt. Cap payload batches and enforce maximum character/token thresholds.
+  - **Dense Payload Serialization**: Transmit concise relative paths and compact schema fields rather than repetitive full-path strings.
+  - **RLM Hierarchical Workarounds**: Partition files into logical sub-clusters before prompting. Categorize recursively at cluster levels before resolving fine-grained renames.
+  - **TPM & Rate Limit Safeguards**: Implement rate-limit aware batch pacing and backoff strategies.
+
 ---
 
 ## 📝 How to Add New Principles
 
 To add a new principle:
-1. Assign the next sequential ID (`PRINCIPLE-009`, etc.).
+1. Assign the next sequential ID (`PRINCIPLE-010`, etc.).
 2. Define the **Problem/Concept** and concrete **Rules/Guidelines**.
 3. Update `GUIDELINES.md` and `AGENTS.md`.
 4. Run `py scripts/sync_principles.py` to auto-propagate across all AI guidelines.
