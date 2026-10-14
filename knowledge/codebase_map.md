@@ -9,14 +9,14 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 1506 | 73635 | 1 | 0 |
+| `main.py` | 1668 | 82246 | 1 | 0 |
 | `models/__init__.py` | 44 | 1399 | 2 | 0 |
 | `services/__init__.py` | 39 | 1266 | 0 | 9 |
-| `services/benchmark_service.py` | 181 | 7724 | 2 | 0 |
+| `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
 | `services/document_peeker.py` | 151 | 5969 | 1 | 0 |
 | `services/file_executor.py` | 232 | 8492 | 1 | 0 |
 | `services/file_scanner.py` | 40 | 1408 | 1 | 0 |
-| `services/llm_service.py` | 209 | 8628 | 2 | 0 |
+| `services/llm_service.py` | 211 | 8710 | 2 | 0 |
 | `services/model_downloader.py` | 181 | 6535 | 2 | 0 |
 | `services/ollama_manager.py` | 158 | 5646 | 2 | 0 |
 | `services/providers/__init__.py` | 44 | 1198 | 0 | 1 |
@@ -24,9 +24,9 @@
 | `services/providers/embedded.py` | 94 | 4160 | 1 | 0 |
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
 | `services/providers/registry.py` | 130 | 4668 | 1 | 3 |
-| `services/rlm_organizer.py` | 407 | 16980 | 2 | 0 |
+| `services/rlm_organizer.py` | 412 | 17184 | 2 | 0 |
 | `tests/test_ai_status.py` | 118 | 5346 | 1 | 0 |
-| `tests/test_benchmark_service.py` | 125 | 5140 | 3 | 0 |
+| `tests/test_benchmark_service.py` | 152 | 6518 | 3 | 0 |
 | `tests/test_deploy_manager.py` | 189 | 7764 | 4 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
 | `tests/test_file_executor.py` | 156 | 6060 | 1 | 0 |
@@ -34,7 +34,7 @@
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
 | `tests/test_providers.py` | 54 | 1795 | 1 | 0 |
 | `tests/test_rlm_organizer.py` | 78 | 3409 | 2 | 0 |
-| `tests/test_settings_functionality.py` | 232 | 9316 | 1 | 0 |
+| `tests/test_settings_functionality.py` | 234 | 9382 | 1 | 0 |
 | `tests/test_sync_and_knowledge.py` | 87 | 3297 | 1 | 0 |
 
 ---
@@ -49,6 +49,10 @@
   - Method `._save_settings(silent)`
   - Method `._build_ui()`
   - Method `._build_settings_window()`
+  - Method `._on_batch_size_slider_changed(value)`
+  - Method `._on_limit_slider_changed(value)`
+  - Method `._on_peek_length_slider_changed(value)`
+  - Method `._on_pacing_slider_changed(value)`
   - Method `._on_provider_changed(choice)`
   - Method `._update_provider_ui(provider_name, force_defaults)`
   - Method `._on_vision_toggled()`
@@ -133,9 +137,9 @@ measures latency, evaluates schema compliance and vision support, and calculates
 
 #### Classes
 - **`BenchmarkResult`**
-  - *Structured report card of hardware and model performance.*
+  - *Structured report card of hardware and model performance with continuous slider tuning.*
 - **`BenchmarkService`**
-  - *Benchmark runner that probes latency, vision, and calculates optimal settings.*
+  - *Benchmark runner that probes latency, vision, and calculates continuous optimal settings.*
   - Method `.run_benchmark(cls, provider, model, provider_name, progress_callback)`
 
 ### `services/document_peeker.py`
@@ -190,7 +194,7 @@ Adapts the pluggable AI provider and RLM Organizer for backward compatibility an
   - Method `.__init__(base_url, api_key, provider_id)`
   - Method `.test_connection(model)`
   - Method `.check_ai_status(cls, provider_name, base_url, api_key, model)`
-  - Method `.analyze_files(files, model, create_new_folders, existing_folders, analyze_images, numbered_rename, ai_rename, content_peeking, target_folder, output_folder, progress_callback)`
+  - Method `.analyze_files(files, model, create_new_folders, existing_folders, analyze_images, numbered_rename, ai_rename, content_peeking, peek_max_chars, target_folder, output_folder, progress_callback)`
 
 ### `services/model_downloader.py`
 > Model Downloader Utility (PRINCIPLE-003, PRINCIPLE-007, PRINCIPLE-008)
@@ -294,9 +298,9 @@ and PRINCIPLE-009 (Token Frugality & Context Budgeting).
 - **`RLMOrganizer`**
   - *Recursive Language Model File Organization Engine.*
   - Method `.__init__(provider)`
-  - Method `.organize(files, model, output_folder, existing_folders, create_new_folders, analyze_images, ai_rename, numbered_rename, content_peeking, cluster_batch_size, progress_callback)`
-  - Method `._process_regular_rlm(files, model, output_folder, existing_folders, create_new_folders, ai_rename, content_peeking, cluster_batch_size, progress_callback)`
-  - Method `._analyze_cluster(batch, model, output_folder, existing_folders, create_new_folders, ai_rename, content_peeking)`
+  - Method `.organize(files, model, output_folder, existing_folders, create_new_folders, analyze_images, ai_rename, numbered_rename, content_peeking, peek_max_chars, cluster_batch_size, progress_callback)`
+  - Method `._process_regular_rlm(files, model, output_folder, existing_folders, create_new_folders, ai_rename, content_peeking, peek_max_chars, cluster_batch_size, progress_callback)`
+  - Method `._analyze_cluster(batch, model, output_folder, existing_folders, create_new_folders, ai_rename, content_peeking, peek_max_chars)`
   - Method `._process_images_hierarchical(files, model, output_folder, existing_folders, create_new_folders, ai_rename, progress_callback)`
   - Method `.get_heuristic_category(file_path)`
   - Method `._heuristic_fallback_batch(files, output_folder, existing_folders)`
@@ -340,6 +344,7 @@ Tests latency measurement, optimal batch calculation, vision detection, and came
   - Method `.analyze_image(image_path, prompt, model, max_tokens)`
 - **`TestBenchmarkService`**
   - Method `.test_fast_cloud_benchmark()`
+  - Method `.test_continuous_slider_tuning_fast_vs_slow()`
   - Method `.test_vision_model_detection()`
   - Method `.test_camera_photo_anti_hallucination_guard()`
 

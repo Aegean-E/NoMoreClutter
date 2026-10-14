@@ -49,7 +49,7 @@ class MockAnimalsHallucinatingProvider(BaseAIProvider):
 
 class TestBenchmarkService(unittest.TestCase):
     def test_fast_cloud_benchmark(self):
-        """Fast latency (<800ms) should recommend batch size 15 and limit 100."""
+        """Fast latency (<800ms) should calibrate high continuous slider values."""
         provider = MockBenchProvider(delay_sec=0.01)
         progress_msgs = []
 
@@ -65,10 +65,37 @@ class TestBenchmarkService(unittest.TestCase):
 
         self.assertIsInstance(result, BenchmarkResult)
         self.assertTrue(result.is_json_compliant)
-        self.assertEqual(result.recommended_batch_size, 15)
-        self.assertEqual(result.recommended_limit, 100)
+        self.assertGreaterEqual(result.recommended_batch_size, 15)
+        self.assertGreaterEqual(result.recommended_limit, 50)
+        self.assertGreaterEqual(result.recommended_peek_length, 180)
         self.assertIn("Ultra-Fast", result.hardware_tier)
         self.assertGreater(len(progress_msgs), 2)
+
+    def test_continuous_slider_tuning_fast_vs_slow(self):
+        """Continuous slider auto-tuning must yield scaled values based on latency."""
+        # 1. Fast Cloud Provider
+        fast_provider = MockBenchProvider(delay_sec=0.01)
+        fast_res = BenchmarkService.run_benchmark(
+            provider=fast_provider,
+            model="fast-model",
+            provider_name="Groq",
+        )
+
+        # 2. Simulate Slow CPU Provider (mocking 3.5s latency via mock)
+        with unittest.mock.patch("time.perf_counter", side_effect=[0.0, 3.5]):
+            slow_provider = MockBenchProvider(delay_sec=0.0)
+            slow_res = BenchmarkService.run_benchmark(
+                provider=slow_provider,
+                model="slow-gguf",
+                provider_name="Embedded (100% Offline GGUF)",
+            )
+
+        # Fast model gets higher batch size, higher limit, larger peek snippet
+        self.assertGreater(fast_res.recommended_batch_size, slow_res.recommended_batch_size)
+        self.assertGreater(fast_res.recommended_limit, slow_res.recommended_limit)
+        self.assertGreater(fast_res.recommended_peek_length, slow_res.recommended_peek_length)
+        # Slow model gets CPU cooldown pacing delay
+        self.assertGreaterEqual(slow_res.recommended_pacing_delay, 0.2)
 
     def test_vision_model_detection(self):
         """Models with vision in their name should be flagged as vision-capable."""

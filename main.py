@@ -66,6 +66,11 @@ class NoMoreClutterApp(ctk.CTk):
             self.settings = {}
     
     def _save_settings(self, silent: bool = False):
+        batch_val = str(int(round(float(self.batch_size_slider.get())))) if hasattr(self, "batch_size_slider") else self.batch_size_entry.get().strip()
+        limit_val = str(int(round(float(self.limit_slider.get())))) if hasattr(self, "limit_slider") else self.limit_entry.get().strip()
+        peek_val = int(round(float(self.peek_length_slider.get()))) if hasattr(self, "peek_length_slider") else int(self.settings.get("peek_length", 180) or 180)
+        pacing_val = round(float(self.pacing_slider.get()), 2) if hasattr(self, "pacing_slider") else float(self.settings.get("pacing_delay", 0.2) or 0.2)
+
         self.settings = {
             "provider_name": self.provider_var.get(),
             "api_key": self.api_key_entry.get().strip(),
@@ -77,8 +82,10 @@ class NoMoreClutterApp(ctk.CTk):
             "ai_rename": self.ai_rename_var.get(),
             "content_peeking": self.content_peeking_var.get(),
             "auto_execute": self.auto_execute_var.get(),
-            "limit": self.limit_entry.get().strip(),
-            "batch_size": self.batch_size_entry.get().strip(),
+            "limit": limit_val,
+            "batch_size": batch_val,
+            "peek_length": peek_val,
+            "pacing_delay": pacing_val,
             "included_categories": {cat: var.get() for cat, var in self.type_vars.items()} if hasattr(self, "type_vars") else {},
         }
         with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
@@ -306,21 +313,109 @@ class NoMoreClutterApp(ctk.CTk):
         self.content_peeking_var = ctk.BooleanVar(value=self.settings.get("content_peeking", True))
         ctk.CTkCheckBox(scroll, text="Peek inside documents (PDF, DOCX, TXT) for intelligent content-based categorization", variable=self.content_peeking_var).pack(padx=10, pady=4, anchor="w")
         
-        # Section 3: Performance & Limits
-        ctk.CTkLabel(scroll, text="⚡ Performance & Limits", font=ctk.CTkFont(weight="bold", size=14)).pack(padx=10, pady=(20, 5), anchor="w")
+        # Section 3: Performance, Context & Continuous Sliders
+        ctk.CTkLabel(scroll, text="⚡ Performance, Context & Continuous Sliders", font=ctk.CTkFont(weight="bold", size=14)).pack(padx=10, pady=(20, 5), anchor="w")
+        ctk.CTkLabel(scroll, text="Fine-tune performance sliders manually or click 'Run Auto-Benchmark' below to calibrate automatically:", font=ctk.CTkFont(size=12), text_color="gray").pack(padx=10, pady=(0, 6), anchor="w")
         
         self.auto_execute_var = ctk.BooleanVar(value=self.settings.get("auto_execute", False))
-        ctk.CTkCheckBox(scroll, text="Auto-execute moves immediately without confirmation dialog", variable=self.auto_execute_var).pack(padx=10, pady=4, anchor="w")
-        
-        ctk.CTkLabel(scroll, text="Max files to process (0 = unlimited):").pack(padx=10, pady=(8, 0), anchor="w")
-        self.limit_entry = ctk.CTkEntry(scroll, width=120)
-        self.limit_entry.insert(0, self.settings.get("limit", "50"))
-        self.limit_entry.pack(padx=10, pady=4, anchor="w")
-        
-        ctk.CTkLabel(scroll, text="RLM cluster batch size:").pack(padx=10, pady=(8, 0), anchor="w")
-        self.batch_size_entry = ctk.CTkEntry(scroll, width=120)
-        self.batch_size_entry.insert(0, self.settings.get("batch_size", "15"))
-        self.batch_size_entry.pack(padx=10, pady=4, anchor="w")
+        ctk.CTkCheckBox(scroll, text="Auto-execute moves immediately without confirmation dialog", variable=self.auto_execute_var).pack(padx=10, pady=(0, 10), anchor="w")
+
+        # Synchronized companion entry boxes for API compatibility
+        self.batch_size_entry = ctk.CTkEntry(scroll)
+        self.limit_entry = ctk.CTkEntry(scroll)
+
+        # 1. RLM Cluster Batch Size Slider
+        initial_batch = int(self.settings.get("batch_size", "15") or 15)
+        initial_batch = max(1, min(30, initial_batch))
+
+        batch_head = ctk.CTkFrame(scroll, fg_color="transparent")
+        batch_head.pack(fill="x", padx=10, pady=(6, 2))
+        ctk.CTkLabel(batch_head, text="📦 RLM Cluster Batch Size:", font=ctk.CTkFont(weight="bold")).pack(side="left")
+        self.batch_size_label = ctk.CTkLabel(batch_head, text=f"{initial_batch} files/cluster", font=ctk.CTkFont(weight="bold"), text_color="#74C0FC")
+        self.batch_size_label.pack(side="right")
+
+        self.batch_size_slider = ctk.CTkSlider(
+            scroll,
+            from_=1,
+            to=30,
+            number_of_steps=29,
+            command=self._on_batch_size_slider_changed,
+            height=18
+        )
+        self.batch_size_slider.set(initial_batch)
+        self.batch_size_slider.pack(fill="x", padx=10, pady=(0, 2))
+        ctk.CTkLabel(scroll, text="Number of files grouped per AI prompt. Higher is faster; lower saves GPU/CPU RAM.", font=ctk.CTkFont(size=11), text_color="gray").pack(padx=10, pady=(0, 8), anchor="w")
+
+        # 2. Max Files Limit Slider
+        initial_limit = int(self.settings.get("limit", "50") or 50)
+        initial_limit = max(0, min(250, initial_limit))
+
+        limit_head = ctk.CTkFrame(scroll, fg_color="transparent")
+        limit_head.pack(fill="x", padx=10, pady=(6, 2))
+        ctk.CTkLabel(limit_head, text="📊 Max Files to Process:", font=ctk.CTkFont(weight="bold")).pack(side="left")
+        limit_text = "0 (Unlimited)" if initial_limit == 0 else f"{initial_limit} files"
+        self.limit_label = ctk.CTkLabel(limit_head, text=limit_text, font=ctk.CTkFont(weight="bold"), text_color="#74C0FC")
+        self.limit_label.pack(side="right")
+
+        self.limit_slider = ctk.CTkSlider(
+            scroll,
+            from_=0,
+            to=250,
+            number_of_steps=50,
+            command=self._on_limit_slider_changed,
+            height=18
+        )
+        self.limit_slider.set(initial_limit)
+        self.limit_slider.pack(fill="x", padx=10, pady=(0, 2))
+        ctk.CTkLabel(scroll, text="Processing limit per run. Slide to 0 for unlimited file processing.", font=ctk.CTkFont(size=11), text_color="gray").pack(padx=10, pady=(0, 8), anchor="w")
+
+        # 3. Document Peeking Context Budget Slider
+        initial_peek = int(self.settings.get("peek_length", 180) or 180)
+        initial_peek = max(50, min(350, initial_peek))
+
+        peek_head = ctk.CTkFrame(scroll, fg_color="transparent")
+        peek_head.pack(fill="x", padx=10, pady=(6, 2))
+        ctk.CTkLabel(peek_head, text="📄 Document Peek Snippet Length:", font=ctk.CTkFont(weight="bold")).pack(side="left")
+        self.peek_length_label = ctk.CTkLabel(peek_head, text=f"{initial_peek} chars", font=ctk.CTkFont(weight="bold"), text_color="#74C0FC")
+        self.peek_length_label.pack(side="right")
+
+        self.peek_length_slider = ctk.CTkSlider(
+            scroll,
+            from_=50,
+            to=350,
+            number_of_steps=30,
+            command=self._on_peek_length_slider_changed,
+            height=18
+        )
+        self.peek_length_slider.set(initial_peek)
+        self.peek_length_slider.pack(fill="x", padx=10, pady=(0, 2))
+        ctk.CTkLabel(scroll, text="Snippet character preview length extracted from PDFs, Word docs, and text.", font=ctk.CTkFont(size=11), text_color="gray").pack(padx=10, pady=(0, 8), anchor="w")
+
+        # 4. Inter-Batch Pacing Delay Slider
+        initial_pacing = float(self.settings.get("pacing_delay", 0.2) or 0.2)
+        initial_pacing = max(0.0, min(2.0, initial_pacing))
+
+        pacing_head = ctk.CTkFrame(scroll, fg_color="transparent")
+        pacing_head.pack(fill="x", padx=10, pady=(6, 2))
+        ctk.CTkLabel(pacing_head, text="⏱️ Inter-Batch Request Pacing Delay:", font=ctk.CTkFont(weight="bold")).pack(side="left")
+        self.pacing_label = ctk.CTkLabel(pacing_head, text=f"{initial_pacing:.2f}s delay", font=ctk.CTkFont(weight="bold"), text_color="#74C0FC")
+        self.pacing_label.pack(side="right")
+
+        self.pacing_slider = ctk.CTkSlider(
+            scroll,
+            from_=0.0,
+            to=2.0,
+            number_of_steps=20,
+            command=self._on_pacing_slider_changed,
+            height=18
+        )
+        self.pacing_slider.set(initial_pacing)
+        self.pacing_slider.pack(fill="x", padx=10, pady=(0, 2))
+        ctk.CTkLabel(scroll, text="Pause between cluster batches. 0.0s for cloud; 0.15s-0.4s for free-tier TPM or local CPU.", font=ctk.CTkFont(size=11), text_color="gray").pack(padx=10, pady=(0, 12), anchor="w")
+
+        # Pre-populate companion entries
+        self.batch_size_entry.insert(0, str(initial_batch))
+        self.limit_entry.insert(0, str(initial_limit))
 
         # Auto-Tune & Hardware Benchmark Card (Tests PC latency & finds optimal settings)
         benchmark_card = ctk.CTkFrame(scroll, fg_color="#181B1F", corner_radius=8, border_width=1, border_color="#3B8ED0")
@@ -361,6 +456,33 @@ class NoMoreClutterApp(ctk.CTk):
         
         # Initialize provider presets state
         self._update_provider_ui(self.provider_var.get(), force_defaults=False)
+
+    def _on_batch_size_slider_changed(self, value):
+        val_int = int(round(float(value)))
+        if hasattr(self, "batch_size_label"):
+            self.batch_size_label.configure(text=f"{val_int} files/cluster")
+        if hasattr(self, "batch_size_entry"):
+            self.batch_size_entry.delete(0, "end")
+            self.batch_size_entry.insert(0, str(val_int))
+
+    def _on_limit_slider_changed(self, value):
+        val_int = int(round(float(value)))
+        txt = "0 (Unlimited)" if val_int == 0 else f"{val_int} files"
+        if hasattr(self, "limit_label"):
+            self.limit_label.configure(text=txt)
+        if hasattr(self, "limit_entry"):
+            self.limit_entry.delete(0, "end")
+            self.limit_entry.insert(0, str(val_int))
+
+    def _on_peek_length_slider_changed(self, value):
+        val_int = int(round(float(value)))
+        if hasattr(self, "peek_length_label"):
+            self.peek_length_label.configure(text=f"{val_int} chars")
+
+    def _on_pacing_slider_changed(self, value):
+        val_float = round(float(value), 2)
+        if hasattr(self, "pacing_label"):
+            self.pacing_label.configure(text=f"{val_float:.2f}s delay")
 
     def _on_provider_changed(self, choice):
         self._update_provider_ui(choice, force_defaults=True)
@@ -609,16 +731,19 @@ class NoMoreClutterApp(ctk.CTk):
         self.benchmark_run_btn.configure(state="normal")
         self.benchmark_apply_btn.configure(state="normal")
         self.benchmark_progress_bar.set(1.0)
-        self.benchmark_status_label.configure(text="✅ Benchmark complete! Optimal settings ready to apply.", text_color="#51CF66")
+        self.benchmark_status_label.configure(text="✅ Benchmark complete! Optimal slider settings ready to apply.", text_color="#51CF66")
 
         self.benchmark_results_box.delete("1.0", "end")
         self.benchmark_results_box.insert("end", f"📊 HARDWARE & MODEL BENCHMARK REPORT\n")
         self.benchmark_results_box.insert("end", f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
         self.benchmark_results_box.insert("end", f"• Tier: {result.hardware_tier}\n")
-        self.benchmark_results_box.insert("end", f"• Latency: {result.latency_ms:.0f} ms (~{result.tokens_per_sec:.0f} tokens/sec)\n")
-        self.benchmark_results_box.insert("end", f"• Recommended Batch Size: {result.recommended_batch_size} files\n")
-        self.benchmark_results_box.insert("end", f"• Recommended File Limit: {result.recommended_limit} files\n")
-        self.benchmark_results_box.insert("end", f"\n💡 Actionable Insights:\n")
+        self.benchmark_results_box.insert("end", f"• Latency: {result.latency_ms:.0f} ms (~{result.tokens_per_sec:.0f} tokens/sec)\n\n")
+        self.benchmark_results_box.insert("end", f"🎯 Calibrated Continuous Slider Recommendations:\n")
+        self.benchmark_results_box.insert("end", f"  • 📦 Batch Size Slider: {result.recommended_batch_size} files/cluster\n")
+        self.benchmark_results_box.insert("end", f"  • 📊 File Limit Slider: {result.recommended_limit} files\n")
+        self.benchmark_results_box.insert("end", f"  • 📄 Document Peek Budget Slider: {result.recommended_peek_length} chars\n")
+        self.benchmark_results_box.insert("end", f"  • ⏱️ Inter-Batch Pacing Slider: {result.recommended_pacing_delay:.2f}s delay\n\n")
+        self.benchmark_results_box.insert("end", f"💡 Hardware Insights:\n")
         for rec in result.recommendations:
             self.benchmark_results_box.insert("end", f"  {rec}\n")
         self.benchmark_results_box.see("1.0")
@@ -636,16 +761,28 @@ class NoMoreClutterApp(ctk.CTk):
             return
 
         res = self.last_benchmark_result
-        self.batch_size_entry.delete(0, "end")
-        self.batch_size_entry.insert(0, str(res.recommended_batch_size))
+        if hasattr(self, "batch_size_slider"):
+            self.batch_size_slider.set(res.recommended_batch_size)
+            self._on_batch_size_slider_changed(res.recommended_batch_size)
 
-        self.limit_entry.delete(0, "end")
-        self.limit_entry.insert(0, str(res.recommended_limit))
+        if hasattr(self, "limit_slider"):
+            self.limit_slider.set(res.recommended_limit)
+            self._on_limit_slider_changed(res.recommended_limit)
+
+        if hasattr(self, "peek_length_slider"):
+            self.peek_length_slider.set(res.recommended_peek_length)
+            self._on_peek_length_slider_changed(res.recommended_peek_length)
+
+        if hasattr(self, "pacing_slider"):
+            self.pacing_slider.set(res.recommended_pacing_delay)
+            self._on_pacing_slider_changed(res.recommended_pacing_delay)
 
         applied_msg = (
-            f"Applied Optimal Settings:\n"
-            f"• Batch Size: {res.recommended_batch_size}\n"
-            f"• File Limit: {res.recommended_limit}"
+            f"Applied Optimal Settings for {res.hardware_tier}:\n"
+            f"  • 📦 Batch Size Slider: {res.recommended_batch_size} files/cluster\n"
+            f"  • 📊 File Limit Slider: {res.recommended_limit} files\n"
+            f"  • 📄 Context Peek Budget Slider: {res.recommended_peek_length} chars\n"
+            f"  • ⏱️ Inter-Batch Pacing Slider: {res.recommended_pacing_delay:.2f}s delay"
         )
 
         if res.is_vision_supported and not self.analyze_images_var.get():
@@ -656,7 +793,7 @@ class NoMoreClutterApp(ctk.CTk):
             )
             if enable_vision:
                 self.analyze_images_var.set(True)
-                applied_msg += "\n• Enabled AI Vision for images"
+                applied_msg += "\n  • 👁️ Enabled AI Vision for images"
 
         self._save_settings(silent=True)
         messagebox.showinfo("Optimal Settings Applied", f"{applied_msg}\n\nSettings saved successfully!")
@@ -1261,7 +1398,10 @@ class NoMoreClutterApp(ctk.CTk):
             return
 
         try:
-            limit = int(self.limit_entry.get().strip() or 0)
+            if hasattr(self, "limit_slider"):
+                limit = int(round(float(self.limit_slider.get())))
+            else:
+                limit = int(self.limit_entry.get().strip() or 0)
         except Exception:
             limit = 0
         if limit > 0:
@@ -1343,7 +1483,10 @@ class NoMoreClutterApp(ctk.CTk):
             return
 
         try:
-            limit = int(self.limit_entry.get().strip() or 0)
+            if hasattr(self, "limit_slider"):
+                limit = int(round(float(self.limit_slider.get())))
+            else:
+                limit = int(self.limit_entry.get().strip() or 0)
         except Exception:
             limit = 0
 
@@ -1365,20 +1508,38 @@ class NoMoreClutterApp(ctk.CTk):
 
     def _analyze_thread(self, files):
         try:
-            batch_size = int(self.batch_size_entry.get().strip() or 15)
+            if hasattr(self, "batch_size_slider"):
+                batch_size = int(round(float(self.batch_size_slider.get())))
+            else:
+                batch_size = int(self.batch_size_entry.get().strip() or 15)
         except Exception:
             batch_size = 15
         if batch_size <= 0:
             batch_size = 15
 
-        all_results = []
-        output = self.output_folder if self.output_folder else self.source_folder
+        try:
+            if hasattr(self, "peek_length_slider"):
+                peek_max_chars = int(round(float(self.peek_length_slider.get())))
+            else:
+                peek_max_chars = int(self.settings.get("peek_length", 180) or 180)
+        except Exception:
+            peek_max_chars = 180
 
         _, _, get_by_name, _, _ = get_provider_registry()
         preset = get_by_name(self.provider_var.get())
         provider_id = preset.id if preset else ("embedded" if self.llm_url.get().strip() == "local://embedded" else "custom")
         model_name = self.llm_model.get().strip()
-        pacing_sec = preset.recommended_pacing_sec if preset else 0.2
+
+        try:
+            if hasattr(self, "pacing_slider"):
+                pacing_sec = float(self.pacing_slider.get())
+            else:
+                pacing_sec = preset.recommended_pacing_sec if preset else 0.2
+        except Exception:
+            pacing_sec = 0.2
+
+        all_results = []
+        output = self.output_folder if self.output_folder else self.source_folder
 
         try:
             LLMService, LLMError = get_LLMService()
@@ -1403,6 +1564,7 @@ class NoMoreClutterApp(ctk.CTk):
                     numbered_rename=self.numbered_rename_var.get(),
                     ai_rename=self.ai_rename_var.get(),
                     content_peeking=self.content_peeking_var.get(),
+                    peek_max_chars=peek_max_chars,
                     target_folder=output,
                     output_folder=output,
                 )
@@ -1414,7 +1576,7 @@ class NoMoreClutterApp(ctk.CTk):
                 self.after(0, self._append_batch_log, results)
                 self.after(0, self._update_progress, len(batch), all_results)
 
-                # Provider-adaptive pacing (0ms for fast cloud APIs, short pause for local servers)
+                # Provider-adaptive pacing delay from slider
                 if pacing_sec > 0 and (i + batch_size < len(files)):
                     time.sleep(pacing_sec)
 

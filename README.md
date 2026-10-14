@@ -36,8 +36,8 @@ An intelligent AI-powered desktop application that automatically organizes your 
 - **Clean Destination Folders**: Rolling back automatically prunes newly created empty destination directories.
 - **Non-Destructive Operations**: Files are safely moved with zero data loss risk.
 
-### 🎨 Modern Dark UI & ⚡ Performance Auto-Tuning
-- **⚡ Hardware Auto-Tuner & Performance Benchmark**: Measure PC and model latency (ms) and throughput (tokens/sec) directly inside Settings > Performance & Limits. Automatically discovers your hardware tier and applies optimal batch sizes (5, 10, or 15) and file processing limits (25, 50, or 100) with 1 click.
+### 🎨 Modern Dark UI & ⚡ Continuous Performance Sliders
+- **⚡ Hardware Auto-Tuner & Continuous Performance Sliders**: Real-time interactive sliders with live value badges for **RLM Cluster Batch Size** (1–30), **Max File Limit** (0–250), **Document Peek Context Budget** (50–350 chars), and **Inter-Batch Pacing Delay** (0.0s–2.0s). The built-in benchmark measures PC latency (ms) and throughput (tokens/sec) and uses continuous mathematical formulas to calibrate all 4 sliders to the exact optimal points for your hardware.
 - **Sleek CustomTkinter Interface**: Designed with dark-mode aesthetic, real-time logging, and interactive controls.
 - **🔌 Real-Time AI Plugged/Unplugged Indicator**: Interactive status pill in the header displaying connection health (🟢 **AI Plugged: Groq Ready**, 🟢 **AI Plugged: Embedded**, 🔴 **AI Unplugged: No Key**, 🔴 **AI Unplugged: Offline**). Click the pill to test connection or launch 1-Click Quick Deploy.
 - **Provider Quick-Switching**: Dropdown selector with pre-configured API URLs, recommended models, and direct links to get free API keys.

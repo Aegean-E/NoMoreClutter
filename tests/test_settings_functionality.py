@@ -209,6 +209,8 @@ class TestSettingsFunctionality(unittest.TestCase):
             "auto_execute": False,
             "limit": "75",
             "batch_size": "20",
+            "peek_length": 220,
+            "pacing_delay": 0.15,
             "included_categories": {
                 "Documents": True,
                 "Images": True,

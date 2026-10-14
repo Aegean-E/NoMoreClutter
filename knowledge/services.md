@@ -159,17 +159,21 @@ Zero-dependency lightweight content extractor for intelligent semantic file orga
 
 ## 9. `BenchmarkService` (`services/benchmark_service.py`)
 
-Automated hardware performance benchmarking and settings auto-tuner (PRINCIPLE-007).
+Automated hardware performance benchmarking and continuous settings auto-tuner (PRINCIPLE-007).
 
 ### Key Concepts
 - **Lightweight Synthetic Testing**: Tests the active AI model against realistic synthetic payloads (invoices, Python scripts, camera timestamps, markdown docs, and archives).
 - **Latency & Throughput Measurement**: Measures millisecond response latency and tokens-per-second throughput to classify hardware tiers (Ultra-Fast Cloud, Standard, Conservative).
 - **Vision Capability Probing**: Detects whether the active model or provider supports multimodal visual photo inspection.
-- **Optimal Parameter Tuning**: Calculates optimal RLM cluster batch sizes (5, 10, or 15) and processing limits to maximize speed while preventing rate-limit spikes or freezing.
+- **Continuous Mathematical Slider Auto-Tuning**: Computes continuous, mathematically-derived optimal points rather than rigid coarse steps:
+  - **Batch Size Slider** ($B_{opt}$): Smoothly scaled with $25 \times (500 / \max(L_{ms}, 500))^{0.65}$, clamped between 3 and 25 files/cluster.
+  - **Max File Limit Slider** ($Limit_{opt}$): Calibrates session duration to ~30-45s based on measured throughput and batch size, clamped between 15 and 200 files.
+  - **Document Peek Snippet Slider** ($Peek_{opt}$): Calibrates token context budget between 100 and 250 characters based on latency.
+  - **Inter-Batch Pacing Slider** ($Pacing_{opt}$): Tailored to endpoint characteristics (0.0s for Gemini/OpenAI, 0.15s for Groq free-tier TPM, 0.2s-0.35s for local CPU cooldown).
 
 ### Methods
 - `run_benchmark(provider, model: str, provider_name: str, progress_callback=None) -> BenchmarkResult`:
-  Runs the benchmark suite, measures latency and compliance, probes vision capability, and returns a structured `BenchmarkResult` with actionable recommendations.
+  Runs the benchmark suite, measures latency and compliance, probes vision capability, and returns a structured `BenchmarkResult` with continuous slider recommendations.
 
 
 

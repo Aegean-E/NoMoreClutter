@@ -165,7 +165,31 @@ Implement a multi-path 1-Click Quick Deploy architecture:
 ### Consequences
 - **Positive**: Every setting operates deterministically and predictably in both AI Organize and Quick Organize modes; zero settings drift across restarts.
 
-- **Negative**: Benchmark takes 1-3 seconds to run when explicitly triggered by the user.
+---
+
+## ADR-010: Continuous Mathematical Slider Auto-Tuning Architecture
+
+### Context
+1. **Rigid Coarse Tiers**: Earlier benchmark implementations mapped latency into 3 rigid, hardcoded tiers (<900ms -> 15 & 100; 900-2500ms -> 10 & 50; >2500ms -> 5 & 25).
+2. **Static Text Entries**: Settings like batch size and file limits were presented as plain text boxes without tactile feedback, visual range constraints, or live value badges.
+3. **Missing Context & Pacing Sliders**: Document peeking context budget (token overhead) and inter-batch pacing delay (TPM rate limiting) were hardcoded rather than being tunable and auto-calibrated to user hardware.
+
+### Decision
+1. **Continuous Mathematical Auto-Tuning (`BenchmarkService`)**:
+   - Replaced coarse steps with continuous formulas based on measured latency ($L_{ms}$) and throughput ($TPS$):
+     - $\text{Batch Size} = \text{clamp}\left(\text{round}\left(25 \times (500 / \max(L_{ms}, 500))^{0.65}\right), 3, 25\right)$
+     - $\text{File Limit} = \text{clamp}\left(\text{round}\left(\frac{35000}{L_{ms}} \times \frac{B}{5} \times 12 / 5\right) \times 5, 15, 200\right)$
+     - $\text{Context Peek} = \text{clamp}\left(\text{round}\left((250 - L_{ms} / 35) / 10\right) \times 10, 100, 250\right)$
+     - $\text{Pacing Delay} =$ Adaptive delay (0.0s for high TPM/local GPU, 0.15s for Groq, 0.20s-0.35s for local CPU cooldown).
+2. **Interactive Slider UI Controls (`main.py`)**:
+   - Implemented `CTkSlider` controls with live badges for Batch Size (1–30), File Limit (0–250), Context Peek (50–350), and Pacing Delay (0.0s–2.0s).
+   - "Apply Recommended Settings" smoothly updates all 4 sliders to the exact measured optimal points.
+   - Dual-mode synchronization ensures full backward compatibility with manual entry inputs.
+
+### Consequences
+- **Positive**: Exact, bespoke calibration for every user machine; tactile and intuitive UI; eliminates rate-limit errors and thread starvation.
+- **Negative**: Benchmark takes 1-2 seconds to complete when manually triggered by user.
+
 
 
 

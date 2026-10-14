@@ -35,6 +35,7 @@ class RLMOrganizer:
         ai_rename: bool = True,
         numbered_rename: bool = False,
         content_peeking: bool = True,
+        peek_max_chars: int = 180,
         cluster_batch_size: int = 15,
         progress_callback=None,
     ) -> List[FileChange]:
@@ -74,6 +75,7 @@ class RLMOrganizer:
                 create_new_folders=create_new_folders,
                 ai_rename=ai_rename,
                 content_peeking=content_peeking,
+                peek_max_chars=peek_max_chars,
                 cluster_batch_size=cluster_batch_size,
                 progress_callback=progress_callback,
             )
@@ -94,6 +96,7 @@ class RLMOrganizer:
         create_new_folders: bool,
         ai_rename: bool,
         content_peeking: bool,
+        peek_max_chars: int,
         cluster_batch_size: int,
         progress_callback=None,
     ) -> List[FileChange]:
@@ -112,6 +115,7 @@ class RLMOrganizer:
                 create_new_folders=create_new_folders,
                 ai_rename=ai_rename,
                 content_peeking=content_peeking,
+                peek_max_chars=peek_max_chars,
             )
             all_changes.extend(cluster_changes)
 
@@ -129,6 +133,7 @@ class RLMOrganizer:
         create_new_folders: bool,
         ai_rename: bool,
         content_peeking: bool = True,
+        peek_max_chars: int = 180,
     ) -> List[FileChange]:
         """Analyze a scoped cluster using compact token-efficient payload schemas."""
         # Dense payload: Transmit relative filenames + IDs rather than full paths (saves ~70% tokens)
@@ -138,7 +143,7 @@ class RLMOrganizer:
             id_to_filepath[idx] = path
             item_data = {"id": idx, "name": os.path.basename(path)}
             if content_peeking:
-                peek_snippet = DocumentPeeker.peek(path, max_chars=180)
+                peek_snippet = DocumentPeeker.peek(path, max_chars=peek_max_chars)
                 if peek_snippet:
                     item_data["peek"] = peek_snippet
             dense_items.append(item_data)
