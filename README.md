@@ -122,22 +122,25 @@ python -m unittest discover tests
 
 ### Supported Providers
 
-| Provider | Type | Default Model | URL / Endpoint | Setup Required |
-|----------|------|---------------|----------------|----------------|
-| **Groq** *(Recommended)* | Cloud (Zero-Install) | `llama-3.3-70b-versatile` | `https://api.groq.com/openai/v1` | Free API Key |
-| **Built-In Embedded AI** | Embedded (100% Offline) | `qwen2.5-1.5b-instruct-q4_k_m.gguf` | `local://embedded` | 1-Click in-app download |
-| **Google Gemini** | Cloud (Zero-Install) | `gemini-2.0-flash` | `https://generativelanguage.googleapis.com/v1beta/openai/` | Free API Key |
-| **OpenAI** | Cloud (Zero-Install) | `gpt-4o-mini` | `https://api.openai.com/v1` | API Key |
-| **OpenRouter** | Cloud (Zero-Install) | `meta-llama/llama-3.3-70b-instruct` | `https://openrouter.ai/api/v1` | API Key |
-| **LM Studio** | Local Server | `local-model` | `http://localhost:1234/v1` | Start server on port 1234 |
-| **Ollama** | Local Server | `llama3.2:1b` | `http://localhost:11434/v1` | 1-Click auto-pull or `ollama serve` |
-| **Custom** | Any | Custom | User-defined | Varies |
+| Provider | Type | Default Model | Vision Model | URL / Endpoint | Setup Required |
+|----------|------|---------------|--------------|----------------|----------------|
+| **Groq** *(Recommended)* | Cloud (Zero-Install) | `llama-3.3-70b-versatile` | `llama-3.2-11b-vision-preview` | `https://api.groq.com/openai/v1` | Free API Key |
+| **Built-In Embedded AI** | Embedded (100% Offline) | `qwen2.5-1.5b-instruct-q4_k_m.gguf` | `moondream2-text-model-f16.gguf` | `local://embedded` | 1-Click in-app download |
+| **Google Gemini** | Cloud (Zero-Install) | `gemini-1.5-flash` | `gemini-1.5-flash` | `https://generativelanguage.googleapis.com/v1beta/openai/` | Free API Key |
+| **OpenAI** | Cloud (Zero-Install) | `gpt-4o-mini` | `gpt-4o-mini` | `https://api.openai.com/v1` | API Key |
+| **OpenRouter** | Cloud (Zero-Install) | `meta-llama/llama-3.3-70b-instruct` | `meta-llama/llama-3.2-11b-vision-instruct` | `https://openrouter.ai/api/v1` | API Key |
+| **LM Studio** | Local Server | `llama3` | `qwen2.5-vl-7b` | `http://localhost:1234/v1` | Start server on port 1234 |
+| **Ollama** | Local Server | `llama3.2:1b` | `moondream:latest` / `llama3.2-vision:latest` | `http://localhost:11434/v1` | 1-Click auto-pull or `ollama serve` |
+| **Custom** | Any | Custom | Custom | User-defined | Varies |
 
 ### Step-by-Step Usage
 
 1. **Select Source Directory**: Click **Browse** and choose the messy folder you want to organize.
-2. **Choose Organization Mode**:
-   - **🚀 1-Click AI Deploy**: Click the orange header button to auto-download an offline GGUF model, auto-pull into Ollama, or connect a free cloud API.
+2. **Choose Organization Mode & Deploy AI**:
+   - **🚀 1-Click AI Quick-Deploy**: Click the orange header button to open the deployment center with explicit **`[👁️ Vision Supported]`** and **`[📝 Text-Only]`** capability badges on every model:
+     - **Tab 1: Built-In Embedded AI**: 1-click download compact offline GGUFs (including **Moondream 2 Multimodal Vision** with dual-file streaming for base model + `mmproj` vision projector).
+     - **Tab 2: Ollama Auto-Pilot**: 1-click discover local Ollama server and pull recommended text or vision models (`moondream`, `llama3.2-vision`).
+     - **Tab 3: Instant Free Cloud**: Instant setup with free-tier Groq or Google Gemini for instant vision intelligence with 0 MB disk footprint.
    - **⚡ Quick Organize (No AI)**: Immediately sorts files by type and extension without calling an LLM.
    - **🚀 Organize with AI**: Select your active provider, and click **🚀 Organize Files**.
 3. **Inspect Progress**: Watch real-time logs in the bottom console area.

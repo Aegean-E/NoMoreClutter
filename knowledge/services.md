@@ -128,9 +128,15 @@ Facade maintaining backward compatibility for existing scripts, tests, and UI co
 ## 6. `ModelDownloader` (`services/model_downloader.py`)
 
 Provides 1-click model weight streaming, tracking, and atomic storage for embedded offline AI models.
-- **`GGUF_CATALOG`**: Curated catalog of compact quantized models (`qwen2.5-0.5b`, `qwen2.5-1.5b`, `smollm2-1.7b`).
-- **`download_model(...)`**: Chunked streaming download from HuggingFace with progress callbacks, atomic `.part` replacement, and `threading.Event` cancellation.
-- **`is_model_downloaded(...)`**: Verifies presence and valid size of local weights in `models/weights/`.
+- **`ModelCatalogItem`**: Data model representing downloadable GGUF models with `has_vision`, `capability_badge` (`[👁️ Vision Supported]` vs `[📝 Text-Only]`), `mmproj_filename`, `mmproj_url`, `mmproj_size_mb`, and `total_size_mb`.
+- **`GGUF_CATALOG`**: Curated catalog of compact quantized models:
+  - `qwen2.5-1.5b`: Recommended text model (~986 MB).
+  - `moondream2-vision`: Multimodal vision & text model (~2.7 GB text + ~868 MB `mmproj` projector = ~3.5 GB total).
+  - `qwen2.5-0.5b`: Ultra-light text model (~398 MB).
+  - `smollm2-1.7b`: Compact HuggingFace text model (~1.06 GB).
+- **`download_model(...)`**: Chunked streaming download from HuggingFace with progress callbacks, atomic `.part` replacement, and `threading.Event` cancellation. Supports multi-file downloads (base language model + multimodal `mmproj` vision projector).
+- **`is_model_downloaded(...)`**: Verifies presence and valid size (>10 MB) of local weights in `models/weights/`. If the model specifies an `mmproj` projector, verifies that both files exist locally.
+- **`get_mmproj_path(...)`**: Resolves path to the multimodal projector file associated with a given model filename.
 
 ---
 
@@ -140,7 +146,12 @@ Provides 1-click Ollama discovery and streaming model pulling via local REST API
 - **`check_status(...)`**: Non-blocking ping of `GET /api/tags`.
 - **`list_installed_models(...)`**: Inspects tags of locally installed models in Ollama.
 - **`pull_model(...)`**: Sends `POST /api/pull` with `stream: true`, parsing streaming progress updates.
-- **`RECOMMENDED_OLLAMA_MODELS`**: Curated recommendations (`llama3.2:1b`, `qwen2.5:1.5b`, `llama3.2:3b`, `moondream:latest`).
+- **`RECOMMENDED_OLLAMA_MODELS`**: Curated recommendations with capability badges:
+  - `llama3.2:1b` `[📝 Text-Only]` (~1.3 GB).
+  - `qwen2.5:1.5b` `[📝 Text-Only]` (~986 MB).
+  - `llama3.2:3b` `[📝 Text-Only]` (~2.0 GB).
+  - `moondream:latest` `[👁️ Vision Supported]` (~1.7 GB).
+  - `llama3.2-vision:latest` `[👁️ Vision Supported]` (~7.9 GB).
 
 ---
 

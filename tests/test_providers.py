@@ -52,12 +52,18 @@ class TestProviders(unittest.TestCase):
     def test_preset_has_vision(self):
         self.assertTrue(get_preset("groq").has_vision)
         self.assertTrue(get_preset("gemini").has_vision)
-        self.assertFalse(get_preset("embedded").has_vision)
+        self.assertTrue(get_preset("embedded").has_vision)
 
     def test_provider_instance_has_vision(self):
         from services.providers.embedded import EmbeddedProvider
-        embedded = EmbeddedProvider()
-        self.assertFalse(embedded.has_vision)
+        embedded_text = EmbeddedProvider()
+        self.assertFalse(embedded_text.has_vision)
+
+        embedded_vision = EmbeddedProvider(model_filename="moondream2-text-model-f16.gguf")
+        self.assertTrue(embedded_vision.has_vision)
+
+        embedded_vision_id = EmbeddedProvider(model_filename="moondream2-vision")
+        self.assertTrue(embedded_vision_id.has_vision)
 
         openai_prov = OpenAICompatibleProvider(base_url="https://api.groq.com")
         self.assertTrue(openai_prov.has_vision)

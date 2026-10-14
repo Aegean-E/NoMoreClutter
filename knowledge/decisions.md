@@ -281,6 +281,31 @@ Implement a multi-path 1-Click Quick Deploy architecture:
 ### Consequences
 - **Positive**: 100% fluid, responsive UI with zero post-scan freezing; instant visual feedback as duplicates are discovered in real time.
 
+---
+
+## ADR-015: 1-Click Vision Model Deployment & Model Capability Badging
+
+### Context
+1. **Model Capability Ambiguity**: Users deploying models via 1-Click AI Quick-Deploy had no visual indication of whether a model was text-focused (categorizing documents and auto-sorting photos by date) or multimodal vision-capable (analyzing image contents and recognizing scene objects).
+2. **Missing Local Embedded Vision**: Embedded GGUF models were previously strictly text-only single-file models. Users desiring 100% offline vision analysis had to manually install external desktop servers.
+
+### Decision
+1. **Multimodal Dual-File Downloader (`services/model_downloader.py`)**:
+   - Extended `ModelCatalogItem` with `has_vision`, `mmproj_filename`, `mmproj_url`, `mmproj_size_mb`, and `capability_badge`.
+   - Added `moondream2-vision` (Moondream 2 Multimodal Vision) to `GGUF_CATALOG`.
+   - `ModelDownloader.download_model` orchestrates dual-file streaming downloads (base language model + `mmproj` vision projector) with unified 0–100% progress reporting and atomic `.part` replacement.
+   - `ModelDownloader.is_model_downloaded` validates both the base model and `mmproj` projector weights (>10 MB).
+2. **Model Capability Badges Across All Tabs (`main.py`)**:
+   - Every model option in Tab 1 (Embedded), Tab 2 (Ollama), and Tab 3 (Cloud) displays a clear `[👁️ Vision Supported]` or `[📝 Text-Only]` badge.
+   - Info cards display clear capability details (e.g., `👁️ Vision Supported • Analyzes photo scenes, objects, & documents`).
+   - Added `llama3.2-vision:latest` to Ollama recommendations.
+3. **Dynamic Embedded Provider Vision Support (`services/providers/embedded.py`)**:
+   - `EmbeddedProvider.has_vision` dynamically checks the active model name against the catalog.
+   - `EmbeddedProvider.analyze_image` supports multimodal handlers (`MoondreamChatHandler`, `Llava15ChatHandler`) when weights and `llama-cpp-python` are present.
+
+### Consequences
+- **Positive**: Complete capability transparency before initiating downloads; 1-click offline vision intelligence with atomic dual-file downloads; seamless fallback when text models are chosen.
+
 
 
 

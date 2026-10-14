@@ -22,11 +22,21 @@ class TestModelDownloader(unittest.TestCase):
         self.assertIn("qwen2.5-1.5b", GGUF_CATALOG)
         self.assertIn("qwen2.5-0.5b", GGUF_CATALOG)
         self.assertIn("smollm2-1.7b", GGUF_CATALOG)
+        self.assertIn("moondream2-vision", GGUF_CATALOG)
         
         default_item = GGUF_CATALOG["qwen2.5-1.5b"]
         self.assertTrue(default_item.is_default)
         self.assertTrue(default_item.url.startswith("https://huggingface.co/"))
         self.assertTrue(default_item.filename.endswith(".gguf"))
+        self.assertEqual(default_item.capability_badge, "[📝 Text-Only]")
+
+    def test_vision_catalog_item(self):
+        vision_item = GGUF_CATALOG["moondream2-vision"]
+        self.assertTrue(vision_item.has_vision)
+        self.assertEqual(vision_item.capability_badge, "[👁️ Vision Supported]")
+        self.assertEqual(vision_item.mmproj_filename, "moondream2-mmproj-f16.gguf")
+        self.assertTrue(vision_item.mmproj_url.startswith("https://huggingface.co/"))
+        self.assertEqual(vision_item.total_size_mb, vision_item.size_mb + vision_item.mmproj_size_mb)
 
     def test_weights_dir(self):
         weights_dir = ModelDownloader.get_weights_dir()
@@ -79,12 +89,42 @@ class TestModelDownloader(unittest.TestCase):
                     )
 
 
+    @patch("urllib.request.urlopen")
+    def test_download_multimodal_model_mock_success(self, mock_urlopen):
+        fake_content = b"GGUF_MOCK_DATA" * 64
+        mock_resp = MagicMock()
+        mock_resp.headers = {"content-length": str(len(fake_content))}
+        mock_resp.read.side_effect = [fake_content[:256], fake_content[256:], b"", fake_content[:256], fake_content[256:], b""]
+        mock_urlopen.return_value.__enter__.return_value = mock_resp
+
+        progress_calls = []
+        def on_progress(downloaded, total, speed, percent):
+            progress_calls.append((downloaded, total, percent))
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch.object(ModelDownloader, "get_weights_dir", return_value=Path(tmpdir)):
+                res_path = ModelDownloader.download_model(
+                    model_id="moondream2-vision",
+                    progress_callback=on_progress,
+                )
+                self.assertTrue(res_path.exists())
+                mmproj_path = ModelDownloader.get_mmproj_path(res_path.name)
+                self.assertIsNotNone(mmproj_path)
+                self.assertTrue(mmproj_path.exists())
+                self.assertGreater(len(progress_calls), 0)
+
+
 class TestOllamaManager(unittest.TestCase):
     def test_recommended_catalog(self):
         self.assertIn("llama3.2:1b", RECOMMENDED_OLLAMA_MODELS)
         self.assertIn("qwen2.5:1.5b", RECOMMENDED_OLLAMA_MODELS)
         self.assertIn("moondream:latest", RECOMMENDED_OLLAMA_MODELS)
+        self.assertIn("llama3.2-vision:latest", RECOMMENDED_OLLAMA_MODELS)
         self.assertTrue(RECOMMENDED_OLLAMA_MODELS["moondream:latest"].has_vision)
+        self.assertTrue(RECOMMENDED_OLLAMA_MODELS["llama3.2-vision:latest"].has_vision)
+        self.assertFalse(RECOMMENDED_OLLAMA_MODELS["llama3.2:1b"].has_vision)
+        self.assertEqual(RECOMMENDED_OLLAMA_MODELS["moondream:latest"].capability_badge, "[👁️ Vision Supported]")
+        self.assertEqual(RECOMMENDED_OLLAMA_MODELS["llama3.2:1b"].capability_badge, "[📝 Text-Only]")
 
     @patch("urllib.request.urlopen")
     def test_check_status_online(self, mock_urlopen):
@@ -154,16 +194,28 @@ class TestEmbeddedProvider(unittest.TestCase):
         provider = get_provider("embedded")
         self.assertIsInstance(provider, EmbeddedProvider)
 
+    def test_provider_vision_attribute(self):
+        text_prov = EmbeddedProvider(model_filename="qwen2.5-1.5b")
+        self.assertFalse(text_prov.has_vision)
+
+        vision_prov = EmbeddedProvider(model_filename="moondream2-vision")
+        self.assertTrue(vision_prov.has_vision)
+
     def test_test_connection_not_downloaded(self):
         provider = EmbeddedProvider(model_filename="non_existent_model.gguf")
         success, msg = provider.test_connection()
         self.assertFalse(success)
         self.assertIn("not downloaded", msg)
 
-    def test_analyze_image_not_implemented(self):
+    def test_analyze_image_text_model_raises_not_implemented(self):
         provider = EmbeddedProvider(model_filename="test.gguf")
         with self.assertRaises(NotImplementedError):
             provider.analyze_image("dummy.jpg", "test prompt", "test.gguf")
+
+    def test_analyze_image_vision_model_raises_file_not_found(self):
+        provider = EmbeddedProvider(model_filename="moondream2-vision")
+        with self.assertRaises(FileNotFoundError):
+            provider.analyze_image("dummy.jpg", "test prompt", "moondream2-vision")
 
 
 class TestAppDeploymentLogic(unittest.TestCase):

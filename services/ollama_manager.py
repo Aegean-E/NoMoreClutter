@@ -21,6 +21,11 @@ class OllamaRecommendedModel:
     has_vision: bool = False
     is_default: bool = False
 
+    @property
+    def capability_badge(self) -> str:
+        """Return visual badge indicating model capabilities."""
+        return "[👁️ Vision Supported]" if self.has_vision else "[📝 Text-Only]"
+
 
 RECOMMENDED_OLLAMA_MODELS: Dict[str, OllamaRecommendedModel] = {
     "llama3.2:1b": OllamaRecommendedModel(
@@ -52,6 +57,14 @@ RECOMMENDED_OLLAMA_MODELS: Dict[str, OllamaRecommendedModel] = {
         name="Moondream 2 (Tiny Vision)",
         size_approx="~1.7 GB",
         description="Compact local vision model capable of image tagging and categorization.",
+        has_vision=True,
+        is_default=False,
+    ),
+    "llama3.2-vision:latest": OllamaRecommendedModel(
+        id="llama3.2-vision:latest",
+        name="LLaMA 3.2 Vision 11B (Flagship Multimodal)",
+        size_approx="~7.9 GB",
+        description="Meta's flagship vision model. High-fidelity scene understanding and OCR.",
         has_vision=True,
         is_default=False,
     ),

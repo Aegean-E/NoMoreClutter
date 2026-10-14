@@ -9,7 +9,7 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 1944 | 93343 | 1 | 0 |
+| `main.py` | 1978 | 94820 | 1 | 0 |
 | `models/__init__.py` | 87 | 2446 | 5 | 0 |
 | `services/__init__.py` | 47 | 1476 | 0 | 11 |
 | `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
@@ -19,13 +19,13 @@
 | `services/file_executor.py` | 262 | 9889 | 1 | 0 |
 | `services/file_scanner.py` | 40 | 1408 | 1 | 0 |
 | `services/llm_service.py` | 211 | 8710 | 2 | 0 |
-| `services/model_downloader.py` | 181 | 6535 | 2 | 0 |
-| `services/ollama_manager.py` | 158 | 5646 | 2 | 0 |
+| `services/model_downloader.py` | 290 | 11524 | 2 | 0 |
+| `services/ollama_manager.py` | 171 | 6187 | 2 | 0 |
 | `services/providers/__init__.py` | 44 | 1198 | 0 | 1 |
 | `services/providers/base.py` | 48 | 1565 | 1 | 0 |
-| `services/providers/embedded.py` | 99 | 4325 | 1 | 0 |
+| `services/providers/embedded.py` | 170 | 7320 | 1 | 0 |
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
-| `services/providers/registry.py` | 135 | 4862 | 1 | 3 |
+| `services/providers/registry.py` | 135 | 4892 | 1 | 3 |
 | `services/rlm_organizer.py` | 432 | 18699 | 2 | 0 |
 | `ui/__init__.py` | 9 | 285 | 0 | 0 |
 | `ui/duplicate_finder.py` | 528 | 20422 | 1 | 0 |
@@ -35,12 +35,12 @@
 | `tests/test_benchmark_service.py` | 152 | 6518 | 3 | 0 |
 | `tests/test_cleaner_service.py` | 85 | 3024 | 1 | 0 |
 | `tests/test_deduplicator.py` | 138 | 5268 | 1 | 0 |
-| `tests/test_deploy_manager.py` | 189 | 7764 | 4 | 0 |
+| `tests/test_deploy_manager.py` | 241 | 10673 | 4 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
 | `tests/test_file_executor.py` | 223 | 8964 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
-| `tests/test_providers.py` | 67 | 2334 | 1 | 0 |
+| `tests/test_providers.py` | 73 | 2626 | 1 | 0 |
 | `tests/test_rlm_organizer.py` | 121 | 5209 | 2 | 0 |
 | `tests/test_settings_functionality.py` | 250 | 10130 | 1 | 0 |
 | `tests/test_sync_and_knowledge.py` | 87 | 3297 | 1 | 0 |
@@ -254,12 +254,16 @@ Zero external dependencies (uses standard library urllib).
 
 #### Classes
 - **`ModelCatalogItem`**
+  - Method `.total_size_mb()`
+  - Method `.capability_badge()`
 - **`ModelDownloader`**
   - *Manages downloading, caching, and verification of embedded model weights.*
   - Method `.get_weights_dir()`
   - Method `.get_model_path(cls, filename)`
+  - Method `.get_mmproj_path(cls, filename)`
   - Method `.is_model_downloaded(cls, filename)`
   - Method `.get_downloaded_models(cls)`
+  - Method `._download_file(cls, url, dest_file, progress_callback, cancel_event, bytes_already_done, combined_total_bytes, start_time)`
   - Method `.download_model(cls, model_id, progress_callback, cancel_event)`
 
 ### `services/ollama_manager.py`
@@ -270,6 +274,7 @@ Zero external dependencies (uses standard library urllib and json).
 
 #### Classes
 - **`OllamaRecommendedModel`**
+  - Method `.capability_badge()`
 - **`OllamaManager`**
   - *Manages interactions with local Ollama daemon for 1-click model deployment.*
   - Method `.check_status(base_url)`
@@ -507,10 +512,12 @@ Tests ModelDownloader, OllamaManager, and EmbeddedProvider with mock streaming.
 #### Classes
 - **`TestModelDownloader`**
   - Method `.test_catalog_integrity()`
+  - Method `.test_vision_catalog_item()`
   - Method `.test_weights_dir()`
   - Method `.test_is_model_downloaded_nonexistent()`
   - Method `.test_download_model_mock_success(mock_urlopen)`
   - Method `.test_download_model_cancellation(mock_urlopen)`
+  - Method `.test_download_multimodal_model_mock_success(mock_urlopen)`
 - **`TestOllamaManager`**
   - Method `.test_recommended_catalog()`
   - Method `.test_check_status_online(mock_urlopen)`
@@ -520,8 +527,10 @@ Tests ModelDownloader, OllamaManager, and EmbeddedProvider with mock streaming.
 - **`TestEmbeddedProvider`**
   - Method `.test_preset_exists()`
   - Method `.test_factory_instantiation()`
+  - Method `.test_provider_vision_attribute()`
   - Method `.test_test_connection_not_downloaded()`
-  - Method `.test_analyze_image_not_implemented()`
+  - Method `.test_analyze_image_text_model_raises_not_implemented()`
+  - Method `.test_analyze_image_vision_model_raises_file_not_found()`
 - **`TestAppDeploymentLogic`**
   - Method `.test_service_accessors()`
   - Method `.test_embedded_model_activation_updates_preset()`

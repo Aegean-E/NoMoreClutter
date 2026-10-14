@@ -1103,10 +1103,10 @@ class NoMoreClutterApp(ctk.CTk):
         ctk.CTkLabel(tab_embed, text="Downloads a quantized GGUF model directly into NoMoreClutter. Runs completely offline without LM Studio, Ollama, or API keys.", text_color="gray", wraplength=620, justify="left", font=ctk.CTkFont(size=12)).pack(padx=10, pady=(0, 10), anchor="w")
 
         ModelDownloader, GGUF_CATALOG = get_model_downloader()
-        catalog_names = [item.name for item in GGUF_CATALOG.values()]
+        catalog_names = [f"{item.capability_badge} {item.name}" for item in GGUF_CATALOG.values()]
 
         ctk.CTkLabel(tab_embed, text="Select Model:", font=ctk.CTkFont(weight="bold")).pack(padx=10, pady=(5, 2), anchor="w")
-        self.embed_model_var = ctk.StringVar(value=catalog_names[1] if len(catalog_names) > 1 else catalog_names[0])
+        self.embed_model_var = ctk.StringVar(value=catalog_names[0])
         self.embed_model_menu = ctk.CTkOptionMenu(
             tab_embed,
             values=catalog_names,
@@ -1199,7 +1199,7 @@ class NoMoreClutterApp(ctk.CTk):
         self.ollama_installed_label.pack(padx=10, pady=(4, 8), anchor="w")
 
         OllamaManager, RECOMMENDED_OLLAMA_MODELS = get_ollama_manager()
-        ollama_model_options = [f"{m.id} - {m.name} ({m.size_approx})" for m in RECOMMENDED_OLLAMA_MODELS.values()]
+        ollama_model_options = [f"{m.capability_badge} {m.id} - {m.name} ({m.size_approx})" for m in RECOMMENDED_OLLAMA_MODELS.values()]
 
         ctk.CTkLabel(tab_ollama, text="Select Recommended Model to Pull:", font=ctk.CTkFont(weight="bold")).pack(padx=10, pady=(6, 2), anchor="w")
         self.ollama_model_var = ctk.StringVar(value=ollama_model_options[0])
@@ -1254,8 +1254,11 @@ class NoMoreClutterApp(ctk.CTk):
         ctk.CTkLabel(tab_cloud, text="⚡ Instant Zero-Download Cloud AI", font=ctk.CTkFont(weight="bold", size=14)).pack(padx=10, pady=(10, 4), anchor="w")
         ctk.CTkLabel(tab_cloud, text="Use high-speed free tier cloud models (Groq or Google Gemini). 0 MB disk space, instant start, intelligent reasoning.", text_color="gray", wraplength=620, justify="left", font=ctk.CTkFont(size=12)).pack(padx=10, pady=(0, 12), anchor="w")
 
-        self.cloud_provider_var = ctk.StringVar(value="Groq (Free & Fastest - Zero Install)")
-        cloud_options = ["Groq (Free & Fastest - Zero Install)", "Google Gemini (Free Tier - Zero Install)"]
+        self.cloud_provider_var = ctk.StringVar(value="[👁️ Vision Supported] Groq (Free & Fastest - Zero Install)")
+        cloud_options = [
+            "[👁️ Vision Supported] Groq (Free & Fastest - Zero Install)",
+            "[👁️ Vision Supported] Google Gemini (Free Tier - Zero Install)"
+        ]
         self.cloud_provider_menu = ctk.CTkOptionMenu(
             tab_cloud,
             values=cloud_options,
@@ -1266,7 +1269,14 @@ class NoMoreClutterApp(ctk.CTk):
         )
         self.cloud_provider_menu.pack(padx=10, pady=(0, 10), anchor="w")
 
-        self.cloud_desc_label = ctk.CTkLabel(tab_cloud, text="⚡ Groq provides ultra-fast free LLaMA 3.3 70B inference with hundreds of tokens per second.", text_color="cyan", wraplength=580, justify="left", font=ctk.CTkFont(size=12))
+        self.cloud_desc_label = ctk.CTkLabel(
+            tab_cloud,
+            text="⚡ Groq provides ultra-fast free LLaMA 3.3 70B text + LLaMA 3.2 11B Vision inference.\n👁️ 100% Vision Supported: Analyzes photo scene details instantly with zero disk usage.",
+            text_color="cyan",
+            wraplength=580,
+            justify="left",
+            font=ctk.CTkFont(size=12)
+        )
         self.cloud_desc_label.pack(padx=10, pady=(0, 10), anchor="w")
 
         self.cloud_key_btn = ctk.CTkButton(
@@ -1303,23 +1313,39 @@ class NoMoreClutterApp(ctk.CTk):
         choice = self.embed_model_var.get()
         selected_item = None
         for item in GGUF_CATALOG.values():
-            if item.name == choice:
+            if item.name in choice or item.id in choice:
                 selected_item = item
                 break
         if not selected_item:
             selected_item = GGUF_CATALOG["qwen2.5-1.5b"]
 
-        self.embed_desc_label.configure(text=f"ℹ️ {selected_item.description} (Size: ~{selected_item.size_mb} MB)")
+        if selected_item.has_vision:
+            cap_text = (
+                f"👁️ Vision Supported • Analyzes photo scenes, objects, & documents\n"
+                f"ℹ️ {selected_item.description}\n"
+                f"📦 Size: ~{selected_item.size_mb} MB (Model) + ~{selected_item.mmproj_size_mb} MB (Projector) = ~{selected_item.total_size_mb} MB Total"
+            )
+        else:
+            cap_text = (
+                f"📝 Text-Only • Organizes documents & auto-sorts camera photos by date\n"
+                f"ℹ️ {selected_item.description} (Size: ~{selected_item.size_mb} MB)"
+            )
+
+        self.embed_desc_label.configure(text=cap_text)
 
         is_dl = ModelDownloader.is_model_downloaded(selected_item.filename)
         if is_dl:
             model_path = ModelDownloader.get_model_path(selected_item.filename)
             actual_mb = model_path.stat().st_size / (1024 * 1024)
+            if selected_item.mmproj_filename:
+                proj_path = ModelDownloader.get_mmproj_path(selected_item.filename)
+                if proj_path and proj_path.exists():
+                    actual_mb += proj_path.stat().st_size / (1024 * 1024)
             self.embed_status_label.configure(text=f"✅ Downloaded & Ready to Use ({actual_mb:.0f} MB)", text_color="#51CF66")
             self.embed_download_btn.configure(text="⬇️ Re-Download Model", state="normal")
             self.embed_activate_btn.configure(state="normal")
         else:
-            self.embed_status_label.configure(text=f"⬇️ Not Downloaded Yet (~{selected_item.size_mb} MB needed)", text_color="#FFA94D")
+            self.embed_status_label.configure(text=f"⬇️ Not Downloaded Yet (~{selected_item.total_size_mb} MB needed)", text_color="#FFA94D")
             self.embed_download_btn.configure(text="⬇️ Download & Activate Model", state="normal")
             self.embed_activate_btn.configure(state="disabled")
 
@@ -1328,7 +1354,7 @@ class NoMoreClutterApp(ctk.CTk):
         ModelDownloader, GGUF_CATALOG = get_model_downloader()
         selected_id = "qwen2.5-1.5b"
         for item in GGUF_CATALOG.values():
-            if item.name == choice:
+            if item.name in choice or item.id in choice:
                 selected_id = item.id
                 break
 
@@ -1402,7 +1428,7 @@ class NoMoreClutterApp(ctk.CTk):
         choice = self.embed_model_var.get()
         selected_item = None
         for item in GGUF_CATALOG.values():
-            if item.name == choice:
+            if item.name in choice or item.id in choice:
                 selected_item = item
                 break
         if not selected_item:
@@ -1442,8 +1468,16 @@ class NoMoreClutterApp(ctk.CTk):
 
     def _pull_ollama_action(self):
         choice = self.ollama_model_var.get()
-        tag = choice.split()[0].strip()
-        OllamaManager, _ = get_ollama_manager()
+        OllamaManager, RECOMMENDED_OLLAMA_MODELS = get_ollama_manager()
+        tag = None
+        for m_id in RECOMMENDED_OLLAMA_MODELS.keys():
+            if f" {m_id} " in f" {choice} " or choice.startswith(m_id):
+                tag = m_id
+                break
+        if not tag:
+            cleaned = re.sub(r"^\[.*?\]\s*", "", choice).strip()
+            tag = cleaned.split()[0].strip()
+
         is_running, _ = OllamaManager.check_status()
         if not is_running:
             messagebox.showwarning("Ollama Not Running", "Ollama is not running on localhost:11434.\nPlease start Ollama and click Refresh.")
