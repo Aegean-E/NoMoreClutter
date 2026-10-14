@@ -199,7 +199,12 @@ Respond ONLY with a valid JSON array of objects:
                         visited_ids.add(item_id)
                         
                         folder_name = self._sanitize_folder_name(item.get("folder", "General"))
-                        new_filename = self._sanitize_filename(item.get("name", os.path.basename(orig_path)), orig_path)
+                        
+                        # Deterministic AI rename setting enforcement
+                        if ai_rename:
+                            new_filename = self._sanitize_filename(item.get("name", os.path.basename(orig_path)), orig_path)
+                        else:
+                            new_filename = os.path.basename(orig_path)
 
                         # Camera timestamp anti-hallucination guard for images without vision
                         ext = os.path.splitext(orig_path)[1].lower()
@@ -215,10 +220,15 @@ Respond ONLY with a valid JSON array of objects:
                                     new_filename = basename
                         
                         # Preserve existing folder constraint if create_new_folders is False
-                        if not create_new_folders and existing_folders:
-                            folder_name = self._match_closest_folder(folder_name, existing_folders)
+                        if not create_new_folders:
+                            if existing_folders:
+                                folder_name = self._match_closest_folder(folder_name, existing_folders)
+                                target_path = os.path.join(output_folder, folder_name, new_filename)
+                            else:
+                                target_path = os.path.join(output_folder, new_filename)
+                        else:
+                            target_path = os.path.join(output_folder, folder_name, new_filename)
 
-                        target_path = os.path.join(output_folder, folder_name, new_filename)
                         changes.append(FileChange(
                             original=orig_path,
                             action="move",
@@ -285,10 +295,14 @@ Respond ONLY with a valid JSON array of objects:
                     folder = "Images"
                     new_filename = os.path.basename(img_path)
 
-                if not create_new_folders and existing_folders:
-                    folder = self._match_closest_folder(folder, existing_folders)
-
-                new_path = os.path.join(output_folder, folder, new_filename)
+                if not create_new_folders:
+                    if existing_folders:
+                        folder = self._match_closest_folder(folder, existing_folders)
+                        new_path = os.path.join(output_folder, folder, new_filename)
+                    else:
+                        new_path = os.path.join(output_folder, new_filename)
+                else:
+                    new_path = os.path.join(output_folder, folder, new_filename)
                 results.append(FileChange(original=img_path, action="move", new_path=new_path))
 
             except Exception as e:

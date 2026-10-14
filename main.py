@@ -79,6 +79,7 @@ class NoMoreClutterApp(ctk.CTk):
             "auto_execute": self.auto_execute_var.get(),
             "limit": self.limit_entry.get().strip(),
             "batch_size": self.batch_size_entry.get().strip(),
+            "included_categories": {cat: var.get() for cat, var in self.type_vars.items()} if hasattr(self, "type_vars") else {},
         }
         with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
             json.dump(self.settings, f, indent=2)
@@ -157,9 +158,11 @@ class NoMoreClutterApp(ctk.CTk):
         
         ctk.CTkLabel(file_types_frame, text="📋 File Categories to Include", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, columnspan=3, padx=15, pady=(12, 6), sticky="w")
         
+        saved_cats = self.settings.get("included_categories", {})
         self.type_vars = {}
         for i, (category, extensions) in enumerate(FILE_TYPE_CATEGORIES.items()):
-            self.type_vars[category] = ctk.BooleanVar(value=True)  # Enabled by default for zero-friction
+            is_enabled = saved_cats.get(category, True)
+            self.type_vars[category] = ctk.BooleanVar(value=is_enabled)
             ext_display = ", ".join(extensions[:3]) + ("..." if len(extensions) > 3 else "")
             ctk.CTkCheckBox(file_types_frame, text=f"{category} ({ext_display})", variable=self.type_vars[category]).grid(row=1 + i // 3, column=i % 3, padx=15, pady=4, sticky="w")
         
@@ -357,13 +360,13 @@ class NoMoreClutterApp(ctk.CTk):
         self.connection_status.pack(padx=10, pady=5, anchor="w")
         
         # Initialize provider presets state
-        self._update_provider_ui(self.provider_var.get())
+        self._update_provider_ui(self.provider_var.get(), force_defaults=False)
 
     def _on_provider_changed(self, choice):
-        self._update_provider_ui(choice)
+        self._update_provider_ui(choice, force_defaults=True)
         self._refresh_ai_status_async()
 
-    def _update_provider_ui(self, provider_name: str):
+    def _update_provider_ui(self, provider_name: str, force_defaults: bool = False):
         _, _, get_by_name, _, _ = get_provider_registry()
         preset = get_by_name(provider_name)
         if not preset:
@@ -371,13 +374,17 @@ class NoMoreClutterApp(ctk.CTk):
 
         self.provider_desc_label.configure(text=f"ℹ️ {preset.description}")
         
-        # Update URL and Model if they match prior presets or are default
-        self.llm_url.delete(0, "end")
-        self.llm_url.insert(0, preset.base_url)
+        # Update URL and Model if requested (e.g. user selected new preset) or if currently empty
+        current_url = self.llm_url.get().strip()
+        if force_defaults or not current_url:
+            self.llm_url.delete(0, "end")
+            self.llm_url.insert(0, preset.base_url)
         
-        model_to_use = preset.vision_model if self.analyze_images_var.get() else preset.default_model
-        self.llm_model.delete(0, "end")
-        self.llm_model.insert(0, model_to_use)
+        current_model = self.llm_model.get().strip()
+        if force_defaults or not current_model:
+            model_to_use = preset.vision_model if self.analyze_images_var.get() else preset.default_model
+            self.llm_model.delete(0, "end")
+            self.llm_model.insert(0, model_to_use)
         
         if preset.requires_api_key:
             self.key_label.configure(text="API Key (Required):", text_color="#FFA94D")
@@ -410,12 +417,18 @@ class NoMoreClutterApp(ctk.CTk):
         self.update()
         
         try:
+            _, _, get_by_name, _, _ = get_provider_registry()
+            preset = get_by_name(self.provider_var.get())
+            provider_id = preset.id if preset else ("embedded" if self.llm_url.get().strip() == "local://embedded" else "custom")
+            model_name = self.llm_model.get().strip()
+
             LLMService, _ = get_LLMService()
             llm = LLMService(
                 base_url=self.llm_url.get().strip(),
                 api_key=self.api_key_entry.get().strip(),
+                provider_id=provider_id,
+                model=model_name,
             )
-            model_name = self.llm_model.get().strip()
             success, msg = llm.test_connection(model_name)
             if success:
                 self.connection_status.configure(text=f"✅ {msg}", text_color="#51CF66")
@@ -1247,6 +1260,13 @@ class NoMoreClutterApp(ctk.CTk):
             messagebox.showinfo("Info", "No matching files found in the source directory.")
             return
 
+        try:
+            limit = int(self.limit_entry.get().strip() or 0)
+        except Exception:
+            limit = 0
+        if limit > 0:
+            files = files[:limit]
+
         output = self.output_folder if self.output_folder else self.source_folder
         RLMOrganizer, _ = get_RLMOrganizer()
         
@@ -1256,19 +1276,29 @@ class NoMoreClutterApp(ctk.CTk):
         for f in files:
             cat = RLMOrganizer.get_heuristic_category(f)
             folder_name = cat
-            if not self.create_folders_var.get() and existing:
-                folder_name = RLMOrganizer._match_closest_folder(cat, existing)
+            if not self.create_folders_var.get():
+                if existing:
+                    folder_name = RLMOrganizer._match_closest_folder(cat, existing)
+                else:
+                    folder_name = ""
+            
+            target_path = os.path.join(output, folder_name, os.path.basename(f)) if folder_name else os.path.join(output, os.path.basename(f))
             changes.append(FileChange(
                 original=f,
                 action="move",
-                new_path=os.path.join(output, folder_name, os.path.basename(f))
+                new_path=target_path
             ))
+
+        # Honor numbered_rename setting
+        if self.numbered_rename_var.get() and changes:
+            changes = RLMOrganizer._apply_numbered_rename(changes)
 
         self.analysis_results = changes
         self.output_text.delete("1.0", "end")
         self.output_text.insert("end", f"⚡ Quick Organized {len(changes)} files using smart rules:\n\n")
         for c in changes:
-            dest_cat = os.path.basename(os.path.dirname(c.new_path))
+            dest_dir = os.path.dirname(c.new_path)
+            dest_cat = os.path.basename(dest_dir) if dest_dir != output else "(root)"
             self.output_text.insert("end", f"  • {os.path.basename(c.original)} ➔ {dest_cat}/\n")
 
         self.status_label.configure(text=f"⚡ Ready: {len(changes)} files classified", text_color="#51CF66")
@@ -1338,12 +1368,16 @@ class NoMoreClutterApp(ctk.CTk):
             batch_size = int(self.batch_size_entry.get().strip() or 15)
         except Exception:
             batch_size = 15
+        if batch_size <= 0:
+            batch_size = 15
 
         all_results = []
         output = self.output_folder if self.output_folder else self.source_folder
 
         _, _, get_by_name, _, _ = get_provider_registry()
         preset = get_by_name(self.provider_var.get())
+        provider_id = preset.id if preset else ("embedded" if self.llm_url.get().strip() == "local://embedded" else "custom")
+        model_name = self.llm_model.get().strip()
         pacing_sec = preset.recommended_pacing_sec if preset else 0.2
 
         try:
@@ -1351,6 +1385,8 @@ class NoMoreClutterApp(ctk.CTk):
             llm = LLMService(
                 base_url=self.llm_url.get().strip(),
                 api_key=self.api_key_entry.get().strip(),
+                provider_id=provider_id,
+                model=model_name,
             )
             
             existing = self._get_existing_folders() + self.created_folders

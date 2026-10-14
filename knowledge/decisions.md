@@ -138,6 +138,33 @@ Implement a multi-path 1-Click Quick Deploy architecture:
 
 ### Consequences
 - **Positive**: Zero-guesswork tuning tailored to user hardware; prevents bizarre photo hallucinations; provides clear guidance on when to enable Vision.
+
+---
+
+## ADR-009: Comprehensive Settings Architecture, Provider Auto-Detection & Persistence
+
+### Context
+1. **Settings Integrity & State Coupling**: The settings dialog manages 13 configuration controls across AI endpoints, organization rules, and performance limits. If provider switching unconditionally overwrites saved custom URLs and models, users lose custom configurations across window re-opens.
+2. **Embedded GGUF Provider Dispatch**: Calling `LLMService` without explicitly passing `provider_id="embedded"` when `base_url="local://embedded"` caused fallback to `OpenAICompatibleProvider`, triggering invalid network requests instead of invoking `EmbeddedProvider`.
+3. **Category Selection Volatility**: Category checkboxes (Documents, Images, Audio, Video, Archives, Code) were not persisted to `settings.json`, resetting to all-enabled on every restart.
+4. **Deterministic Setting Enforcement**: Options like `ai_rename=False` and `create_folders=False` occasionally suffered from LLM non-compliance unless enforced deterministically at post-processing.
+
+### Decision
+1. **Self-Healing Provider Auto-Detection**:
+   - `LLMService.__init__` automatically inspects `base_url` and detects `"local://embedded"`, switching `provider_id` to `"embedded"`.
+   - UI callers (`_test_connection`, `_analyze_thread`) resolve preset IDs before dispatch.
+2. **Protected Settings Preservation**:
+   - `_update_provider_ui` accepts a `force_defaults: bool` flag. When initializing from disk, existing custom `llm_url` and `llm_model` values are preserved rather than overwritten by preset defaults.
+3. **Full Settings & Category Persistence**:
+   - `included_categories` map is saved and loaded in `settings.json`, preserving checkbox filters across application sessions.
+4. **Deterministic Option Enforcement**:
+   - When `ai_rename=False`, original filename is preserved in code regardless of LLM generation.
+   - When `create_folders=False` with no existing folders, files are placed in destination root rather than arbitrary subfolders.
+   - `_quick_organize` respects `limit`, `numbered_rename`, and `create_folders`.
+
+### Consequences
+- **Positive**: Every setting operates deterministically and predictably in both AI Organize and Quick Organize modes; zero settings drift across restarts.
+
 - **Negative**: Benchmark takes 1-3 seconds to run when explicitly triggered by the user.
 
 

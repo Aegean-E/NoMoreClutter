@@ -9,14 +9,14 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 1470 | 71869 | 1 | 0 |
+| `main.py` | 1506 | 73635 | 1 | 0 |
 | `models/__init__.py` | 44 | 1399 | 2 | 0 |
 | `services/__init__.py` | 39 | 1266 | 0 | 9 |
 | `services/benchmark_service.py` | 181 | 7724 | 2 | 0 |
 | `services/document_peeker.py` | 151 | 5969 | 1 | 0 |
 | `services/file_executor.py` | 232 | 8492 | 1 | 0 |
 | `services/file_scanner.py` | 40 | 1408 | 1 | 0 |
-| `services/llm_service.py` | 204 | 8385 | 2 | 0 |
+| `services/llm_service.py` | 209 | 8628 | 2 | 0 |
 | `services/model_downloader.py` | 181 | 6535 | 2 | 0 |
 | `services/ollama_manager.py` | 158 | 5646 | 2 | 0 |
 | `services/providers/__init__.py` | 44 | 1198 | 0 | 1 |
@@ -24,7 +24,7 @@
 | `services/providers/embedded.py` | 94 | 4160 | 1 | 0 |
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
 | `services/providers/registry.py` | 130 | 4668 | 1 | 3 |
-| `services/rlm_organizer.py` | 393 | 16216 | 2 | 0 |
+| `services/rlm_organizer.py` | 407 | 16980 | 2 | 0 |
 | `tests/test_ai_status.py` | 118 | 5346 | 1 | 0 |
 | `tests/test_benchmark_service.py` | 125 | 5140 | 3 | 0 |
 | `tests/test_deploy_manager.py` | 189 | 7764 | 4 | 0 |
@@ -34,6 +34,7 @@
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
 | `tests/test_providers.py` | 54 | 1795 | 1 | 0 |
 | `tests/test_rlm_organizer.py` | 78 | 3409 | 2 | 0 |
+| `tests/test_settings_functionality.py` | 232 | 9316 | 1 | 0 |
 | `tests/test_sync_and_knowledge.py` | 87 | 3297 | 1 | 0 |
 
 ---
@@ -49,7 +50,7 @@
   - Method `._build_ui()`
   - Method `._build_settings_window()`
   - Method `._on_provider_changed(choice)`
-  - Method `._update_provider_ui(provider_name)`
+  - Method `._update_provider_ui(provider_name, force_defaults)`
   - Method `._on_vision_toggled()`
   - Method `._toggle_show_key()`
   - Method `._open_signup_url()`
@@ -455,6 +456,25 @@ Tests initialization, error encapsulation, and integration with RLM organizer.
   - Method `.test_heuristic_categorization()`
   - Method `.test_numbered_rename()`
   - Method `.test_organize_mock()`
+
+### `tests/test_settings_functionality.py`
+> Unit tests verifying the function of EVERY setting in NoMoreClutter (PRINCIPLE-011).
+Tests AI rename, folder creation, numbered rename, content peeking, limits,
+batch sizes, embedded provider detection, and settings persistence.
+
+#### Classes
+- **`TestSettingsFunctionality`**
+  - Method `.setUp()`
+  - Method `.tearDown()`
+  - Method `.test_ai_rename_setting_disabled_guarantees_original_name()`
+  - Method `.test_ai_rename_setting_enabled_applies_sanitized_name()`
+  - Method `.test_create_folders_setting_enabled()`
+  - Method `.test_create_folders_setting_disabled_with_existing()`
+  - Method `.test_create_folders_setting_disabled_without_existing()`
+  - Method `.test_numbered_rename_setting_enabled()`
+  - Method `.test_content_peeking_setting_enabled_and_disabled()`
+  - Method `.test_embedded_provider_auto_resolution()`
+  - Method `.test_settings_persistence_all_keys()`
 
 ### `tests/test_sync_and_knowledge.py`
 > Unit tests for Principles and Knowledge Base Synchronization (PRINCIPLE-011).

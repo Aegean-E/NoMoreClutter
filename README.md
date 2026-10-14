@@ -162,6 +162,7 @@ NoMoreClutter/
 ├── tests/                     # Automated unit test suite (PRINCIPLE-011)
 │   ├── test_ai_status.py      # AI plugged/unplugged indicator & health check tests
 │   ├── test_benchmark_service.py # Benchmark latency, vision probing & photo guard tests
+│   ├── test_settings_functionality.py # Comprehensive settings function & persistence tests
 │   ├── test_providers.py      # Provider registry & creation tests
 │   ├── test_deploy_manager.py # Model downloader, Ollama manager & embedded provider tests
 │   ├── test_document_peeker.py # PDF, DOCX, and text snippet extraction tests

@@ -21,6 +21,11 @@ class LLMService:
     def __init__(self, base_url: str = "http://localhost:1234/v1", api_key: str = "not-needed", provider_id: str = "custom", **kwargs):
         self.base_url = base_url
         self.api_key = api_key
+        
+        # Auto-detect embedded provider if base_url is local://embedded
+        if provider_id == "custom" and (base_url == "local://embedded" or "embedded" in str(base_url).lower()):
+            provider_id = "embedded"
+            
         self.provider_id = provider_id
         
         self.provider = get_provider(
