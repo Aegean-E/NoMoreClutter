@@ -22,9 +22,13 @@ NoMoreClutter follows a clean separation of concerns:
 │  │ (Directory traversal)│    │(Hierarchical cluster)│  │
 │  └──────────────────────┘    └──────────┬───────────┘  │
 │  ┌──────────────────────┐               │              │
-│  │   file_executor.py   │               │              │
-│  │(Safe moves & Undo)   │               │              │
+│  │  document_peeker.py  │◄──────────────┤              │
+│  │(Zero-dep text peek)  │               │              │
 │  └──────────────────────┘               │              │
+│  ┌──────────────────────┐               │              │
+│  │   file_executor.py   │◄──────────────┘              │
+│  │(Persistent disk undo)│                              │
+│  └──────────────────────┘                              │
 └─────────────────────────────────────────┼──────────────┘
                                           │
 ┌─────────────────────────────────────────▼──────────────┐
@@ -62,10 +66,15 @@ NoMoreClutter follows a clean separation of concerns:
   - Serializes files into dense JSON schemas (`id`, `name`, `ext`) saving ~70% token budget.
   - Enforces deterministic ID-to-file mapping.
   - Provides a 100% offline, zero-AI heuristic fallback.
+- **`document_peeker.py`**:
+  - Zero-dependency document text extractor for intelligent content-based sorting.
+  - Extracts budgeted snippets ($\le 200$ chars) from PDF, Word (`.docx`), Markdown, and code/text files without bloated third-party libraries.
+  - Feeds `"peek"` previews directly into dense RLM payloads.
 - **`file_executor.py`**:
-  - Moves files safely to target directories.
-  - Dynamically prevents collisions using `stem (n).ext`.
-  - Maintains an undo operation history stack enabling batch rollback.
+  - Safely moves/copies files to target directories with collision resolution (`stem (n).ext`).
+  - Atomically writes batch operations to `history.json` for persistent multi-session undo.
+  - Detects past sessions on launch, enabling one-click rollbacks across restarts.
+  - Performs reverse-order rollbacks and automatically prunes empty destination directories.
 - **`model_downloader.py`**:
   - 1-click model streaming utility downloading compact GGUF weights directly from HuggingFace.
   - Atomic rename and cancellation support via standard library `urllib`.
@@ -93,24 +102,25 @@ NoMoreClutter follows a clean separation of concerns:
 5. For each Cluster:
      - Check file types:
        * Images with vision enabled -> provider.chat_vision()
-       * Non-images or text files  -> provider.chat() with dense JSON
+       * Documents/Code with peeking enabled -> document_peeker.peek() injected into payload
+       * Non-images or text files -> provider.chat() with dense JSON
      - If provider fails or not configured -> heuristic rule engine
      - Parse response & map strictly by integer file ID
 6. file_executor.py receives List[Tuple[FileInfo, str, Optional[str]]]
 7. Move files with collision avoidance
-8. Operation batch saved to undo stack
-9. UI notified: progress complete, logs written
+8. Batch operation atomically saved to history.json (persistent across restarts)
+9. UI notified: progress complete, logs written, Undo button enabled
 ```
 
 ### 3.2 Undo Pipeline
 ```
-1. User clicks "↩ Undo Moves"
-2. file_executor.undo_last_batch() pops the last BatchOperation
+1. User clicks "↩ Undo Moves" (enabled on launch if history.json contains past sessions)
+2. file_executor.undo_last_batch() pops the most recent batch from history.json
 3. For each moved file (in reverse order):
-     - Safely moves file back to original path
+     - Safely moves file back to original path with collision resolution
      - Deletes newly created empty directories
-4. Returns count of restored files
-5. UI reflects restoration in console log
+4. Updates or clears history.json atomically
+5. UI reflects restoration count and remaining batches in console log
 ```
 
 ---

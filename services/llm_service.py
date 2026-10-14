@@ -44,6 +44,7 @@ class LLMService:
         analyze_images: bool = False,
         numbered_rename: bool = False,
         ai_rename: bool = True,
+        content_peeking: bool = True,
         target_folder: str = "",
         output_folder: str = "",
         progress_callback=None,
@@ -63,6 +64,7 @@ class LLMService:
                 analyze_images=analyze_images,
                 ai_rename=ai_rename,
                 numbered_rename=numbered_rename,
+                content_peeking=content_peeking,
                 progress_callback=progress_callback,
             )
         except Exception as e:

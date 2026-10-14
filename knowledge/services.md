@@ -67,19 +67,25 @@ Implements `BaseAIProvider` over standard OpenAI-compatible REST endpoints.
 
 ## 3. `FileExecutor` (`services/file_executor.py`)
 
-Handles safe disk operations and maintains rollback history.
+Handles safe disk operations and maintains persistent, multi-session rollback history.
 
 ### Safety Features
-- **Collision Avoidance**: If `Target/report.pdf` exists, `get_safe_destination_path()` automatically increments to `Target/report (1).pdf`, `Target/report (2).pdf`, etc.
-- **Batch History**: Every executed move is appended to an in-memory stack `_undo_stack: List[List[FileMoveRecord]]`.
+- **Collision Avoidance**: If `Target/report.pdf` exists, `_resolve_collision()` automatically increments to `Target/report (1).pdf`, `Target/report (2).pdf`, etc.
+- **Persistent Multi-Session Undo**: All executed batches are logged to `history.json` via crash-proof atomic write (`history.json.tmp` -> replace). Undo operations persist and remain available across application restarts.
+- **Reverse-Order Rollback**: `undo_last_batch()` restores files in strict reverse order to original locations with collision handling, and automatically cleans up empty created destination directories.
+- **Legacy Compatibility**: Automatically parses both dictionary batch records and legacy raw list formats.
 
 ### Methods
-- `execute_moves(moves: List[Tuple[FileInfo, str, Optional[str]]], base_target_dir: str, callback: Optional[Callable[[str], None]] = None) -> List[Tuple[FileInfo, str]]`:
-  Executes file moves, creates destination folders, and logs moves.
-- `undo_last_batch(callback: Optional[Callable[[str], None]] = None) -> int`:
-  Rolls back the most recent batch of moved files to their original paths.
-- `get_safe_destination_path(target_folder: str, filename: str) -> str`:
-  Returns a guaranteed non-colliding path.
+- `execute(changes: List[FileChange]) -> Tuple[int, int]`:
+  Safely moves/copies files, creates parent directories, records batch with timestamp to persistent history, and returns `(success_count, error_count)`.
+- `undo_last_batch() -> Tuple[int, int]`:
+  Reverts the most recent batch from `history.json`, cleans empty folders, and updates disk persistence.
+- `has_undo() -> bool`:
+  Checks if any undo operations are available across past or current sessions.
+- `get_history_summary() -> List[Dict[str, Any]]`:
+  Returns structured summary of past batches (`batch_id`, `timestamp_str`, `count`) for UI display and status indicators.
+- `clear_history()`:
+  Resets in-memory history and purges `history.json` from disk.
 
 ---
 
@@ -115,4 +121,25 @@ Provides 1-click Ollama discovery and streaming model pulling via local REST API
 - **`list_installed_models(...)`**: Inspects tags of locally installed models in Ollama.
 - **`pull_model(...)`**: Sends `POST /api/pull` with `stream: true`, parsing streaming progress updates.
 - **`RECOMMENDED_OLLAMA_MODELS`**: Curated recommendations (`llama3.2:1b`, `qwen2.5:1.5b`, `llama3.2:3b`, `moondream:latest`).
+
+---
+
+## 8. `DocumentPeeker` (`services/document_peeker.py`)
+
+Zero-dependency lightweight content extractor for intelligent semantic file organization (PRINCIPLE-007, PRINCIPLE-009).
+
+### Key Concepts
+- **Zero Heavy Dependencies**: Uses standard Python libraries (`zipfile`, `re`, `zlib`) without pulling in heavy binary dependencies (`pypdf`, `python-docx`, `tika`).
+- **Token-Budgeted Snippets**: Enforces strict character limits (default `max_chars=200`, truncated with `...`) to prevent token window exhaustion and preserve TPM quotas.
+- **Whitespace Sanitization**: Strips control characters, collapses newlines and repeated tabs into single spaces for clean single-line JSON prompt embedding.
+
+### Supported File Formats
+- **Plain Text / Code**: `.txt`, `.md`, `.markdown`, `.rst`, `.csv`, `.tsv`, `.json`, `.xml`, `.html`, `.css`, `.js`, `.ts`, `.py`, `.java`, `.c`, `.cpp`, `.h`, `.cs`, `.go`, `.rs`, `.sh`, `.bat`, `.ps1`, `.yaml`, `.yml`, `.ini`, `.cfg`, `.conf`, `.sql`, `.log`.
+- **Word Documents (`.docx`)**: Unzips `word/document.xml` using stdlib `zipfile` and parses `<w:t>` tags via regex.
+- **PDF Documents (`.pdf`)**: Scans initial bytes for uncompressed `BT ... ET` text streams and decompresses FlateDecode zlib streams with standard `zlib`.
+
+### Methods
+- `peek(file_path: str, max_chars: int = 200) -> str`:
+  Dispatches to format-specific readers based on file extension; returns a sanitized, token-budgeted text preview (or `""` if unsupported or unreadable).
+
 

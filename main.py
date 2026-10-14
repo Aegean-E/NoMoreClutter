@@ -70,6 +70,7 @@ class NoMoreClutterApp(ctk.CTk):
             "analyze_images": self.analyze_images_var.get(),
             "numbered_rename": self.numbered_rename_var.get(),
             "ai_rename": self.ai_rename_var.get(),
+            "content_peeking": self.content_peeking_var.get(),
             "auto_execute": self.auto_execute_var.get(),
             "limit": self.limit_entry.get().strip(),
             "batch_size": self.batch_size_entry.get().strip(),
@@ -167,7 +168,16 @@ class NoMoreClutterApp(ctk.CTk):
         
         self.output_text = ctk.CTkTextbox(output_frame, wrap="none", font=ctk.CTkFont(family="Consolas", size=12))
         self.output_text.pack(fill="both", expand=True, padx=15, pady=(0, 15))
-        
+
+        # Check for persistent undo operations from previous sessions (Option 2)
+        FileExecutor = get_FileExecutor()
+        if FileExecutor.has_undo():
+            self.undo_btn.configure(state="normal")
+            summaries = FileExecutor.get_history_summary()
+            if summaries:
+                last_batch = summaries[0]
+                self.output_text.insert("end", f"ℹ️ Multi-session Undo: {last_batch['count']} files from previous run ({last_batch['timestamp_str']}) can be undone with '↩ Undo Moves'.\n\n")
+
         self._build_settings_window()
 
     def _build_settings_window(self):
@@ -256,6 +266,9 @@ class NoMoreClutterApp(ctk.CTk):
         
         self.numbered_rename_var = ctk.BooleanVar(value=self.settings.get("numbered_rename", False))
         ctk.CTkCheckBox(scroll, text="Rename files sequentially (1.jpg, 2.jpg...)", variable=self.numbered_rename_var).pack(padx=10, pady=4, anchor="w")
+        
+        self.content_peeking_var = ctk.BooleanVar(value=self.settings.get("content_peeking", True))
+        ctk.CTkCheckBox(scroll, text="Peek inside documents (PDF, DOCX, TXT) for intelligent content-based categorization", variable=self.content_peeking_var).pack(padx=10, pady=4, anchor="w")
         
         # Section 3: Performance & Limits
         ctk.CTkLabel(scroll, text="⚡ Performance & Limits", font=ctk.CTkFont(weight="bold", size=14)).pack(padx=10, pady=(20, 5), anchor="w")
@@ -1046,6 +1059,7 @@ class NoMoreClutterApp(ctk.CTk):
                     analyze_images=self.analyze_images_var.get(),
                     numbered_rename=self.numbered_rename_var.get(),
                     ai_rename=self.ai_rename_var.get(),
+                    content_peeking=self.content_peeking_var.get(),
                     target_folder=output,
                     output_folder=output,
                 )

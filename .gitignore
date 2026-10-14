@@ -13,6 +13,9 @@ ENV/
 
 # User configuration & local secrets
 settings.json
+history.json
+*.history
+
 
 # IDE & Editor caches
 .vscode/

@@ -27,3 +27,8 @@ def get_model_downloader():
 def get_ollama_manager():
     from .ollama_manager import OllamaManager, RECOMMENDED_OLLAMA_MODELS
     return OllamaManager, RECOMMENDED_OLLAMA_MODELS
+
+def get_document_peeker():
+    from .document_peeker import DocumentPeeker
+    return DocumentPeeker
+

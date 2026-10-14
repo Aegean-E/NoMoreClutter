@@ -22,6 +22,7 @@ class AppSettings:
     analyze_images: bool = False
     numbered_rename: bool = False
     ai_rename: bool = True
+    content_peeking: bool = True
     auto_execute: bool = False
     limit: str = "50"
     batch_size: str = "15"

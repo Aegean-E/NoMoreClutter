@@ -94,3 +94,28 @@ Implement a multi-path 1-Click Quick Deploy architecture:
 - **Positive**: True zero-friction onboarding (PRINCIPLE-008); users can deploy an AI model in a single click with visual progress.
 - **Negative**: Model weights require disk space (~400MB to ~1GB), managed safely outside git via `.gitignore`.
 
+---
+
+## ADR-007: Persistent Multi-Session Undo & Zero-Dependency Document Peeking
+
+### Context
+1. **Volatile Undo**: Reorganizing files in prior versions relied solely on an in-memory stack. If a user closed the app or experienced a crash, all undo capability was lost.
+2. **Cryptic File Names**: Many scanned or downloaded files have ambiguous names (e.g. `Scan_001.pdf`, `doc_final.docx`, `export.csv`). Categorizing purely on filenames caused inaccurate grouping. Heavy text-extraction libraries (`pypdf`, `python-docx`, `tika`) would violate lean dependency principles (PRINCIPLE-007).
+
+### Decision
+1. **Atomic Disk History (`history.json`)**:
+   - `FileExecutor` persists batch operations to `history.json` via atomic `.tmp` replacement.
+   - On startup, `FileExecutor.has_undo()` automatically detects past sessions, enabling the Undo button with summary notices.
+   - Rollbacks occur in reverse chronological order, safely resolve collisions, and clean up newly empty destination folders.
+2. **Zero-Dependency Document Peeking (`services/document_peeker.py`)**:
+   - Text/code files are read directly with UTF-8 / latin-1 fallback.
+   - `.docx` documents are inspected using Python standard library `zipfile`, reading `<w:t>` tags from `word/document.xml`.
+   - `.pdf` documents are inspected for uncompressed text blocks and decompressed FlateDecode streams using Python standard library `zlib`.
+   - Extracted snippets are strictly capped at $\le 200$ characters and whitespace-sanitized to preserve token frugality (PRINCIPLE-009).
+   - Injected into dense RLM organizer payloads under the `"peek"` key.
+
+### Consequences
+- **Positive**: Reorganize operations can be undone days or weeks later across reboots; semantic categorization accuracy is dramatically elevated; zero external pip dependencies added; token overhead is bounded and lean.
+- **Negative**: Incur negligible disk I/O when reading the first few bytes of documents during planning.
+
+

@@ -10,6 +10,7 @@ import re
 from typing import List, Dict, Any, Optional
 from models import FileChange, IMAGE_EXTENSIONS, FILE_TYPE_CATEGORIES
 from .providers.base import BaseAIProvider
+from .document_peeker import DocumentPeeker
 
 
 class RLMOrganizerError(Exception):
@@ -33,6 +34,7 @@ class RLMOrganizer:
         analyze_images: bool = False,
         ai_rename: bool = True,
         numbered_rename: bool = False,
+        content_peeking: bool = True,
         cluster_batch_size: int = 15,
         progress_callback=None,
     ) -> List[FileChange]:
@@ -63,7 +65,7 @@ class RLMOrganizer:
         # Non-image files or images when vision is disabled
         other_files = regular_files if analyze_images else files
         if other_files:
-            # 3. RLM Clustering and Recursive Bounded Batching
+            # 3. RLM Clustering and Recursive Bounded Batching with Document Content Peeking
             reg_results = self._process_regular_rlm(
                 files=other_files,
                 model=model,
@@ -71,6 +73,7 @@ class RLMOrganizer:
                 existing_folders=existing,
                 create_new_folders=create_new_folders,
                 ai_rename=ai_rename,
+                content_peeking=content_peeking,
                 cluster_batch_size=cluster_batch_size,
                 progress_callback=progress_callback,
             )
@@ -90,6 +93,7 @@ class RLMOrganizer:
         existing_folders: List[str],
         create_new_folders: bool,
         ai_rename: bool,
+        content_peeking: bool,
         cluster_batch_size: int,
         progress_callback=None,
     ) -> List[FileChange]:
@@ -107,6 +111,7 @@ class RLMOrganizer:
                 existing_folders=existing_folders,
                 create_new_folders=create_new_folders,
                 ai_rename=ai_rename,
+                content_peeking=content_peeking,
             )
             all_changes.extend(cluster_changes)
 
@@ -123,6 +128,7 @@ class RLMOrganizer:
         existing_folders: List[str],
         create_new_folders: bool,
         ai_rename: bool,
+        content_peeking: bool = True,
     ) -> List[FileChange]:
         """Analyze a scoped cluster using compact token-efficient payload schemas."""
         # Dense payload: Transmit relative filenames + IDs rather than full paths (saves ~70% tokens)
@@ -130,7 +136,12 @@ class RLMOrganizer:
         id_to_filepath: Dict[int, str] = {}
         for idx, path in enumerate(batch):
             id_to_filepath[idx] = path
-            dense_items.append({"id": idx, "name": os.path.basename(path)})
+            item_data = {"id": idx, "name": os.path.basename(path)}
+            if content_peeking:
+                peek_snippet = DocumentPeeker.peek(path, max_chars=180)
+                if peek_snippet:
+                    item_data["peek"] = peek_snippet
+            dense_items.append(item_data)
 
         items_json = json.dumps(dense_items, ensure_ascii=False)
         existing_json = json.dumps(existing_folders, ensure_ascii=False) if existing_folders else "[]"
@@ -147,6 +158,12 @@ class RLMOrganizer:
             else f"Choose the best matching folder from existing folders: {existing_json}. If none fit, use 'General'."
         )
 
+        peek_rule = (
+            "3. If a file includes a 'peek' snippet, use its text content (e.g. invoice details, project topic, author) to choose the best folder and descriptive filename."
+            if content_peeking
+            else ""
+        )
+
         prompt = f"""You are a fast, structured file organizer. Categorize these files:
 {items_json}
 
@@ -156,7 +173,8 @@ Available existing folders:
 Rules:
 1. {folder_rule}
 2. {rename_rule}
-3. Respond ONLY with a valid JSON array of objects:
+{peek_rule}
+Respond ONLY with a valid JSON array of objects:
 [{{"id": 0, "folder": "Folder_Name", "name": "descriptive_filename.ext"}}]"""
 
         try:

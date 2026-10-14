@@ -9,12 +9,13 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 1149 | 55898 | 1 | 0 |
-| `models/__init__.py` | 43 | 1366 | 2 | 0 |
-| `services/__init__.py` | 29 | 1018 | 0 | 7 |
-| `services/file_executor.py` | 114 | 3956 | 1 | 0 |
+| `main.py` | 1163 | 56859 | 1 | 0 |
+| `models/__init__.py` | 44 | 1399 | 2 | 0 |
+| `services/__init__.py` | 34 | 1121 | 0 | 8 |
+| `services/document_peeker.py` | 151 | 5969 | 1 | 0 |
+| `services/file_executor.py` | 232 | 8492 | 1 | 0 |
 | `services/file_scanner.py` | 40 | 1408 | 1 | 0 |
-| `services/llm_service.py` | 69 | 2425 | 2 | 0 |
+| `services/llm_service.py` | 71 | 2512 | 2 | 0 |
 | `services/model_downloader.py` | 181 | 6535 | 2 | 0 |
 | `services/ollama_manager.py` | 158 | 5646 | 2 | 0 |
 | `services/providers/__init__.py` | 44 | 1198 | 0 | 1 |
@@ -22,9 +23,10 @@
 | `services/providers/embedded.py` | 94 | 4160 | 1 | 0 |
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
 | `services/providers/registry.py` | 130 | 4668 | 1 | 3 |
-| `services/rlm_organizer.py` | 355 | 13935 | 2 | 0 |
+| `services/rlm_organizer.py` | 373 | 14704 | 2 | 0 |
 | `tests/test_deploy_manager.py` | 189 | 7764 | 4 | 0 |
-| `tests/test_file_executor.py` | 82 | 2915 | 1 | 0 |
+| `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
+| `tests/test_file_executor.py` | 156 | 6060 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
 | `tests/test_providers.py` | 54 | 1795 | 1 | 0 |
@@ -107,17 +109,38 @@
 - `def get_provider_registry()`
 - `def get_model_downloader()`
 - `def get_ollama_manager()`
+- `def get_document_peeker()`
+
+### `services/document_peeker.py`
+> Document Content Peeker (PRINCIPLE-007: Performance, PRINCIPLE-009: Token Frugality)
+Extracts brief, token-budgeted text snippets from documents (TXT, MD, PDF, DOCX, CSV, Code)
+to empower semantic AI categorization without dumping entire files into prompts.
+Zero external dependencies (uses standard library zipfile, zlib, re, os).
+
+#### Classes
+- **`DocumentPeeker`**
+  - *Safely extracts compact text snippets from documents for intelligent categorization.*
+  - Method `.peek(cls, file_path, max_chars)`
+  - Method `._extract_plain_text(file_path, max_bytes)`
+  - Method `._extract_docx(file_path)`
+  - Method `._extract_pdf(file_path, max_scan_bytes)`
+  - Method `._clean_and_truncate(text, max_chars)`
 
 ### `services/file_executor.py`
-> Safe File Operations & Undo Management (PRINCIPLE-007: Performance & Reliability)
-Guarantees collision avoidance, directory creation, and rollback capabilities.
+> Safe File Operations & Persistent Multi-Session Undo Management (PRINCIPLE-007: Reliability)
+Guarantees collision avoidance, directory creation, atomic persistent history logging,
+and multi-session rollback capabilities that survive application restarts.
 
 #### Classes
 - **`FileExecutor`**
-  - *Safe execution engine for file reorganization with collision avoidance and undo tracking.*
+  - *Safe execution engine with persistent multi-session undo tracking and collision resolution.*
+  - Method `._ensure_loaded(cls)`
+  - Method `._load_history(cls)`
+  - Method `._save_history(cls)`
   - Method `.execute(cls, changes)`
   - Method `.undo_last_batch(cls)`
   - Method `.has_undo(cls)`
+  - Method `.get_history_summary(cls)`
   - Method `.clear_history(cls)`
   - Method `._resolve_collision(target_path)`
 
@@ -139,7 +162,7 @@ Adapts the pluggable AI provider and RLM Organizer for backward compatibility an
   - *Unified service facade interfacing with Pluggable AI Providers and RLM Engine.*
   - Method `.__init__(base_url, api_key, provider_id)`
   - Method `.test_connection(model)`
-  - Method `.analyze_files(files, model, create_new_folders, existing_folders, analyze_images, numbered_rename, ai_rename, target_folder, output_folder, progress_callback)`
+  - Method `.analyze_files(files, model, create_new_folders, existing_folders, analyze_images, numbered_rename, ai_rename, content_peeking, target_folder, output_folder, progress_callback)`
 
 ### `services/model_downloader.py`
 > Model Downloader Utility (PRINCIPLE-003, PRINCIPLE-007, PRINCIPLE-008)
@@ -243,9 +266,9 @@ and PRINCIPLE-009 (Token Frugality & Context Budgeting).
 - **`RLMOrganizer`**
   - *Recursive Language Model File Organization Engine.*
   - Method `.__init__(provider)`
-  - Method `.organize(files, model, output_folder, existing_folders, create_new_folders, analyze_images, ai_rename, numbered_rename, cluster_batch_size, progress_callback)`
-  - Method `._process_regular_rlm(files, model, output_folder, existing_folders, create_new_folders, ai_rename, cluster_batch_size, progress_callback)`
-  - Method `._analyze_cluster(batch, model, output_folder, existing_folders, create_new_folders, ai_rename)`
+  - Method `.organize(files, model, output_folder, existing_folders, create_new_folders, analyze_images, ai_rename, numbered_rename, content_peeking, cluster_batch_size, progress_callback)`
+  - Method `._process_regular_rlm(files, model, output_folder, existing_folders, create_new_folders, ai_rename, content_peeking, cluster_batch_size, progress_callback)`
+  - Method `._analyze_cluster(batch, model, output_folder, existing_folders, create_new_folders, ai_rename, content_peeking)`
   - Method `._process_images_hierarchical(files, model, output_folder, existing_folders, create_new_folders, ai_rename, progress_callback)`
   - Method `.get_heuristic_category(file_path)`
   - Method `._heuristic_fallback_batch(files, output_folder, existing_folders)`
@@ -281,6 +304,26 @@ Tests ModelDownloader, OllamaManager, and EmbeddedProvider with mock streaming.
   - Method `.test_service_accessors()`
   - Method `.test_embedded_model_activation_updates_preset()`
 
+### `tests/test_document_peeker.py`
+> Unit tests for Document Content Peeker (PRINCIPLE-007, PRINCIPLE-009, PRINCIPLE-011)
+Tests plain text, docx, pdf stream extraction, truncation, and RLM dense payload integration.
+
+#### Classes
+- **`DummyProvider`**
+  - Method `.__init__()`
+  - Method `.test_connection(model)`
+  - Method `.complete(prompt, model, temperature, max_tokens)`
+  - Method `.analyze_image(image_path, prompt, model, max_tokens)`
+- **`TestDocumentPeeker`**
+  - Method `.setUp()`
+  - Method `.tearDown()`
+  - Method `.test_plain_text_peeking()`
+  - Method `.test_code_file_peeking()`
+  - Method `.test_docx_peeking()`
+  - Method `.test_pdf_peeking_uncompressed()`
+  - Method `.test_nonexistent_or_empty_file()`
+  - Method `.test_rlm_organizer_content_peeking_integration()`
+
 ### `tests/test_file_executor.py`
 > Unit tests for FileExecutor (PRINCIPLE-007)
 Tests collision avoidance, safe moves, and undo management.
@@ -291,6 +334,8 @@ Tests collision avoidance, safe moves, and undo management.
   - Method `.tearDown()`
   - Method `.test_execute_move_and_undo()`
   - Method `.test_collision_avoidance()`
+  - Method `.test_persistent_history_across_restarts()`
+  - Method `.test_legacy_history_format_compatibility()`
 
 ### `tests/test_file_scanner.py`
 > Unit tests for FileScanner (PRINCIPLE-011).

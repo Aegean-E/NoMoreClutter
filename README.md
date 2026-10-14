@@ -24,19 +24,21 @@ An intelligent AI-powered desktop application that automatically organizes your 
 
 ### 🧠 Recursive Language Model (RLM) Organization
 - **Hierarchical Decomposition**: Files are grouped into logical clusters before prompting, preventing token exhaustion and staying well within free-tier rate limits (TPM/RPM).
+- **📄 Intelligent Document Content Peeking**: Extracts compact, token-budgeted text snippets ($\le 200$ chars) from PDF documents, Word files (`.docx`), Markdown, and code/text files with zero third-party dependencies. Enables the AI to accurately classify invoices, meeting notes, and contracts even when filenames are cryptic (e.g., `Scan_001.pdf`).
 - **Token Frugality (~70% Savings)**: Ultra-dense JSON payloads eliminate repetitive path dumps and reduce prompt token overhead.
 - **Deterministic ID Mapping**: Protects against index-shift hallucinations so files are always mapped to their exact decisions.
 - **Single-Pass Vision Analysis**: Categorizes and renames images in a single call rather than multiple redundant round trips.
 
-### 🛡️ File Safety & ↩ Batch Undo
+### 🛡️ File Safety & ↩ Persistent Multi-Session Undo
 - **Collision Avoidance**: Never overwrites existing files; intelligently renames colliding filenames to `name (1).ext`.
-- **One-Click Batch Undo**: Accidental moves can be instantly reverted with the `↩ Undo Moves` button, restoring all files to their original locations.
-- **Non-Destructive Operations**: Files are safely moved, preserving disk space while recording an operation history log.
+- **Persistent Multi-Session Undo**: Operation history is atomically committed to `history.json`. Revert past reorganization batches across app restarts and reboots with a single click of the `↩ Undo Moves` button.
+- **Clean Destination Folders**: Rolling back automatically prunes newly created empty destination directories.
+- **Non-Destructive Operations**: Files are safely moved with zero data loss risk.
 
 ### 🎨 Modern Dark UI
 - **Sleek CustomTkinter Interface**: Designed with dark-mode aesthetic, real-time logging, and interactive controls.
 - **Provider Quick-Switching**: Dropdown selector with pre-configured API URLs, recommended models, and direct links to get free API keys.
-- **Settings Persistence**: Your provider choices, API keys, and scan filters are automatically remembered across sessions.
+- **Configurable Peeking & Settings Persistence**: Toggle document peeking, customize scan filters, and save provider preferences automatically.
 
 ---
 
@@ -141,11 +143,12 @@ NoMoreClutter/
 ├── services/
 │   ├── __init__.py            # Service factories & lazy loaders
 │   ├── file_scanner.py        # File discovery and extension filtering
+│   ├── document_peeker.py     # Zero-dependency document content snippet extractor (PDF, DOCX, text)
 │   ├── rlm_organizer.py       # RLM hierarchical categorization & token optimizer
 │   ├── model_downloader.py    # 1-Click HuggingFace model weight streaming & verification
 │   ├── ollama_manager.py      # 1-Click Ollama API discovery & streaming pull
 │   ├── llm_service.py         # AI facade delegating to RLM and Providers
-│   ├── file_executor.py       # Collision-safe file execution & batch undo history
+│   ├── file_executor.py       # Collision-safe execution & persistent multi-session undo history
 │   └── providers/             # Pluggable AI provider system
 │       ├── __init__.py        # Provider package exports
 │       ├── base.py            # BaseAIProvider abstract interface
@@ -155,8 +158,9 @@ NoMoreClutter/
 ├── tests/                     # Automated unit test suite (PRINCIPLE-011)
 │   ├── test_providers.py      # Provider registry & creation tests
 │   ├── test_deploy_manager.py # Model downloader, Ollama manager & embedded provider tests
+│   ├── test_document_peeker.py # PDF, DOCX, and text snippet extraction tests
 │   ├── test_rlm_organizer.py  # RLM engine & token payload tests
-│   ├── test_file_executor.py  # Safe move, collision avoidance, and undo tests
+│   ├── test_file_executor.py  # Safe move, collision avoidance, and persistent undo tests
 │   ├── test_file_scanner.py   # Shallow/recursive scan & extension filter tests
 │   ├── test_llm_service.py    # LLMService facade & error wrapping tests
 │   └── test_sync_and_knowledge.py # Principle parsing & AST symbol extraction tests
