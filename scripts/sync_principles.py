@@ -139,7 +139,13 @@ def sync_all(check_only: bool = False):
         if check_only:
             print(f"[OUT OF SYNC]: {target_path.relative_to(ROOT_DIR)}")
         else:
-            target_path.write_text(expected_content, encoding="utf-8")
+            # Atomic fsync write (PRINCIPLE-012, PRINCIPLE-013)
+            tmp_target = target_path.with_suffix(target_path.suffix + f".tmp_{os.getpid()}")
+            with open(tmp_target, "w", encoding="utf-8") as f:
+                f.write(expected_content)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_target, target_path)
             print(f"[UPDATED]: {target_path.relative_to(ROOT_DIR)}")
 
     if check_only and mismatches > 0:

@@ -17,6 +17,10 @@ This document defines the architectural guidelines and design principles for **N
 | **[PRINCIPLE-007](#principle-007-performance--resource-optimization-speed--lean-architecture)** | Speed & Lean Optimization | Maximum execution speed, non-blocking async operations, and lean dependency footprint. |
 | **[PRINCIPLE-008](#principle-008-zero-friction-onboarding--hybrid-ai-access-one-click-start)** | One-Click Zero-Install & Hybrid Access | Zero mandatory external apps; one-click cloud AI with full local server preservation. |
 | **[PRINCIPLE-009](#principle-009-token-frugality--lean-code-architecture-context-budgeting)** | Token Frugality & Lean Code | Concise code, strict token budgets, compact payloads, and RLM cluster workarounds. |
+| **[PRINCIPLE-010](#principle-010-ai-knowledge-base--continuous-synchronization)** | AI Knowledge Base | Active codebase documentation in `knowledge/` auto-updated after every change. |
+| **[PRINCIPLE-011](#principle-011-automated-test-verification--continuous-test-coverage-regression-shield)** | Regression Shield | 100% test pass gate and continuous test coverage before staging and committing. |
+| **[PRINCIPLE-012](#principle-012-crash-resilience-state-atomicity--power-loss-recovery-fail-safe-operations)** | Crash Resilience & Atomicity | Fail-safe atomic writes (fsync + replace) and incremental WAL for sudden power cuts. |
+| **[PRINCIPLE-013](#principle-013-incremental-progress-checkpointing--disruption-recovery-zero-progress-loss-workflow)** | Zero-Progress-Loss Workflow | Micro-milestone commits, pre-flight disruption audit, and task ledger recovery. |
 
 ---
 
@@ -127,10 +131,21 @@ This document defines the architectural guidelines and design principles for **N
 
 ---
 
+### PRINCIPLE-013: Incremental Progress Checkpointing & Disruption Recovery (Zero-Progress-Loss Workflow)
+- **Problem**: When electricity cuts out or hardware crashes occur during a multi-file task or long coding session, all uncommitted in-memory work is wiped out, files may be left in half-edited states, and cold-starting AI agents cannot determine what was interrupted or where to resume.
+- **Guideline**:
+  - **Micro-Milestone Atomicity**: Break down complex implementations into small, verifiable sub-tasks and commit working state incrementally rather than accumulating large, vulnerable working-tree drifts.
+  - **Pre-flight Disruption Audit**: Every cold-start session must begin by auditing `git status`, inspecting surviving uncommitted files, and checking for interrupted ledger records before modifying any code.
+  - **Atomic File Modifications**: All source, test, script, and guideline modifications must be written atomically with buffer flushes and atomic replaces (`os.replace`) to eliminate 0-byte truncation risks during unexpected power-downs.
+  - **Disruption Ledger**: Track in-flight multi-step refactors in `.agents/task_ledger.json` (managed via `scripts/disruption_recovery.py`) so any subsequent agent or developer can seamlessly inspect the checkpoint trail and resume.
+  - **Non-Breaking Invariant**: Every intermediate checkpoint commit must maintain a clean build and 100% passing automated unit tests (`PRINCIPLE-011`).
+
+---
+
 ## 📝 How to Add New Principles
 
 To add a new principle:
-1. Assign the next sequential ID (`PRINCIPLE-013`, etc.).
+1. Assign the next sequential ID (`PRINCIPLE-014`, etc.).
 2. Define the **Problem/Concept** and concrete **Rules/Guidelines**.
 3. Update `GUIDELINES.md` and `AGENTS.md`.
 4. Run `py scripts/sync_principles.py` to auto-propagate across all AI guidelines.

@@ -37,6 +37,7 @@
 | `tests/test_cleaner_service.py` | 85 | 3024 | 1 | 0 |
 | `tests/test_deduplicator.py` | 138 | 5268 | 1 | 0 |
 | `tests/test_deploy_manager.py` | 241 | 10673 | 4 | 0 |
+| `tests/test_disruption_recovery.py` | 114 | 4682 | 1 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
 | `tests/test_file_executor.py` | 223 | 8964 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
@@ -575,6 +576,22 @@ Tests ModelDownloader, OllamaManager, and EmbeddedProvider with mock streaming.
 - **`TestAppDeploymentLogic`**
   - Method `.test_service_accessors()`
   - Method `.test_embedded_model_activation_updates_preset()`
+
+### `tests/test_disruption_recovery.py`
+> Unit tests for Disruption Recovery & Task Progress Ledger (PRINCIPLE-012, PRINCIPLE-013).
+Validates atomic ledger writing, crash self-healing against corrupt JSON,
+checkpoint tracking, and pre-flight disruption audit behavior.
+Zero GUI dependencies (runs 100% headless in milliseconds).
+
+#### Classes
+- **`TestDisruptionRecovery`**
+  - Method `.setUp()`
+  - Method `.tearDown()`
+  - Method `.test_ledger_initialization_on_missing_file()`
+  - Method `.test_atomic_write_and_reload()`
+  - Method `.test_self_healing_quarantines_corrupt_json()`
+  - Method `.test_record_checkpoint_and_complete()`
+  - Method `.test_run_disruption_audit()`
 
 ### `tests/test_document_peeker.py`
 > Unit tests for Document Content Peeker (PRINCIPLE-007, PRINCIPLE-009, PRINCIPLE-011)

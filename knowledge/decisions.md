@@ -328,6 +328,32 @@ Implement a multi-path 1-Click Quick Deploy architecture:
 ### Consequences
 - **Positive**: Fluid, seamless in-app preview and visual duplicate verification; tests run in under 0.02s with zero GUI overhead or RAM bloat.
 
+---
+
+## ADR-017: Incremental Progress Checkpointing & Zero-Progress-Loss Disruption Recovery Ledger
+
+### Context
+1. **Electricity Shortages & Abrupt Shutdowns**: Sudden power cuts, electrical flickers, or system freezes can strike at any moment during multi-step implementations or refactoring workflows.
+2. **Work Loss in Monolithic Sessions**: If progress is only committed at the very end of an entire feature or conversation, an unexpected outage wipes out all in-progress work, leaving no record of completed sub-tasks and leaving uncommitted files vulnerable to corruption.
+3. **Cold-Start Confusion**: When a cold-starting AI agent enters after an unclean shutdown, it has no native memory of the interrupted session or what was in flight.
+
+### Decision
+1. **PRINCIPLE-013 Protocol**:
+   - Codified `PRINCIPLE-013: Incremental Progress Checkpointing & Disruption Recovery (Zero-Progress-Loss Workflow)` across all guideline files.
+   - Enforce atomic micro-milestone commits after each verified sub-step rather than deferring to a single monolithic end-of-task commit.
+   - Mandate pre-flight disruption audits at the start of every session before touching code.
+2. **Disruption Recovery Tooling (`scripts/disruption_recovery.py`)**:
+   - Implemented a zero-dependency recovery utility managing `.agents/task_ledger.json`.
+   - All ledger updates use atomic temporary files, buffer flushing (`os.fsync`), and atomic replacements (`os.replace`).
+   - Built-in startup self-healing: corrupted ledger files from power cuts are quarantined automatically to `.corrupt_<timestamp>` without crashing.
+   - Added `run_disruption_audit()` to inspect Git status, uncommitted files, and interrupted task state.
+3. **Atomic Guideline Auto-Sync**:
+   - Upgraded `scripts/sync_principles.py` to write all guideline targets via atomic `os.fsync` + `os.replace` rather than direct truncation.
+
+### Consequences
+- **Positive**: Zero progress loss during sudden power outages; instant cold-start disruption audit and task resumption; 100% fail-safe file persistence.
+
+
 
 
 
