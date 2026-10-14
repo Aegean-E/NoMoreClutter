@@ -1,0 +1,215 @@
+# Codebase Map & Symbol Catalog 🗺️
+
+> **AUTO-GENERATED & VERIFIED BY `scripts/update_knowledge_base.py`**
+> This document provides an automated, up-to-date registry of all modules, classes, and exported functions across the NoMoreClutter repository.
+
+---
+
+## 📦 Module Summary Table
+
+| Module Path | Lines | Size (Bytes) | Classes | Functions |
+|-------------|-------|--------------|---------|-----------|
+| `main.py` | 601 | 28849 | 1 | 0 |
+| `models/__init__.py` | 43 | 1366 | 2 | 0 |
+| `services/__init__.py` | 21 | 732 | 0 | 5 |
+| `services/file_executor.py` | 114 | 3956 | 1 | 0 |
+| `services/file_scanner.py` | 40 | 1408 | 1 | 0 |
+| `services/llm_service.py` | 68 | 2425 | 2 | 0 |
+| `services/providers/__init__.py` | 38 | 941 | 0 | 1 |
+| `services/providers/base.py` | 43 | 1407 | 1 | 0 |
+| `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
+| `services/providers/registry.py` | 119 | 4218 | 1 | 3 |
+| `services/rlm_organizer.py` | 355 | 13935 | 2 | 0 |
+| `tests/test_file_executor.py` | 82 | 2915 | 1 | 0 |
+| `tests/test_providers.py` | 54 | 1795 | 1 | 0 |
+| `tests/test_rlm_organizer.py` | 78 | 3409 | 2 | 0 |
+
+---
+
+## 🔍 Deep Symbol Breakdown
+
+### `main.py`
+#### Classes
+- **`NoMoreClutterApp`**
+  - Method `.__init__()`
+  - Method `._load_settings()`
+  - Method `._save_settings()`
+  - Method `._build_ui()`
+  - Method `._build_settings_window()`
+  - Method `._on_provider_changed(choice)`
+  - Method `._update_provider_ui(provider_name)`
+  - Method `._on_vision_toggled()`
+  - Method `._toggle_show_key()`
+  - Method `._open_signup_url()`
+  - Method `._test_connection()`
+  - Method `._open_settings()`
+  - Method `._hide_settings()`
+  - Method `._select_source()`
+  - Method `._select_output()`
+  - Method `._update_folder_info()`
+  - Method `._get_selected_extensions()`
+  - Method `._get_existing_folders()`
+  - Method `._quick_organize()`
+  - Method `._analyze()`
+  - Method `._analyze_thread(files)`
+  - Method `._append_batch_log(results)`
+  - Method `._update_progress(count, results)`
+  - Method `._analysis_complete(results)`
+  - Method `._show_error(error)`
+  - Method `._execute()`
+  - Method `._undo_moves()`
+
+### `models/__init__.py`
+#### Classes
+- **`FileChange`**
+- **`AppSettings`**
+  - Method `.__post_init__()`
+
+### `services/__init__.py`
+#### Functions
+- `def get_FileScanner()`
+- `def get_LLMService()`
+- `def get_RLMOrganizer()`
+- `def get_FileExecutor()`
+- `def get_provider_registry()`
+
+### `services/file_executor.py`
+> Safe File Operations & Undo Management (PRINCIPLE-007: Performance & Reliability)
+Guarantees collision avoidance, directory creation, and rollback capabilities.
+
+#### Classes
+- **`FileExecutor`**
+  - *Safe execution engine for file reorganization with collision avoidance and undo tracking.*
+  - Method `.execute(cls, changes)`
+  - Method `.undo_last_batch(cls)`
+  - Method `.has_undo(cls)`
+  - Method `.clear_history(cls)`
+  - Method `._resolve_collision(target_path)`
+
+### `services/file_scanner.py`
+#### Classes
+- **`FileScanner`**
+  - Method `.scan_folder(folder_path, extensions, include_subfolders)`
+  - Method `.get_extension(filename)`
+  - Method `.get_category(extension, categories)`
+
+### `services/llm_service.py`
+> LLM Service Facade (PRINCIPLE-001, PRINCIPLE-003, PRINCIPLE-009)
+Adapts the pluggable AI provider and RLM Organizer for backward compatibility and clean orchestration.
+
+#### Classes
+- **`LLMError`**
+  - *Legacy exception class maintained for backward compatibility.*
+- **`LLMService`**
+  - *Unified service facade interfacing with Pluggable AI Providers and RLM Engine.*
+  - Method `.__init__(base_url, api_key, provider_id)`
+  - Method `.test_connection(model)`
+  - Method `.analyze_files(files, model, create_new_folders, existing_folders, analyze_images, numbered_rename, ai_rename, target_folder, output_folder, progress_callback)`
+
+### `services/providers/__init__.py`
+> Services Provider Module (PRINCIPLE-003: Modularity)
+
+#### Functions
+- `def get_provider(provider_id, base_url, api_key)`
+  - *Instantiate and return the appropriate AI provider.*
+
+### `services/providers/base.py`
+> Base AI Provider Interface (PRINCIPLE-003: Modularity & Pluggable Architecture)
+Defines the standard abstraction for all AI providers (Cloud, Embedded, and Local Server).
+
+#### Classes
+- **`BaseAIProvider`**
+  - *Abstract base class for all AI model providers.*
+  - Method `.__init__(base_url, api_key)`
+  - Method `.test_connection(model)`
+  - Method `.complete(prompt, model, temperature, max_tokens)`
+  - Method `.analyze_image(image_path, prompt, model, max_tokens)`
+
+### `services/providers/openai_compatible.py`
+> OpenAI-Compatible AI Provider Implementation (PRINCIPLE-003, PRINCIPLE-007, PRINCIPLE-009)
+Unifies cloud APIs (Groq, Gemini, OpenAI, OpenRouter) and local servers (LM Studio, Ollama).
+
+#### Classes
+- **`OpenAICompatibleProvider`**
+  - *Universal provider for all endpoints following the OpenAI API standard.*
+  - Method `.__init__(base_url, api_key, timeout_sec)`
+  - Method `._get_client()`
+  - Method `.test_connection(model)`
+  - Method `.complete(prompt, model, temperature, max_tokens)`
+  - Method `.analyze_image(image_path, prompt, model, max_tokens)`
+  - Method `._get_mime_type(file_path)`
+
+### `services/providers/registry.py`
+> AI Provider Registry & Presets (PRINCIPLE-003, PRINCIPLE-008)
+Centralized catalog of zero-install cloud providers and local server presets.
+
+#### Classes
+- **`ProviderPreset`**
+#### Functions
+- `def get_preset(provider_id)`
+  - *Retrieve preset by ID or return custom preset.*
+- `def get_preset_by_name(display_name)`
+  - *Find preset by UI display name.*
+- `def list_provider_names()`
+  - *Return all provider display names for UI dropdowns.*
+
+### `services/rlm_organizer.py`
+> Recursive Language Model (RLM) File Organizer Engine
+Implements PRINCIPLE-001 (RLM Compatibility), PRINCIPLE-007 (Performance),
+and PRINCIPLE-009 (Token Frugality & Context Budgeting).
+
+#### Classes
+- **`RLMOrganizerError`**
+  - *Base exception for RLM Organizer operations.*
+- **`RLMOrganizer`**
+  - *Recursive Language Model File Organization Engine.*
+  - Method `.__init__(provider)`
+  - Method `.organize(files, model, output_folder, existing_folders, create_new_folders, analyze_images, ai_rename, numbered_rename, cluster_batch_size, progress_callback)`
+  - Method `._process_regular_rlm(files, model, output_folder, existing_folders, create_new_folders, ai_rename, cluster_batch_size, progress_callback)`
+  - Method `._analyze_cluster(batch, model, output_folder, existing_folders, create_new_folders, ai_rename)`
+  - Method `._process_images_hierarchical(files, model, output_folder, existing_folders, create_new_folders, ai_rename, progress_callback)`
+  - Method `.get_heuristic_category(file_path)`
+  - Method `._heuristic_fallback_batch(files, output_folder, existing_folders)`
+  - Method `._apply_numbered_rename(changes)`
+  - Method `._match_closest_folder(target, existing_folders)`
+  - Method `._sanitize_folder_name(name)`
+  - Method `._sanitize_filename(name, original_path)`
+  - Method `._extract_json(text)`
+
+### `tests/test_file_executor.py`
+> Unit tests for FileExecutor (PRINCIPLE-007)
+Tests collision avoidance, safe moves, and undo management.
+
+#### Classes
+- **`TestFileExecutor`**
+  - Method `.setUp()`
+  - Method `.tearDown()`
+  - Method `.test_execute_move_and_undo()`
+  - Method `.test_collision_avoidance()`
+
+### `tests/test_providers.py`
+> Unit tests for AI Providers and Registry (PRINCIPLE-003, PRINCIPLE-008)
+
+#### Classes
+- **`TestProviders`**
+  - Method `.test_presets_exist()`
+  - Method `.test_preset_retrieval()`
+  - Method `.test_list_provider_names()`
+  - Method `.test_get_preset_by_name()`
+  - Method `.test_get_provider_factory()`
+
+### `tests/test_rlm_organizer.py`
+> Unit tests for RLM Organizer (PRINCIPLE-001, PRINCIPLE-007, PRINCIPLE-009)
+
+#### Classes
+- **`MockProvider`**
+  - Method `.__init__(mock_response)`
+  - Method `.test_connection(model)`
+  - Method `.complete(prompt, model, temperature, max_tokens)`
+  - Method `.analyze_image(image_path, prompt, model, max_tokens)`
+- **`TestRLMOrganizer`**
+  - Method `.test_json_extraction_raw()`
+  - Method `.test_json_extraction_markdown_fenced()`
+  - Method `.test_heuristic_categorization()`
+  - Method `.test_numbered_rename()`
+  - Method `.test_organize_mock()`

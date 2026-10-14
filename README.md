@@ -47,6 +47,7 @@ This project adheres to strict architectural and workflow principles:
 - **[PRINCIPLE-007: Performance & Resource Optimization](GUIDELINES.md#principle-007-performance--resource-optimization-speed--lean-architecture)**: High-speed execution, non-blocking I/O, lean dependencies, and token frugality.
 - **[PRINCIPLE-008: Zero-Friction Onboarding & Hybrid AI Access](GUIDELINES.md#principle-008-zero-friction-onboarding--hybrid-ai-access-one-click-start)**: One-click start without mandatory external software, while retaining full local server support.
 - **[PRINCIPLE-009: Token Frugality & Lean Code Architecture](GUIDELINES.md#principle-009-token-frugality--lean-code-architecture-context-budgeting)**: Concise code, strict token budgeting, dense payload serialization, and RLM clustering.
+- **[PRINCIPLE-010: AI Knowledge Base & Continuous Synchronization](GUIDELINES.md#principle-010-ai-knowledge-base--continuous-synchronization)**: Active codebase knowledge base in `knowledge/` auto-updated after every change via AST synchronization.
 
 > **Universal AI Support**: These guidelines are automatically synchronized across all AI coding assistants (`AGENTS.md`, `GUIDELINES.md`, `GEMINI.md`, `CLAUDE.md`, `.cursorrules`, `.agents/rules/principles.md`, and `.github/copilot-instructions.md`) via `scripts/sync_principles.py`. Full specification in [GUIDELINES.md](GUIDELINES.md) and [AGENTS.md](AGENTS.md).
 
@@ -118,6 +119,14 @@ python -m unittest discover tests
 ```
 NoMoreClutter/
 ├── main.py                     # Main application UI and orchestration (CustomTkinter)
+├── knowledge/                  # AI Codebase Knowledge Base (PRINCIPLE-010)
+│   ├── INDEX.md               # Master AI catalog and system map
+│   ├── architecture.md        # Deep architectural layers and data flows
+│   ├── services.md            # Service contracts, methods, and behaviors
+│   ├── data_models.md         # Data models, schemas, and token formats
+│   ├── state_and_ui.md        # UI hierarchy, concurrency, and threading
+│   ├── decisions.md           # Architecture Decision Records (ADRs)
+│   └── codebase_map.md        # AST-generated module & symbol registry
 ├── models/
 │   └── __init__.py            # Data models (FileInfo, FileCategory, ScanResult)
 ├── services/
@@ -136,13 +145,29 @@ NoMoreClutter/
 │   ├── test_rlm_organizer.py  # RLM engine & token payload tests
 │   └── test_file_executor.py  # Safe move, collision avoidance, and undo tests
 ├── scripts/
-│   └── sync_principles.py     # Cross-AI guidelines synchronizer
+│   ├── sync_principles.py     # Cross-AI guidelines synchronizer (PRINCIPLE-004)
+│   └── update_knowledge_base.py # AST-based knowledge base auto-updater (PRINCIPLE-010)
 ├── settings.json              # Saved user preferences (auto-created, gitignored)
 ├── requirements.txt           # Python dependencies
 ├── AGENTS.md                  # Master AI guidelines and principles
 ├── GUIDELINES.md              # Human-readable architectural guide
 └── README.md                  # Cold-start documentation
 ```
+
+---
+
+## 🧠 AI Codebase Knowledge Base
+
+The repository includes a dedicated, modular knowledge base in [`knowledge/`](knowledge/INDEX.md) designed for AI assistants and contributors:
+- **[Catalog & Sitemap](knowledge/INDEX.md)**: Overview, fast index, and onboarding map.
+- **[System Architecture](knowledge/architecture.md)**: Layers, data flow diagrams, and component boundaries.
+- **[Services Reference](knowledge/services.md)**: Detailed contracts and methods for RLM, providers, and executor.
+- **[Data Models & Schemas](knowledge/data_models.md)**: Enums, dataclasses, dense JSON schemas, and payload examples.
+- **[UI Concurrency & State](knowledge/state_and_ui.md)**: CustomTkinter threading, safe worker dispatch, and settings.
+- **[Architecture Decision Records](knowledge/decisions.md)**: Context, decisions, and trade-offs for RLM, hybrid AI, and undo history.
+- **[Auto-Generated Codebase Map](knowledge/codebase_map.md)**: Complete AST breakdown of all modules, classes, and function signatures.
+
+Run `python scripts/update_knowledge_base.py` at any time to verify and synchronize the knowledge base with the latest code state.
 
 ---
 
