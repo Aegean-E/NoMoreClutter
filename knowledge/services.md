@@ -31,6 +31,8 @@ The recursive organization engine responsible for intelligent file categorizatio
   Instant local rule-based organization based on file extensions and sub-types.
 - `analyze_image_single_pass(image_path: str, existing_categories: List[str] = None) -> Tuple[str, Optional[str]]`:
   Performs single-pass vision analysis to extract both category and descriptive filename.
+- `has_vision` Pre-check & Graceful Fallback:
+  Before running vision on image files, checks `getattr(provider, "has_vision", True)`. If unsupported or `NotImplementedError` is raised, routes images seamlessly into text RLM (`Photos/YYYY` date albums and semantic clusters) without error spam.
 
 ---
 
@@ -39,17 +41,22 @@ The recursive organization engine responsible for intelligent file categorizatio
 ### Abstract Interface: `BaseAIProvider` (`base.py`)
 ```python
 class BaseAIProvider(ABC):
-    @abstractmethod
-    def chat(self, messages: List[Dict[str, str]], temperature: float = 0.2) -> str:
-        """Send chat messages and return assistant response."""
+    @property
+    def has_vision(self) -> bool:
+        """Indicates whether this provider supports multimodal image vision analysis."""
+        return True
 
     @abstractmethod
-    def chat_vision(self, prompt: str, image_path: str, temperature: float = 0.2) -> str:
-        """Send a prompt with a base64-encoded image."""
-
-    @abstractmethod
-    def test_connection(self) -> Tuple[bool, str]:
+    def test_connection(self, model: Optional[str] = None) -> Tuple[bool, str]:
         """Test API connectivity and return (success, message)."""
+
+    @abstractmethod
+    def complete(self, prompt: str, model: str, temperature: float = 0.2, max_tokens: int = 1500) -> str:
+        """Execute text completion."""
+
+    @abstractmethod
+    def analyze_image(self, image_path: str, prompt: str, model: str, max_tokens: int = 100) -> str:
+        """Execute vision analysis on a local image."""
 ```
 
 ### Provider Registry: `ProviderRegistry` (`registry.py`)

@@ -73,6 +73,49 @@ class TestRLMOrganizer(unittest.TestCase):
         self.assertIn("Finance", results[0].new_path)
         self.assertIn("q3_tax.pdf", results[0].new_path)
 
+    def test_organize_non_vision_provider_routes_to_regular_rlm(self):
+        class NonVisionProvider(MockProvider):
+            @property
+            def has_vision(self):
+                return False
+
+        # Even if LLM returns 'Animals', camera timestamp anti-hallucination guard routes to Photos/2017
+        mock_resp = '[{"id": 0, "folder": "Animals", "name": "animal.jpg"}]'
+        organizer = RLMOrganizer(provider=NonVisionProvider(mock_resp))
+        files = ["/data/source/20170926_112101.jpg"]
+
+        results = organizer.organize(
+            files=files,
+            model="test-model",
+            output_folder="/data/dest",
+            analyze_images=True,  # User requested vision, but provider is text-only
+            ai_rename=True,
+        )
+        self.assertEqual(len(results), 1)
+        import os
+        normalized = os.path.normpath(results[0].new_path)
+        self.assertIn(os.path.normpath("Photos/2017"), normalized)
+        self.assertIn("20170926_112101.jpg", normalized)
+
+    def test_organize_vision_not_implemented_graceful_fallback(self):
+        class NotImplementedVisionProvider(MockProvider):
+            def analyze_image(self, image_path, prompt, model, max_tokens=150):
+                raise NotImplementedError("Text-only model")
+
+        mock_resp = '[{"id": 0, "folder": "Artwork", "name": "admin_icon.svg"}]'
+        organizer = RLMOrganizer(provider=NotImplementedVisionProvider(mock_resp))
+        files = ["/data/source/admin_icon.svg"]
+
+        results = organizer.organize(
+            files=files,
+            model="test-model",
+            output_folder="/data/dest",
+            analyze_images=True,
+            ai_rename=True,
+        )
+        self.assertEqual(len(results), 1)
+        self.assertIn("Artwork", results[0].new_path)
+
 
 if __name__ == "__main__":
     unittest.main()

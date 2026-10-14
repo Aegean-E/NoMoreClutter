@@ -19,6 +19,11 @@ class ProviderPreset:
     description: str
     recommended_pacing_sec: float = 0.0
 
+    @property
+    def has_vision(self) -> bool:
+        """Return True if this preset configures a vision-capable model."""
+        return bool(self.vision_model and self.vision_model.strip())
+
 
 PROVIDER_PRESETS: Dict[str, ProviderPreset] = {
     "groq": ProviderPreset(

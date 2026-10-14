@@ -15,6 +15,11 @@ class BaseAIProvider(ABC):
         self.api_key = api_key.strip() if api_key else "not-needed"
         self.extra_config = kwargs
 
+    @property
+    def has_vision(self) -> bool:
+        """Indicates whether this provider supports multimodal image vision analysis."""
+        return True
+
     @abstractmethod
     def test_connection(self, model: Optional[str] = None) -> Tuple[bool, str]:
         """Test if the AI endpoint is accessible and responsive.

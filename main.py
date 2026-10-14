@@ -302,7 +302,13 @@ class NoMoreClutterApp(ctk.CTk):
         ctk.CTkCheckBox(scroll, text="Create new semantic folders (e.g. 'Work_Invoices', 'Family_Photos')", variable=self.create_folders_var).pack(padx=10, pady=4, anchor="w")
         
         self.analyze_images_var = ctk.BooleanVar(value=self.settings.get("analyze_images", False))
-        ctk.CTkCheckBox(scroll, text="Analyze image contents using AI Vision (requires vision-capable model)", variable=self.analyze_images_var, command=self._on_vision_toggled).pack(padx=10, pady=4, anchor="w")
+        self.analyze_images_cb = ctk.CTkCheckBox(
+            scroll,
+            text="Analyze image contents using AI Vision (requires vision-capable model)",
+            variable=self.analyze_images_var,
+            command=self._on_vision_toggled,
+        )
+        self.analyze_images_cb.pack(padx=10, pady=4, anchor="w")
         
         self.ai_rename_var = ctk.BooleanVar(value=self.settings.get("ai_rename", True))
         ctk.CTkCheckBox(scroll, text="Let AI suggest descriptive filenames based on content", variable=self.ai_rename_var).pack(padx=10, pady=4, anchor="w")
@@ -504,9 +510,23 @@ class NoMoreClutterApp(ctk.CTk):
         
         current_model = self.llm_model.get().strip()
         if force_defaults or not current_model:
-            model_to_use = preset.vision_model if self.analyze_images_var.get() else preset.default_model
+            model_to_use = (preset.vision_model if (self.analyze_images_var.get() and preset.vision_model) else preset.default_model)
             self.llm_model.delete(0, "end")
             self.llm_model.insert(0, model_to_use)
+
+        # Update Vision checkbox state according to preset capabilities
+        if hasattr(self, "analyze_images_cb"):
+            if not preset.vision_model:
+                self.analyze_images_cb.configure(
+                    state="disabled",
+                    text="Analyze image contents using AI Vision (Disabled: Embedded/Text models only support text)"
+                )
+                self.analyze_images_var.set(False)
+            else:
+                self.analyze_images_cb.configure(
+                    state="normal",
+                    text="Analyze image contents using AI Vision (requires vision-capable model)"
+                )
         
         if preset.requires_api_key:
             self.key_label.configure(text="API Key (Required):", text_color="#FFA94D")
@@ -519,7 +539,15 @@ class NoMoreClutterApp(ctk.CTk):
         _, _, get_by_name, _, _ = get_provider_registry()
         preset = get_by_name(self.provider_var.get())
         if preset:
-            model_to_use = preset.vision_model if self.analyze_images_var.get() else preset.default_model
+            if self.analyze_images_var.get() and not preset.vision_model:
+                self.analyze_images_var.set(False)
+                messagebox.showinfo(
+                    "Vision Not Supported",
+                    f"'{preset.name}' is a text-focused model and does not support image vision analysis directly.\n\n"
+                    "For multimodal image vision analysis, please select Groq (llama-3.2-11b-vision) or Google Gemini in the Provider dropdown.",
+                )
+                return
+            model_to_use = (preset.vision_model if (self.analyze_images_var.get() and preset.vision_model) else preset.default_model)
             self.llm_model.delete(0, "end")
             self.llm_model.insert(0, model_to_use)
             self._refresh_ai_status_async()

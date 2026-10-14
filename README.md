@@ -27,8 +27,7 @@ An intelligent AI-powered desktop application that automatically organizes your 
 - **📄 Intelligent Document Content Peeking**: Extracts compact, token-budgeted text snippets ($\le 200$ chars) from PDF documents, Word files (`.docx`), Markdown, and code/text files with zero third-party dependencies. Enables the AI to accurately classify invoices, meeting notes, and contracts even when filenames are cryptic (e.g., `Scan_001.pdf`).
 - **📷 Camera Photo Date-Grouping & Anti-Hallucination Guard**: Camera photos with numeric timestamps (e.g., `20170926_112101.jpg`, `IMG_20180401...`) are automatically organized into chronological albums (e.g., `Photos/2017/`) without hallucinating arbitrary scenes (like labeling all files "Animals") when Vision is not active.
 - **Token Frugality (~70% Savings)**: Ultra-dense JSON payloads eliminate repetitive path dumps and reduce prompt token overhead.
-- **Deterministic ID Mapping**: Protects against index-shift hallucinations so files are always mapped to their exact decisions.
-- **Single-Pass Vision Analysis**: Categorizes and renames images in a single call rather than multiple redundant round trips.
+- **Single-Pass Vision Analysis & Text Fallback**: Categorizes and renames images in a single call when using vision-capable models (e.g. Groq Llama-Vision, Google Gemini). Automatically checks provider capabilities (`has_vision`) and gracefully routes images into text RLM and chronological date albums (`Photos/YYYY/`) on text-only models (like in-process Embedded GGUF), completely eliminating terminal errors and folder dumping.
 
 ### 🛡️ File Safety & ↩ Persistent Multi-Session Undo
 - **Collision Avoidance**: Never overwrites existing files; intelligently renames colliding filenames to `name (1).ext`.

@@ -9,7 +9,7 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 1668 | 82246 | 1 | 0 |
+| `main.py` | 1696 | 83584 | 1 | 0 |
 | `models/__init__.py` | 44 | 1399 | 2 | 0 |
 | `services/__init__.py` | 39 | 1266 | 0 | 9 |
 | `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
@@ -20,11 +20,11 @@
 | `services/model_downloader.py` | 181 | 6535 | 2 | 0 |
 | `services/ollama_manager.py` | 158 | 5646 | 2 | 0 |
 | `services/providers/__init__.py` | 44 | 1198 | 0 | 1 |
-| `services/providers/base.py` | 43 | 1407 | 1 | 0 |
-| `services/providers/embedded.py` | 94 | 4160 | 1 | 0 |
+| `services/providers/base.py` | 48 | 1565 | 1 | 0 |
+| `services/providers/embedded.py` | 99 | 4325 | 1 | 0 |
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
-| `services/providers/registry.py` | 130 | 4668 | 1 | 3 |
-| `services/rlm_organizer.py` | 412 | 17184 | 2 | 0 |
+| `services/providers/registry.py` | 135 | 4862 | 1 | 3 |
+| `services/rlm_organizer.py` | 432 | 18699 | 2 | 0 |
 | `tests/test_ai_status.py` | 118 | 5346 | 1 | 0 |
 | `tests/test_benchmark_service.py` | 152 | 6518 | 3 | 0 |
 | `tests/test_deploy_manager.py` | 189 | 7764 | 4 | 0 |
@@ -32,8 +32,8 @@
 | `tests/test_file_executor.py` | 156 | 6060 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
-| `tests/test_providers.py` | 54 | 1795 | 1 | 0 |
-| `tests/test_rlm_organizer.py` | 78 | 3409 | 2 | 0 |
+| `tests/test_providers.py` | 67 | 2334 | 1 | 0 |
+| `tests/test_rlm_organizer.py` | 121 | 5209 | 2 | 0 |
 | `tests/test_settings_functionality.py` | 234 | 9382 | 1 | 0 |
 | `tests/test_sync_and_knowledge.py` | 87 | 3297 | 1 | 0 |
 
@@ -241,6 +241,7 @@ Defines the standard abstraction for all AI providers (Cloud, Embedded, and Loca
 - **`BaseAIProvider`**
   - *Abstract base class for all AI model providers.*
   - Method `.__init__(base_url, api_key)`
+  - Method `.has_vision()`
   - Method `.test_connection(model)`
   - Method `.complete(prompt, model, temperature, max_tokens)`
   - Method `.analyze_image(image_path, prompt, model, max_tokens)`
@@ -253,6 +254,7 @@ Runs 100% offline in-process using downloaded GGUF weights via llama-cpp-python.
 - **`EmbeddedProvider`**
   - *Provider running local quantized GGUF models directly within the application.*
   - Method `.__init__(model_filename)`
+  - Method `.has_vision()`
   - Method `._get_model_path(model)`
   - Method `._get_llm(model)`
   - Method `.test_connection(model)`
@@ -279,6 +281,7 @@ Centralized catalog of zero-install cloud providers and local server presets.
 
 #### Classes
 - **`ProviderPreset`**
+  - Method `.has_vision()`
 #### Functions
 - `def get_preset(provider_id)`
   - *Retrieve preset by ID or return custom preset.*
@@ -445,6 +448,8 @@ Tests initialization, error encapsulation, and integration with RLM organizer.
   - Method `.test_list_provider_names()`
   - Method `.test_get_preset_by_name()`
   - Method `.test_get_provider_factory()`
+  - Method `.test_preset_has_vision()`
+  - Method `.test_provider_instance_has_vision()`
 
 ### `tests/test_rlm_organizer.py`
 > Unit tests for RLM Organizer (PRINCIPLE-001, PRINCIPLE-007, PRINCIPLE-009)
@@ -461,6 +466,8 @@ Tests initialization, error encapsulation, and integration with RLM organizer.
   - Method `.test_heuristic_categorization()`
   - Method `.test_numbered_rename()`
   - Method `.test_organize_mock()`
+  - Method `.test_organize_non_vision_provider_routes_to_regular_rlm()`
+  - Method `.test_organize_vision_not_implemented_graceful_fallback()`
 
 ### `tests/test_settings_functionality.py`
 > Unit tests verifying the function of EVERY setting in NoMoreClutter (PRINCIPLE-011).

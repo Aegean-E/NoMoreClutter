@@ -51,20 +51,31 @@ class RLMOrganizer:
         regular_files = [f for f in files if f not in image_files]
 
         # 2. Vision Pipeline (Single-pass analysis for images)
-        if image_files and analyze_images:
-            img_results = self._process_images_hierarchical(
-                files=image_files,
-                model=model,
-                output_folder=output_folder,
-                existing_folders=existing,
-                create_new_folders=create_new_folders,
-                ai_rename=ai_rename,
-                progress_callback=progress_callback,
-            )
-            changes.extend(img_results)
+        provider_supports_vision = getattr(self.provider, "has_vision", True)
+        images_analyzed_with_vision = False
 
-        # Non-image files or images when vision is disabled
-        other_files = regular_files if analyze_images else files
+        if image_files and analyze_images and provider_supports_vision:
+            try:
+                img_results = self._process_images_hierarchical(
+                    files=image_files,
+                    model=model,
+                    output_folder=output_folder,
+                    existing_folders=existing,
+                    create_new_folders=create_new_folders,
+                    ai_rename=ai_rename,
+                    progress_callback=progress_callback,
+                )
+                changes.extend(img_results)
+                images_analyzed_with_vision = True
+            except NotImplementedError as nie:
+                print(f"Vision analysis unavailable ({nie}). Gracefully routing images to text RLM clustering.")
+                images_analyzed_with_vision = False
+            except Exception as e:
+                print(f"Vision pipeline error ({e}). Gracefully routing images to text RLM clustering.")
+                images_analyzed_with_vision = False
+
+        # Non-image files or images when vision is disabled or unsupported
+        other_files = regular_files if images_analyzed_with_vision else files
         if other_files:
             # 3. RLM Clustering and Recursive Bounded Batching with Document Content Peeking
             reg_results = self._process_regular_rlm(
@@ -214,12 +225,18 @@ Respond ONLY with a valid JSON array of objects:
                         # Camera timestamp anti-hallucination guard for images without vision
                         ext = os.path.splitext(orig_path)[1].lower()
                         basename = os.path.basename(orig_path)
+                        stem = os.path.splitext(basename)[0]
                         if ext in IMAGE_EXTENSIONS:
-                            date_match = re.search(r"\b(19\d{2}|20\d{2})(\d{2})\d{2}[-_]\d{4,6}", basename)
+                            date_match = re.search(r"(?:^|[^\d])(19\d{2}|20\d{2})[-_]?(0[1-9]|1[0-2])[-_]?(0[1-9]|[12]\d|3[01])(?:[-_]?\d{4,6})?", basename)
                             if date_match:
                                 year = date_match.group(1)
+                                clean_tokens = [w.lower() for w in re.findall(r"[a-zA-Z]+", stem)]
+                                camera_prefixes = {"img", "dsc", "pano", "vid", "photo", "jpg", "jpeg", "png", "webp", "html", "fig", "article"}
+                                meaningful_tokens = [t for t in clean_tokens if t not in camera_prefixes and len(t) > 2]
+                                is_hex_or_numeric = bool(re.match(r"^[0-9a-fA-F_\-]+$", stem))
+
                                 hallucinated_tags = {"animals", "animal", "pets", "pet", "general", "other", "random", "misc", "untitled", "images", "photos"}
-                                if folder_name.lower() in hallucinated_tags:
+                                if not meaningful_tokens or is_hex_or_numeric or folder_name.lower() in hallucinated_tags:
                                     folder_name = f"Photos/{year}"
                                 if not new_filename or any(new_filename.lower().startswith(p) for p in ["animal", "image", "photo_1", "photo_2"]):
                                     new_filename = basename
@@ -277,7 +294,7 @@ Respond ONLY with a valid JSON array of objects:
 
         for idx, img_path in enumerate(files):
             try:
-                if os.path.getsize(img_path) < 100:
+                if os.path.exists(img_path) and os.path.getsize(img_path) < 100:
                     continue
 
                 raw = self.provider.analyze_image(image_path=img_path, prompt=prompt, model=model)
@@ -310,6 +327,9 @@ Respond ONLY with a valid JSON array of objects:
                     new_path = os.path.join(output_folder, folder, new_filename)
                 results.append(FileChange(original=img_path, action="move", new_path=new_path))
 
+            except NotImplementedError as nie:
+                # Re-raise so organize() can catch once and immediately fallback all images to text RLM
+                raise nie
             except Exception as e:
                 print(f"Vision error on {img_path}: {e}")
                 cat = "Images"

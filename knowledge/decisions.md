@@ -190,6 +190,30 @@ Implement a multi-path 1-Click Quick Deploy architecture:
 - **Positive**: Exact, bespoke calibration for every user machine; tactile and intuitive UI; eliminates rate-limit errors and thread starvation.
 - **Negative**: Benchmark takes 1-2 seconds to complete when manually triggered by user.
 
+---
+
+## ADR-011: Vision Capability Safeguards and Graceful Text RLM Fallback
+
+### Context
+1. **Spammed Vision Errors**: When running against an image folder using embedded in-process GGUF models (`EmbeddedProvider`) or text-focused local models with `analyze_images=True`, `EmbeddedProvider.analyze_image()` raised `NotImplementedError` on every image file. `_process_images_hierarchical()` caught the exception per file, dumped error logs for 100+ files to stdout, and dumped all images into a generic `Images/` folder.
+2. **Text Model Camera Hallucinations**: When photos with numeric timestamps (e.g., `20170926_112101.jpg`) were sent to text models without vision, the models hallucinated generic tags like `Animals/` or `Cars/`.
+3. **UI Mismatch**: In Settings, the AI Vision checkbox remained active when switching to text-only presets without visual indication.
+
+### Decision
+1. **Provider Capability Flag**:
+   - Added `@property def has_vision(self) -> bool` to `BaseAIProvider` (defaults to `True`), `EmbeddedProvider` (`False`), and `ProviderPreset` (`bool(vision_model)`).
+2. **Graceful Engine Fallback (`RLMOrganizer`)**:
+   - Pre-checks `getattr(self.provider, "has_vision", True)` before attempting image vision analysis.
+   - If vision fails or raises `NotImplementedError`, it immediately aborts the vision loop on the first failure, emits a single informative message, and routes all images into `_process_regular_rlm()`.
+3. **Robust Camera Timestamp Anti-Hallucination Guard**:
+   - In `_analyze_cluster()`, files with numeric camera timestamps (e.g. `20170926_112101.jpg`, `20200818170048...webp`, `20220813...jpg`) are automatically sorted into `Photos/{year}/` (e.g. `Photos/2017/`), preserving original filenames rather than hallucinating categories.
+4. **UI Guidance & Auto-Disabling (`main.py`)**:
+   - Automatically disables or warns on the vision checkbox when text-only models (like Embedded GGUF) are selected.
+
+### Consequences
+- **Positive**: Zero terminal error spam, zero dropped images, seamless date-based grouping for camera rolls, and clear UI feedback.
+
+
 
 
 

@@ -49,6 +49,19 @@ class TestProviders(unittest.TestCase):
         self.assertEqual(provider.api_key, "test-key")
         self.assertEqual(provider.base_url, "https://api.groq.com/openai/v1")
 
+    def test_preset_has_vision(self):
+        self.assertTrue(get_preset("groq").has_vision)
+        self.assertTrue(get_preset("gemini").has_vision)
+        self.assertFalse(get_preset("embedded").has_vision)
+
+    def test_provider_instance_has_vision(self):
+        from services.providers.embedded import EmbeddedProvider
+        embedded = EmbeddedProvider()
+        self.assertFalse(embedded.has_vision)
+
+        openai_prov = OpenAICompatibleProvider(base_url="https://api.groq.com")
+        self.assertTrue(openai_prov.has_vision)
+
 
 if __name__ == "__main__":
     unittest.main()

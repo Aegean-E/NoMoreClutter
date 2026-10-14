@@ -19,6 +19,11 @@ class EmbeddedProvider(BaseAIProvider):
         self._llm_instance = None
         self._loaded_model_path = None
 
+    @property
+    def has_vision(self) -> bool:
+        """Embedded local quantized GGUF models are text-focused and do not support vision."""
+        return False
+
     def _get_model_path(self, model: Optional[str] = None) -> Path:
         """Resolve model filename to local path."""
         target_name = (model or self.model_filename).strip()
