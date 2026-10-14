@@ -413,13 +413,13 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
 
         ctk.CTkButton(
             orig_row,
-            text="👁️ Open",
-            width=50,
+            text="👁️ Preview",
+            width=64,
             height=20,
-            font=ctk.CTkFont(size=9),
-            fg_color="#2C2E33",
+            font=ctk.CTkFont(size=9, weight="bold"),
+            fg_color="#25262B",
             hover_color="#373A40",
-            command=lambda p=group.original: self._open_file(p),
+            command=lambda p=group.original: self._open_viewer(p),
         ).pack(side="right", padx=6)
 
         # Duplicate Rows (Selected for action)
@@ -451,13 +451,13 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
 
             ctk.CTkButton(
                 dup_row,
-                text="👁️ Open",
-                width=50,
+                text="👥 Compare",
+                width=68,
                 height=20,
-                font=ctk.CTkFont(size=9),
-                fg_color="#2C2E33",
-                hover_color="#373A40",
-                command=lambda p=dup_path: self._open_file(p),
+                font=ctk.CTkFont(size=9, weight="bold"),
+                fg_color="#1971C2",
+                hover_color="#1864AB",
+                command=lambda p=dup_path, orig=group.original: self._open_viewer(p, compare_filepath=orig),
             ).pack(side="right", padx=6)
 
     def _select_all_dups(self):
@@ -526,3 +526,19 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
                 subprocess.Popen(["xdg-open", filepath])
         except Exception as e:
             print(f"Could not open file: {e}")
+
+    def _open_viewer(self, filepath: str, compare_filepath: Optional[str] = None):
+        """Open the aesthetic in-app file viewer or side-by-side duplicate comparator."""
+        from .file_viewer import FileViewerDialog
+
+        def on_action(action: str, target_file: str):
+            if action in ("delete", "isolate"):
+                # Automatically refresh duplicate list after removing a file
+                self.after(300, self._start_scan)
+
+        FileViewerDialog(
+            parent=self,
+            filepath=filepath,
+            compare_filepath=compare_filepath,
+            on_action_performed=on_action,
+        )

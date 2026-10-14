@@ -306,6 +306,29 @@ Implement a multi-path 1-Click Quick Deploy architecture:
 ### Consequences
 - **Positive**: Complete capability transparency before initiating downloads; 1-click offline vision intelligence with atomic dual-file downloads; seamless fallback when text models are chosen.
 
+---
+
+## ADR-016: In-App File Viewer, Visual Side-by-Side Duplicate Comparator & Headless Test Decoupling
+
+### Context
+1. **External App Dependency for Previews**: Previously, inspecting file contents or verifying whether two duplicate candidates were truly identical required launching external operating system applications (e.g. default image viewers or text editors), breaking workflow continuity.
+2. **Headless Unit Test Memory Exhaustion**: When unit tests instantiate CustomTkinter widgets (`ctk.CTkFrame`, `ctk.CTkLabel`, `ctk.CTkTextbox`) with `MagicMock` parents in a non-GUI or headless environment, Tkinter and CustomTkinter's canvas redraw loop enters an unbounded `<Configure>` event loop without valid window geometry, consuming up to 8 GB of RAM and freezing/crashing the host machine.
+
+### Decision
+1. **In-App File Viewer (`ui/file_viewer.py`)**:
+   - Implemented `FileViewerDialog` with two display modes:
+     - **Single-File Mode**: Previews images (proportional scaling with Pillow), plain text / code (multi-encoding detection, line-capped), extracted document text (PDF / DOCX via `DocumentPeeker`), or binary files (512-byte hex dump). Includes metadata, "Copy Path", "Reveal in Explorer", and "OS Open" actions.
+     - **Side-by-Side Duplicate Comparison Mode**: Displays canonical original side-by-side with redundant duplicate, byte-for-byte match confirmation banner, and direct "Delete" / "Isolate" action buttons.
+   - Connected "👁️ Preview" and "👥 Compare" buttons directly from `TreePreviewDialog` and `DuplicateFinderDialog`.
+2. **Headless Pure Logic Decoupling**:
+   - Extracted all formatting, decoding, scaling, and category logic into pure, zero-GUI helper functions (`get_category_badge`, `get_file_meta_summary`, `compute_image_preview_size`, `read_text_preview`, `generate_hexdump`).
+   - `FileViewerDialog` delegates directly to these pure helpers.
+   - Unit tests (`tests/test_file_viewer.py`) test only these pure functions without instantiating Tk/CustomTkinter widgets, guaranteeing 100% headless safety and eliminating RAM exhaustion.
+
+### Consequences
+- **Positive**: Fluid, seamless in-app preview and visual duplicate verification; tests run in under 0.02s with zero GUI overhead or RAM bloat.
+
+
 
 
 

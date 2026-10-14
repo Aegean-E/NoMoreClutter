@@ -113,3 +113,13 @@ The application displays an interactive real-time status pill in the top header 
 - **Triple-Scan Matrix**: Configurable checkboxes for empty subdirectories, zero-byte orphan files, and OS debris (`Thumbs.db`, `.DS_Store`).
 - **Safe Leaf Pruning**: Utilizes bottom-up traversal with `os.rmdir()` to prune empty directories without risking non-empty folders.
 
+---
+
+## 8. In-App File Viewer & Side-by-Side Duplicate Comparator (`ui/file_viewer.py`)
+
+- **Interactive File Inspection**: Launched via `👁️ File Viewer` in the main header bar, `👁️ Preview` in Tree Preview, or `👥 Compare` in Duplicate Finder.
+- **Single-File Mode**: Previews images with Pillow aspect scaling, text/code files across multiple encodings, documents via `DocumentPeeker`, or raw binary hex dumps. Provides path copying, explorer revealing, and system opening.
+- **Side-by-Side Comparator Mode**: Compares the canonical original with the duplicate candidate in real time with byte-match confirmation banners, file metadata, and direct "Delete" / "Isolate" actions.
+- **Headless Test Safety**: All parsing, decoding, and scaling logic is extracted into pure functions (`get_category_badge`, `get_file_meta_summary`, `compute_image_preview_size`, `read_text_preview`, `generate_hexdump`), ensuring unit tests never instantiate GUI widgets.
+
+

@@ -260,18 +260,18 @@ class TreePreviewDialog(ctk.CTkToplevel):
                 # Action button to inspect/reveal original file
                 inspect_btn = ctk.CTkButton(
                     row,
-                    text="👁️ Open",
-                    width=54,
+                    text="👁️ Preview",
+                    width=62,
                     height=22,
                     fg_color="#2C2E33",
                     hover_color="#373A40",
-                    font=ctk.CTkFont(size=10),
-                    command=lambda p=c.original: self._open_file(p),
+                    font=ctk.CTkFont(size=10, weight="bold"),
+                    command=lambda p=c.original: self._open_viewer(p),
                 )
                 inspect_btn.pack(side="right", padx=(4, 8))
 
-                # Allow double clicking label to open file
-                lbl.bind("<Double-Button-1>", lambda event, p=c.original: self._open_file(p))
+                # Allow double clicking label to preview file
+                lbl.bind("<Double-Button-1>", lambda event, p=c.original: self._open_viewer(p))
 
                 # Keep references for live search filtering
                 self.file_row_widgets.append({
@@ -458,6 +458,13 @@ class TreePreviewDialog(ctk.CTkToplevel):
                 subprocess.Popen(["xdg-open", filepath])
         except Exception as e:
             print(f"Could not open file: {e}")
+
+    def _open_viewer(self, filepath: str):
+        """Open file inside the aesthetic in-app FileViewerDialog."""
+        if not os.path.exists(filepath):
+            return
+        from .file_viewer import FileViewerDialog
+        FileViewerDialog(parent=self, filepath=filepath)
 
     def _confirm_execution(self):
         """Extract checked files and dispatch to callback."""

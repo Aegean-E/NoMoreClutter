@@ -9,7 +9,7 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 1978 | 94820 | 1 | 0 |
+| `main.py` | 2006 | 95820 | 1 | 0 |
 | `models/__init__.py` | 87 | 2446 | 5 | 0 |
 | `services/__init__.py` | 47 | 1476 | 0 | 11 |
 | `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
@@ -27,10 +27,11 @@
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
 | `services/providers/registry.py` | 135 | 4892 | 1 | 3 |
 | `services/rlm_organizer.py` | 432 | 18699 | 2 | 0 |
-| `ui/__init__.py` | 9 | 285 | 0 | 0 |
-| `ui/duplicate_finder.py` | 528 | 20422 | 1 | 0 |
+| `ui/__init__.py` | 10 | 347 | 0 | 0 |
+| `ui/duplicate_finder.py` | 544 | 21140 | 1 | 0 |
+| `ui/file_viewer.py` | 628 | 24173 | 1 | 5 |
 | `ui/junk_cleaner.py` | 360 | 13874 | 1 | 0 |
-| `ui/tree_preview.py` | 470 | 17758 | 1 | 0 |
+| `ui/tree_preview.py` | 477 | 18064 | 1 | 0 |
 | `tests/test_ai_status.py` | 118 | 5346 | 1 | 0 |
 | `tests/test_benchmark_service.py` | 152 | 6518 | 3 | 0 |
 | `tests/test_cleaner_service.py` | 85 | 3024 | 1 | 0 |
@@ -39,6 +40,7 @@
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
 | `tests/test_file_executor.py` | 223 | 8964 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
+| `tests/test_file_viewer.py` | 120 | 5095 | 1 | 0 |
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
 | `tests/test_providers.py` | 73 | 2626 | 1 | 0 |
 | `tests/test_rlm_organizer.py` | 121 | 5209 | 2 | 0 |
@@ -125,6 +127,7 @@
   - Method `._execute_confirmed(selected_changes)`
   - Method `._open_duplicate_finder()`
   - Method `._open_junk_cleaner()`
+  - Method `._open_file_viewer(filepath)`
   - Method `._undo_moves()`
 
 ### `models/__init__.py`
@@ -397,6 +400,43 @@ and isolate or safely delete duplicate files.
   - Method `._isolate_selected()`
   - Method `._delete_selected()`
   - Method `._open_file(filepath)`
+  - Method `._open_viewer(filepath, compare_filepath)`
+
+### `ui/file_viewer.py`
+> In-App File Viewer & Visual Duplicate Inspector (PRINCIPLE-003, PRINCIPLE-007, PRINCIPLE-012)
+Provides an aesthetic, dark-themed in-app preview for images, text, code, documents (PDF/DOCX),
+and binary files with side-by-side duplicate comparison support.
+
+#### Classes
+- **`FileViewerDialog`**
+  - *Rich in-app File Viewer and Side-by-Side Duplicate Comparator.*
+  - Method `.__init__(parent, filepath, compare_filepath, on_action_performed)`
+  - Method `._build_ui()`
+  - Method `._get_category_badge(ext)`
+  - Method `._get_file_meta_summary(path)`
+  - Method `._build_single_view()`
+  - Method `._build_compare_view()`
+  - Method `._render_file_preview(parent_widget, filepath, max_w, max_h)`
+  - Method `._render_image(parent, filepath, max_w, max_h)`
+  - Method `._render_text(parent, filepath)`
+  - Method `._render_document(parent, filepath)`
+  - Method `._render_binary(parent, filepath)`
+  - Method `._copy_primary_path()`
+  - Method `._reveal_in_explorer(filepath)`
+  - Method `._open_system_default(filepath)`
+  - Method `._delete_duplicate_action()`
+  - Method `._isolate_duplicate_action()`
+#### Functions
+- `def get_category_badge(ext)`
+  - *Return a visual category badge for a given file extension.*
+- `def get_file_meta_summary(path)`
+  - *Extract human-readable file size and modified timestamp.*
+- `def compute_image_preview_size(orig_w, orig_h, max_w, max_h)`
+  - *Calculate scaled dimensions preserving aspect ratio without distortion.*
+- `def read_text_preview(filepath, max_lines)`
+  - *Read first max_lines safely across common encodings.*
+- `def generate_hexdump(data)`
+  - *Generate canonical hex dump representation of binary bytes.*
 
 ### `ui/junk_cleaner.py`
 > Orphan Folder & Junk Pruner UI Dialog (Option 4)
@@ -439,6 +479,7 @@ and inspect proposed AI file moves before execution.
   - Method `._update_selection_counts()`
   - Method `._on_search_changed()`
   - Method `._open_file(filepath)`
+  - Method `._open_viewer(filepath)`
   - Method `._confirm_execution()`
 
 ### `tests/test_ai_status.py`
@@ -584,6 +625,22 @@ Tests shallow and recursive scanning, extension filtering, and category lookups.
   - Method `.test_scan_empty_or_invalid_folder()`
   - Method `.test_get_extension()`
   - Method `.test_get_category()`
+
+### `tests/test_file_viewer.py`
+> Unit tests for In-App File Viewer & Visual Duplicate Inspector (PRINCIPLE-003, PRINCIPLE-007, PRINCIPLE-011).
+Tests pure preview decoding, metadata formatting, hexdump generation, and aspect ratio scaling
+without initializing GUI/Tkinter widgets (preventing headless memory exhaustion).
+
+#### Classes
+- **`TestFileViewerPureLogic`**
+  - Method `.setUp()`
+  - Method `.tearDown()`
+  - Method `.test_category_badges()`
+  - Method `.test_file_meta_summary()`
+  - Method `.test_binary_hexdump_generation()`
+  - Method `.test_text_reading_logic()`
+  - Method `.test_image_dimension_scaling()`
+  - Method `.test_compare_mode_determination()`
 
 ### `tests/test_llm_service.py`
 > Unit tests for LLMService Facade (PRINCIPLE-011).

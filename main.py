@@ -23,7 +23,7 @@ from services import (
     get_cleaner_service,
 )
 from models import FILE_TYPE_CATEGORIES, FileChange
-from ui import TreePreviewDialog, DuplicateFinderDialog, JunkCleanerDialog
+from ui import TreePreviewDialog, DuplicateFinderDialog, JunkCleanerDialog, FileViewerDialog
 
 
 SETTINGS_FILE = "settings.json"
@@ -199,6 +199,20 @@ class NoMoreClutterApp(ctk.CTk):
             font=ctk.CTkFont(size=12, weight="bold"),
         )
         self.clean_btn.pack(side="left", padx=5)
+
+        self.viewer_btn = ctk.CTkButton(
+            nav_actions,
+            text="👁️ File Viewer",
+            command=self._open_file_viewer,
+            height=34,
+            width=115,
+            fg_color="#25262B",
+            hover_color="#373A40",
+            border_width=1,
+            border_color="#373A40",
+            font=ctk.CTkFont(size=12, weight="bold"),
+        )
+        self.viewer_btn.pack(side="left", padx=5)
 
         # AI Status Pill Button (interactive)
         self.ai_status_btn = ctk.CTkButton(
@@ -1951,6 +1965,20 @@ class NoMoreClutterApp(ctk.CTk):
     def _open_junk_cleaner(self):
         folder = self.source_entry.get().strip() or self.output_entry.get().strip() or os.getcwd()
         JunkCleanerDialog(self, initial_folder=folder)
+
+    def _open_file_viewer(self, filepath: Optional[str] = None):
+        target = filepath
+        if not target:
+            init_dir = self.source_entry.get().strip() or self.output_entry.get().strip() or os.getcwd()
+            chosen = filedialog.askopenfilename(
+                title="Select File to Inspect",
+                initialdir=init_dir if os.path.exists(init_dir) else os.getcwd(),
+            )
+            if not chosen:
+                return
+            target = chosen
+
+        FileViewerDialog(self, filepath=target)
 
     def _undo_moves(self):
         """Revert last batch of moves safely (PRINCIPLE-007)."""
