@@ -14,6 +14,7 @@ This document defines the architectural guidelines and design principles for **N
 | **[PRINCIPLE-004](#principle-004-living-principles-system-extensible-governance--auto-sync)** | Living Principles & Auto-Sync | Extensible protocol; automatically synchronizes all AI guidelines across the repository. |
 | **[PRINCIPLE-005](#principle-005-ai-cold-start-readiness--living-documentation-readme-sync)** | AI Cold-Start Readiness & README Sync | Self-describing repo for instant agent onboarding; README updated after every change. |
 | **[PRINCIPLE-006](#principle-006-pre-flight-impact--quality-checklist-cold-start-gate)** | Impact & Quality Checklist | Pre-flight cold-start checklist evaluating why, benefits, risks, and quality preservation. |
+| **[PRINCIPLE-007](#principle-007-performance--resource-optimization-speed--lean-architecture)** | Speed & Lean Optimization | Maximum execution speed, non-blocking async operations, and lean dependency footprint. |
 
 ---
 
@@ -68,11 +69,20 @@ This document defines the architectural guidelines and design principles for **N
     - **Potential harm/risks**: Anticipate failure modes, high latency, context window exhaustion, or thread locks.
     - **Quality Non-Diminution**: Checklists must strictly elevate standards and prevent corners from being cut; they must never justify degraded quality.
 
+### PRINCIPLE-007: Performance & Resource Optimization (Speed & Lean Architecture)
+- **Problem**: Bloated dependencies, unoptimized loops, blocking operations, and inefficient prompting degrade user experience and inflate resource costs.
+- **Guideline**:
+  - **Speed & Latency**: Optimize algorithms for minimal runtime ($O(N)$ scanning, generators, set lookups).
+  - **Non-blocking Execution**: Execute disk operations and LLM calls in background threads or async tasks to keep the UI silky smooth.
+  - **Lean Dependencies**: Maintain a minimal dependency footprint; favor standard library solutions and lazy imports.
+  - **Prompt Frugality**: Design token-efficient prompt structures to accelerate inference and reduce API costs.
+
 ---
 
 ## 📝 How to Add New Principles
 
 To add a new principle:
-1. Assign the next sequential ID (`PRINCIPLE-007`, etc.).
+1. Assign the next sequential ID (`PRINCIPLE-008`, etc.).
 2. Define the **Problem/Concept** and concrete **Rules/Guidelines**.
-3. Update `GUIDELINES.md`, `AGENTS.md`, and `GEMINI.md`.
+3. Update `GUIDELINES.md` and `AGENTS.md`.
+4. Run `py scripts/sync_principles.py` to auto-propagate across all AI guidelines.

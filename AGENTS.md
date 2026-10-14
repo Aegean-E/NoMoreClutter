@@ -86,18 +86,31 @@
 
 ---
 
+### PRINCIPLE-007: Performance & Resource Optimization (Speed & Lean Architecture)
+- **Concept**: Every code change, architectural modification, and dependency choice must be optimized for execution speed, low latency, optimal algorithmic complexity, and lean resource utilization (CPU, memory, disk I/O, and LLM token budget).
+- **Rules**:
+  1. **Algorithmic & I/O Efficiency**: All scanning, filtering, and path transformations must employ optimal algorithmic complexity ($O(N)$ scanning, set lookups, generator pipelines, buffered file operations).
+  2. **Non-Blocking & Asynchronous Execution**: Heavy operations (file system walks, batch moves, network/LLM calls) must execute asynchronously or in worker threads, never blocking the UI or main event loop.
+  3. **Lean Dependency Footprint**: Avoid introducing bloated, heavy third-party packages when standard library or lightweight modules suffice. Utilize lazy loading for heavy dependencies.
+  4. **Token & Network Frugality**: LLM prompts, batch sizes, and recursive trees must be budgeted to minimize latency, token consumption, and API costs while preserving reasoning accuracy.
+  5. **No Brittle Premature Hacks**: Optimization must remain readable, maintainable, modular (**PRINCIPLE-003**), and strictly tested.
+
+---
+
 ## 🛠️ AI Task Checklists
 
 ### 🛫 Pre-Flight Checklist (Run at Cold Start / Before Coding)
-- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-006`) and repo state?
+- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-007`) and repo state?
 - [ ] **Necessity Assessment**: Why is this change needed, and what specific problem does it address?
 - [ ] **Benefit Projection**: How will this directly enhance user value, modularity, or RLM architecture?
+- [ ] **Performance & Resource Plan**: Is the solution designed for optimal speed, minimal latency, and lean dependencies (**PRINCIPLE-007**)?
 - [ ] **Risk / Harm Analysis**: What could break, regress, or introduce latency/fragility, and how will I prevent it?
 - [ ] **Quality Standard**: Does the proposed design uphold premium quality without cutting corners?
 
 ### 🛬 Post-Flight Checklist (Run Before Completion)
 - [ ] Have I adhered to **RLM compatibility** (recursive decomposition where applicable)?
 - [ ] Is the architecture **modular** and decoupled?
+- [ ] Are code paths **optimized for speed, responsiveness, and lean resource consumption** (**PRINCIPLE-007**)?
 - [ ] Have all changes been verified for functionality and correctness?
 - [ ] Have all **AI guideline files been automatically synchronized** if principles changed (**PRINCIPLE-004**)?
 - [ ] Has **README.md been updated** to reflect all changes (**PRINCIPLE-005**)?
