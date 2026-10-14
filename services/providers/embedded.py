@@ -130,11 +130,11 @@ class EmbeddedProvider(BaseAIProvider):
             import base64
             from llama_cpp import Llama
             from llama_cpp.llama_chat_format import MoondreamChatHandler, Llava15ChatHandler
-        except ImportError:
-            raise RuntimeError(
+        except ImportError as e:
+            raise NotImplementedError(
                 "llama-cpp-python with multimodal support is required for local vision analysis. "
                 "Run `pip install llama-cpp-python` or switch to Groq / Gemini for instant free cloud vision."
-            )
+            ) from e
 
         with open(image_path, "rb") as f:
             b64_img = base64.b64encode(f.read()).decode("utf-8")

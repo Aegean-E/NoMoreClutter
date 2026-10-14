@@ -9,7 +9,7 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 2006 | 95820 | 1 | 0 |
+| `main.py` | 2010 | 96011 | 1 | 0 |
 | `models/__init__.py` | 87 | 2446 | 5 | 0 |
 | `services/__init__.py` | 47 | 1476 | 0 | 11 |
 | `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
@@ -23,10 +23,10 @@
 | `services/ollama_manager.py` | 171 | 6187 | 2 | 0 |
 | `services/providers/__init__.py` | 44 | 1198 | 0 | 1 |
 | `services/providers/base.py` | 48 | 1565 | 1 | 0 |
-| `services/providers/embedded.py` | 170 | 7320 | 1 | 0 |
+| `services/providers/embedded.py` | 170 | 7339 | 1 | 0 |
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
 | `services/providers/registry.py` | 135 | 4892 | 1 | 3 |
-| `services/rlm_organizer.py` | 432 | 18699 | 2 | 0 |
+| `services/rlm_organizer.py` | 481 | 20857 | 2 | 0 |
 | `ui/__init__.py` | 10 | 347 | 0 | 0 |
 | `ui/duplicate_finder.py` | 680 | 26799 | 1 | 0 |
 | `ui/file_viewer.py` | 677 | 26082 | 1 | 5 |
@@ -44,7 +44,7 @@
 | `tests/test_file_viewer.py` | 198 | 9071 | 2 | 0 |
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
 | `tests/test_providers.py` | 73 | 2626 | 1 | 0 |
-| `tests/test_rlm_organizer.py` | 121 | 5209 | 2 | 0 |
+| `tests/test_rlm_organizer.py` | 178 | 8278 | 2 | 0 |
 | `tests/test_settings_functionality.py` | 250 | 10130 | 1 | 0 |
 | `tests/test_sync_and_knowledge.py` | 87 | 3297 | 1 | 0 |
 | `tests/test_tree_preview_model.py` | 56 | 2344 | 1 | 0 |
@@ -364,6 +364,8 @@ and PRINCIPLE-009 (Token Frugality & Context Budgeting).
   - Method `._process_regular_rlm(files, model, output_folder, existing_folders, create_new_folders, ai_rename, content_peeking, peek_max_chars, cluster_batch_size, progress_callback)`
   - Method `._analyze_cluster(batch, model, output_folder, existing_folders, create_new_folders, ai_rename, content_peeking, peek_max_chars)`
   - Method `._process_images_hierarchical(files, model, output_folder, existing_folders, create_new_folders, ai_rename, progress_callback)`
+  - Method `._extract_image_year(cls, file_path)`
+  - Method `._get_smart_image_folder(cls, file_path)`
   - Method `.get_heuristic_category(file_path)`
   - Method `._heuristic_fallback_batch(files, output_folder, existing_folders)`
   - Method `._apply_numbered_rename(changes)`
@@ -710,6 +712,9 @@ Tests initialization, error encapsulation, and integration with RLM organizer.
   - Method `.test_organize_mock()`
   - Method `.test_organize_non_vision_provider_routes_to_regular_rlm()`
   - Method `.test_organize_vision_not_implemented_graceful_fallback()`
+  - Method `.test_organize_vision_runtime_error_aborts_immediately_and_routes_to_text_rlm()`
+  - Method `.test_smart_image_folder_extraction()`
+  - Method `.test_heuristic_fallback_batch_image_albums()`
 
 ### `tests/test_settings_functionality.py`
 > Unit tests verifying the function of EVERY setting in NoMoreClutter (PRINCIPLE-011).

@@ -22,7 +22,7 @@ from services import (
     get_deduplicator,
     get_cleaner_service,
 )
-from models import FILE_TYPE_CATEGORIES, FileChange
+from models import FILE_TYPE_CATEGORIES, FileChange, IMAGE_EXTENSIONS
 from ui import TreePreviewDialog, DuplicateFinderDialog, JunkCleanerDialog, FileViewerDialog
 
 
@@ -1706,7 +1706,11 @@ class NoMoreClutterApp(ctk.CTk):
         changes = []
         existing = self._get_existing_folders()
         for f in files:
-            cat = RLMOrganizer.get_heuristic_category(f)
+            ext = os.path.splitext(f)[1].lower()
+            if ext in IMAGE_EXTENSIONS:
+                cat = RLMOrganizer._get_smart_image_folder(f)
+            else:
+                cat = RLMOrganizer.get_heuristic_category(f)
             folder_name = cat
             if not self.create_folders_var.get():
                 if existing:

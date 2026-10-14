@@ -228,18 +228,17 @@ Respond ONLY with a valid JSON array of objects:
                         stem = os.path.splitext(basename)[0]
                         if ext in IMAGE_EXTENSIONS:
                             date_match = re.search(r"(?:^|[^\d])(19\d{2}|20\d{2})[-_]?(0[1-9]|1[0-2])[-_]?(0[1-9]|[12]\d|3[01])(?:[-_]?\d{4,6})?", basename)
-                            if date_match:
-                                year = date_match.group(1)
-                                clean_tokens = [w.lower() for w in re.findall(r"[a-zA-Z]+", stem)]
-                                camera_prefixes = {"img", "dsc", "pano", "vid", "photo", "jpg", "jpeg", "png", "webp", "html", "fig", "article"}
-                                meaningful_tokens = [t for t in clean_tokens if t not in camera_prefixes and len(t) > 2]
-                                is_hex_or_numeric = bool(re.match(r"^[0-9a-fA-F_\-]+$", stem))
+                            year = date_match.group(1) if date_match else self._extract_image_year(orig_path)
+                            clean_tokens = [w.lower() for w in re.findall(r"[a-zA-Z]+", stem)]
+                            camera_prefixes = {"img", "dsc", "pano", "vid", "photo", "jpg", "jpeg", "png", "webp", "html", "fig", "article"}
+                            meaningful_tokens = [t for t in clean_tokens if t not in camera_prefixes and len(t) > 2]
+                            is_hex_or_numeric = bool(re.match(r"^[0-9a-fA-F_\-]+$", stem))
 
-                                hallucinated_tags = {"animals", "animal", "pets", "pet", "general", "other", "random", "misc", "untitled", "images", "photos"}
-                                if not meaningful_tokens or is_hex_or_numeric or folder_name.lower() in hallucinated_tags:
-                                    folder_name = f"Photos/{year}"
-                                if not new_filename or any(new_filename.lower().startswith(p) for p in ["animal", "image", "photo_1", "photo_2"]):
-                                    new_filename = basename
+                            hallucinated_tags = {"animals", "animal", "pets", "pet", "general", "other", "random", "misc", "untitled", "images", "photos"}
+                            if not meaningful_tokens or is_hex_or_numeric or folder_name.lower() in hallucinated_tags:
+                                folder_name = f"Photos/{year}" if year else "Photos"
+                            if not new_filename or any(new_filename.lower().startswith(p) for p in ["animal", "image", "photo_1", "photo_2"]):
+                                new_filename = basename
                         
                         # Preserve existing folder constraint if create_new_folders is False
                         if not create_new_folders:
@@ -260,7 +259,11 @@ Respond ONLY with a valid JSON array of objects:
             # Defensive fallback for any files missed by the LLM
             for idx, orig_path in id_to_filepath.items():
                 if idx not in visited_ids:
-                    cat = self.get_heuristic_category(orig_path)
+                    ext = os.path.splitext(orig_path)[1].lower()
+                    if ext in IMAGE_EXTENSIONS:
+                        cat = self._get_smart_image_folder(orig_path)
+                    else:
+                        cat = self.get_heuristic_category(orig_path)
                     target_path = os.path.join(output_folder, cat, os.path.basename(orig_path))
                     changes.append(FileChange(original=orig_path, action="move", new_path=target_path))
 
@@ -330,9 +333,16 @@ Respond ONLY with a valid JSON array of objects:
             except NotImplementedError as nie:
                 # Re-raise so organize() can catch once and immediately fallback all images to text RLM
                 raise nie
+            except (RuntimeError, ImportError, FileNotFoundError) as engine_err:
+                # Systemic engine/dependency/model missing error: abort vision pipeline immediately
+                raise NotImplementedError(str(engine_err)) from engine_err
             except Exception as e:
+                # If vision fails on the very first file, it is almost certainly a systemic connection/config error
+                if idx == 0:
+                    raise NotImplementedError(f"Vision provider failed on initial image: {e}") from e
+                
                 print(f"Vision error on {img_path}: {e}")
-                cat = "Images"
+                cat = self._get_smart_image_folder(img_path)
                 new_path = os.path.join(output_folder, cat, os.path.basename(img_path))
                 results.append(FileChange(original=img_path, action="move", new_path=new_path))
 
@@ -340,6 +350,41 @@ Respond ONLY with a valid JSON array of objects:
                 progress_callback(1, len(results), total)
 
         return results
+
+    @classmethod
+    def _extract_image_year(cls, file_path: str) -> Optional[str]:
+        """Extract 4-digit year from image filename or file modification timestamp."""
+        basename = os.path.basename(file_path)
+        date_match = re.search(
+            r"(?:^|[^\d])(19\d{2}|20\d{2})[-_]?(0[1-9]|1[0-2])?[-_]?(0[1-9]|[12]\d|3[01])?",
+            basename
+        )
+        if date_match:
+            try:
+                y = int(date_match.group(1))
+                if 1970 <= y <= 2035:
+                    return str(y)
+            except ValueError:
+                pass
+
+        try:
+            if os.path.exists(file_path):
+                import datetime
+                mtime = os.path.getmtime(file_path)
+                m_year = datetime.datetime.fromtimestamp(mtime).year
+                if 1990 <= m_year <= 2035:
+                    return str(m_year)
+        except Exception:
+            pass
+        return None
+
+    @classmethod
+    def _get_smart_image_folder(cls, file_path: str) -> str:
+        """Categorize an image into a date album (Photos/YYYY) or general Photos folder."""
+        year = cls._extract_image_year(file_path)
+        if year:
+            return f"Photos/{year}"
+        return "Photos"
 
     @staticmethod
     def get_heuristic_category(file_path: str) -> str:
@@ -354,7 +399,11 @@ Respond ONLY with a valid JSON array of objects:
         """Pure Python rule-based classification when LLM is unreachable."""
         changes = []
         for f in files:
-            cat = self.get_heuristic_category(f)
+            ext = os.path.splitext(f)[1].lower()
+            if ext in IMAGE_EXTENSIONS:
+                cat = self._get_smart_image_folder(f)
+            else:
+                cat = self.get_heuristic_category(f)
             folder = cat
             if existing_folders:
                 folder = self._match_closest_folder(cat, existing_folders)
