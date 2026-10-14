@@ -9,21 +9,20 @@ This document describes the presentation architecture in `main.py`, including Cu
 Built with CustomTkinter in a dark-mode theme:
 
 ```
-NoMoreClutterApp (ctk.CTk)
-├── Header & Title Frame
-│   ├── Logo / Title Label
-│   └── Settings & Connection Status Indicators
-├── Top Control Area
-│   ├── Directory Selector (Entry + Browse Button)
-│   └── Provider & Key Controls (Provider Dropdown, API Key, Model Entry, Test Button)
-├── Main Workspace (Split / Tabbed Panes)
-│   ├── Category Selection Checkboxes (Images, Documents, Media, Code, Archives)
-│   ├── Action Controls:
-│   │   ├── "⚡ Quick Organize (No AI)"
-│   │   ├── "🚀 Organize Files"
-│   │   └── "↩ Undo Moves"
-│   └── Real-time Console Log (ctk.CTkTextbox with autoscroll)
-└── Status Bar (Progress Bar, Current State, File Counters)
+NoMoreClutterApp (ctk.CTk) - Maximized / Zoomed Full-Screen on Startup (1340x880 minsize)
+├── Top Navigation & Header Bar
+│   ├── Branding & Subtitle ("📁 NoMoreClutter: AI-Powered Workspace Organizer")
+│   ├── AI Status Badge (Interactive Clickable Pill: 🟢 Plugged / 🔴 Unplugged / 🟡 Checking)
+│   ├── Utility Tool Openers ("🔍 Duplicates", "🧹 Clean Junk")
+│   └── Navigation Action Deck ("🚀 1-Click Deploy", "⚙️ Settings")
+└── Main Workspace Grid (Two-Column Master-Detail Layout)
+    ├── Left Scrollable Control Deck:
+    │   ├── Card 1: 📂 Directory Configuration (Source & Destination entries, Browse, Scan badge)
+    │   ├── Card 2: 🎯 File Types to Process (2-Column Grid, Select All / Clear All toggles)
+    │   └── Card 3: ⚡ Organization Control Center ("🔍 AI Organize", "⚡ Quick Organize", "🗂️ Preview & Execute", "↩ Undo Moves", Real-time status pill)
+    └── Right Activity Stream & Terminal:
+        ├── Header Bar (Title + "Clear Log" button)
+        └── Full-Height Live Console Textbox (ctk.CTkTextbox with Consolas font)
 ```
 
 ---

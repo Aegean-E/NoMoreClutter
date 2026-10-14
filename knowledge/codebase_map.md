@@ -9,7 +9,7 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 1737 | 85462 | 1 | 0 |
+| `main.py` | 1913 | 92036 | 1 | 0 |
 | `models/__init__.py` | 85 | 2389 | 5 | 0 |
 | `services/__init__.py` | 47 | 1476 | 0 | 11 |
 | `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
@@ -52,6 +52,9 @@
   - Method `.__init__()`
   - Method `._load_settings()`
   - Method `._save_settings(silent)`
+  - Method `._select_all_categories()`
+  - Method `._deselect_all_categories()`
+  - Method `._clear_log()`
   - Method `._build_ui()`
   - Method `._build_settings_window()`
   - Method `._on_batch_size_slider_changed(value)`

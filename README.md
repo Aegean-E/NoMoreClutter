@@ -50,10 +50,12 @@ An intelligent AI-powered desktop application that automatically organizes your 
 - **Clean Destination Folders**: Rolling back automatically prunes newly created empty destination directories.
 - **Non-Destructive Operations**: Files are safely moved with zero data loss risk.
 
-### 🎨 Modern Dark UI & ⚡ Continuous Performance Sliders
+### 🎨 Modern Dark UI & 🖥️ Spacious Two-Column Dashboard
+- **Full-Screen Master-Detail Experience**: Automatically launches in full-screen maximized mode (`1340x880` default minimum geometry) to eliminate visual clutter and provide an expansive command center.
+- **Top Navigation Bar**: Unified header featuring brand identity, an interactive AI status pill (🟢 **AI Plugged** / 🔴 **AI Unplugged**), utility tools (`🔍 Duplicates`, `🧹 Clean Junk`), and quick navigation (`🚀 1-Click Deploy`, `⚙️ Settings`).
+- **Left Control Deck**: Cleanly separated modular cards for Directory Configuration, 2-column File Types to Process with `All` / `None` quick toggles, and Organization Control Center buttons with real-time status indicators.
+- **Right Activity Stream & Terminal**: Full-height, dedicated real-time activity stream and terminal with a `Clear Log` button and monospace font formatting for clear, readable logs.
 - **⚡ Hardware Auto-Tuner & Continuous Performance Sliders**: Real-time interactive sliders with live value badges for **RLM Cluster Batch Size** (1–30), **Max File Limit** (0–250), **Document Peek Context Budget** (50–350 chars), and **Inter-Batch Pacing Delay** (0.0s–2.0s). The built-in benchmark measures PC latency (ms) and throughput (tokens/sec) and uses continuous mathematical formulas to calibrate all 4 sliders to the exact optimal points for your hardware.
-- **Sleek CustomTkinter Interface**: Designed with dark-mode aesthetic, real-time logging, and interactive controls.
-- **🔌 Real-Time AI Plugged/Unplugged Indicator**: Interactive status pill in the header displaying connection health (🟢 **AI Plugged: Groq Ready**, 🟢 **AI Plugged: Embedded**, 🔴 **AI Unplugged: No Key**, 🔴 **AI Unplugged: Offline**). Click the pill to test connection or launch 1-Click Quick Deploy.
 - **Provider Quick-Switching**: Dropdown selector with pre-configured API URLs, recommended models, and direct links to get free API keys.
 - **Configurable Peeking & Settings Persistence**: Toggle document peeking, customize scan filters, and save provider preferences automatically.
 

@@ -33,10 +33,16 @@ class NoMoreClutterApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         
-        self.title("NoMoreClutter - AI File Organizer")
-        self.geometry("1000x820")
+        self.title("NoMoreClutter 🗂️ - Intelligent AI File Organizer")
+        self.geometry("1340x880")
+        self.minsize(1080, 680)
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
+        try:
+            # Maximizes window gracefully on Windows as user requested
+            self.after(100, lambda: self.state("zoomed"))
+        except Exception:
+            pass
         
         self.source_folder = ""
         self.output_folder = ""
@@ -97,22 +103,75 @@ class NoMoreClutterApp(ctk.CTk):
         if not silent:
             messagebox.showinfo("Saved", "Settings saved successfully!")
     
+    def _select_all_categories(self):
+        for var in self.type_vars.values():
+            var.set(True)
+
+    def _deselect_all_categories(self):
+        for var in self.type_vars.values():
+            var.set(False)
+
+    def _clear_log(self):
+        self.output_text.delete("1.0", "end")
+
     def _build_ui(self):
         self.grid_columnconfigure(0, weight=1)
-        
-        # 1. Header Frame
-        top_frame = ctk.CTkFrame(self)
-        top_frame.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
+        self.grid_rowconfigure(1, weight=1)
+
+        # -------------------------------------------------------------
+        # 1. Top Navigation & App Header (Full Width Bar)
+        # -------------------------------------------------------------
+        top_frame = ctk.CTkFrame(self, fg_color="#18191D", corner_radius=10, border_width=1, border_color="#2C2E33")
+        top_frame.grid(row=0, column=0, padx=20, pady=(16, 10), sticky="ew")
         top_frame.grid_columnconfigure(1, weight=1)
-        
+
+        # Brand / Title Block
         title_box = ctk.CTkFrame(top_frame, fg_color="transparent")
-        title_box.grid(row=0, rowspan=2, column=0, padx=(15, 10), pady=10, sticky="w")
-        ctk.CTkLabel(title_box, text="NoMoreClutter 🗂️", font=ctk.CTkFont(size=24, weight="bold")).pack(anchor="w")
-        ctk.CTkLabel(title_box, text="Intelligent, RLM-compatible file organizer", text_color="gray").pack(anchor="w")
+        title_box.grid(row=0, column=0, padx=(18, 10), pady=12, sticky="w")
         
-        # Interactive AI Status Badge / Pill (Option to see plugged/unplugged state at a glance)
+        brand_row = ctk.CTkFrame(title_box, fg_color="transparent")
+        brand_row.pack(anchor="w")
+        ctk.CTkLabel(brand_row, text="NoMoreClutter 🗂️", font=ctk.CTkFont(size=22, weight="bold"), text_color="#F8F9FA").pack(side="left")
+        ctk.CTkLabel(brand_row, text="v2.5 RLM", font=ctk.CTkFont(size=11, weight="bold"), text_color="#74C0FC", fg_color="#182A38", corner_radius=6, padx=6, pady=2).pack(side="left", padx=8)
+        
+        ctk.CTkLabel(title_box, text="Intelligent AI File Organizer & Storage Reclaimer", text_color="#909296", font=ctk.CTkFont(size=12)).pack(anchor="w", pady=(2, 0))
+
+        # Top Right Actions & Tools Bar
+        nav_actions = ctk.CTkFrame(top_frame, fg_color="transparent")
+        nav_actions.grid(row=0, column=1, padx=(10, 16), pady=12, sticky="e")
+
+        # Utility tools
+        self.dup_btn = ctk.CTkButton(
+            nav_actions,
+            text="🔍 Duplicates",
+            command=self._open_duplicate_finder,
+            height=34,
+            width=120,
+            fg_color="#25262B",
+            hover_color="#373A40",
+            border_width=1,
+            border_color="#373A40",
+            font=ctk.CTkFont(size=12, weight="bold"),
+        )
+        self.dup_btn.pack(side="left", padx=5)
+
+        self.clean_btn = ctk.CTkButton(
+            nav_actions,
+            text="🧹 Clean Junk",
+            command=self._open_junk_cleaner,
+            height=34,
+            width=115,
+            fg_color="#25262B",
+            hover_color="#373A40",
+            border_width=1,
+            border_color="#373A40",
+            font=ctk.CTkFont(size=12, weight="bold"),
+        )
+        self.clean_btn.pack(side="left", padx=5)
+
+        # AI Status Pill Button (interactive)
         self.ai_status_btn = ctk.CTkButton(
-            top_frame,
+            nav_actions,
             text="🟡 Checking AI...",
             command=self._on_ai_status_clicked,
             height=34,
@@ -124,101 +183,218 @@ class NoMoreClutterApp(ctk.CTk):
             border_width=1,
             border_color="#5C5F66",
         )
-        self.ai_status_btn.grid(row=0, rowspan=2, column=1, padx=(10, 15), pady=10, sticky="e")
-        
-        deploy_btn = ctk.CTkButton(
-            top_frame,
-            text="🚀 1-Click AI Deploy",
-            width=160,
-            fg_color="#D9480F",
-            hover_color="#C92A2A",
-            command=self._open_quick_deploy,
-            font=ctk.CTkFont(size=13, weight="bold"),
-        )
-        deploy_btn.grid(row=0, rowspan=2, column=2, padx=(0, 5), pady=10)
+        self.ai_status_btn.pack(side="left", padx=6)
 
-        settings_btn = ctk.CTkButton(top_frame, text="⚙ Settings", width=110, command=self._open_settings)
-        settings_btn.grid(row=0, rowspan=2, column=3, padx=(5, 20), pady=10)
-        
-        # 2. Folder Selection Frame
-        folders_frame = ctk.CTkFrame(self)
-        folders_frame.grid(row=1, column=0, padx=20, pady=10, sticky="ew")
+        deploy_btn = ctk.CTkButton(
+            nav_actions,
+            text="🚀 1-Click AI Deploy",
+            width=150,
+            height=34,
+            fg_color="#E8590C",
+            hover_color="#D9480F",
+            command=self._open_quick_deploy,
+            font=ctk.CTkFont(size=12, weight="bold"),
+        )
+        deploy_btn.pack(side="left", padx=5)
+
+        settings_btn = ctk.CTkButton(
+            nav_actions,
+            text="⚙ Settings",
+            width=100,
+            height=34,
+            fg_color="#373A40",
+            hover_color="#2C2E33",
+            command=self._open_settings,
+            font=ctk.CTkFont(size=12),
+        )
+        settings_btn.pack(side="left", padx=(5, 0))
+
+        # -------------------------------------------------------------
+        # 2. Main Two-Column Content Workspace
+        # -------------------------------------------------------------
+        workspace_grid = ctk.CTkFrame(self, fg_color="transparent")
+        workspace_grid.grid(row=1, column=0, padx=20, pady=(0, 16), sticky="nsew")
+        workspace_grid.grid_columnconfigure(0, weight=0, minsize=480)
+        workspace_grid.grid_columnconfigure(1, weight=1)
+        workspace_grid.grid_rowconfigure(0, weight=1)
+
+        # =============================================================
+        # LEFT COLUMN: Controls & Configurations
+        # =============================================================
+        left_scroll = ctk.CTkScrollableFrame(workspace_grid, width=480, fg_color="transparent")
+        left_scroll.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        left_scroll.grid_columnconfigure(0, weight=1)
+
+        # Card 1: 📁 Directory Paths
+        folders_frame = ctk.CTkFrame(left_scroll, fg_color="#1A1B1E", corner_radius=10, border_width=1, border_color="#2C2E33")
+        folders_frame.pack(fill="x", pady=(0, 10))
         folders_frame.grid_columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(folders_frame, text="📁 Directory Paths", font=ctk.CTkFont(size=14, weight="bold"), text_color="#F8F9FA").grid(row=0, column=0, columnspan=3, padx=16, pady=(14, 6), sticky="w")
         
-        ctk.CTkLabel(folders_frame, text="📁 Source Folder (files to organize)", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, columnspan=3, padx=15, pady=(12, 4), sticky="w")
-        self.source_entry = ctk.CTkEntry(folders_frame, height=36)
-        self.source_entry.grid(row=1, column=0, columnspan=2, padx=15, pady=(0, 8), sticky="ew")
-        ctk.CTkButton(folders_frame, text="Browse", width=100, height=36, command=self._select_source).grid(row=1, column=2, padx=(0, 15), pady=(0, 8))
+        # Source row
+        ctk.CTkLabel(folders_frame, text="Source Folder (files to organize):", font=ctk.CTkFont(size=12, weight="bold"), text_color="#ADB5BD").grid(row=1, column=0, columnspan=3, padx=16, pady=(4, 2), sticky="w")
+        self.source_entry = ctk.CTkEntry(folders_frame, height=36, font=ctk.CTkFont(size=12))
+        self.source_entry.grid(row=2, column=0, columnspan=2, padx=(16, 6), pady=(0, 6), sticky="ew")
+        ctk.CTkButton(folders_frame, text="Browse", width=85, height=36, command=self._select_source, font=ctk.CTkFont(size=12)).grid(row=2, column=2, padx=(0, 16), pady=(0, 6))
+
+        # Output row
+        ctk.CTkLabel(folders_frame, text="Destination Folder (organized output):", font=ctk.CTkFont(size=12, weight="bold"), text_color="#ADB5BD").grid(row=3, column=0, columnspan=3, padx=16, pady=(6, 2), sticky="w")
+        self.output_entry = ctk.CTkEntry(folders_frame, height=36, font=ctk.CTkFont(size=12))
+        self.output_entry.grid(row=4, column=0, columnspan=2, padx=(16, 6), pady=(0, 8), sticky="ew")
+        ctk.CTkButton(folders_frame, text="Browse", width=85, height=36, command=self._select_output, font=ctk.CTkFont(size=12)).grid(row=4, column=2, padx=(0, 16), pady=(0, 8))
+
+        # Folder info labels
+        self.folder_info_label = ctk.CTkLabel(folders_frame, text="", text_color="#74C0FC", font=ctk.CTkFont(size=12))
+        self.folder_info_label.grid(row=5, column=0, columnspan=3, padx=16, pady=(0, 4), sticky="w")
         
-        ctk.CTkLabel(folders_frame, text="💾 Output Folder (organized destination)", font=ctk.CTkFont(weight="bold")).grid(row=2, column=0, columnspan=3, padx=15, pady=(8, 4), sticky="w")
-        self.output_entry = ctk.CTkEntry(folders_frame, height=36)
-        self.output_entry.grid(row=3, column=0, columnspan=2, padx=15, pady=(0, 10), sticky="ew")
-        ctk.CTkButton(folders_frame, text="Browse", width=100, height=36, command=self._select_output).grid(row=3, column=2, padx=(0, 15), pady=(0, 10))
-        
-        self.folder_info_label = ctk.CTkLabel(folders_frame, text="", text_color="gray", font=ctk.CTkFont(size=12))
-        self.folder_info_label.grid(row=4, column=0, columnspan=3, padx=15, pady=(0, 6), sticky="w")
-        
-        self.existing_folders_label = ctk.CTkLabel(folders_frame, text="", text_color="gray", font=ctk.CTkFont(size=11))
-        self.existing_folders_label.grid(row=5, column=0, columnspan=3, padx=15, pady=(0, 10), sticky="w")
-        
-        # 3. File Types Frame
-        file_types_frame = ctk.CTkFrame(self)
-        file_types_frame.grid(row=2, column=0, padx=20, pady=10, sticky="ew")
-        file_types_frame.grid_columnconfigure((0, 1, 2), weight=1)
-        
-        ctk.CTkLabel(file_types_frame, text="📋 File Categories to Include", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, columnspan=3, padx=15, pady=(12, 6), sticky="w")
-        
+        self.existing_folders_label = ctk.CTkLabel(folders_frame, text="", text_color="#868E96", font=ctk.CTkFont(size=11), wraplength=440, justify="left")
+        self.existing_folders_label.grid(row=6, column=0, columnspan=3, padx=16, pady=(0, 14), sticky="w")
+
+        # Card 2: 📋 File Categories to Include
+        file_types_frame = ctk.CTkFrame(left_scroll, fg_color="#1A1B1E", corner_radius=10, border_width=1, border_color="#2C2E33")
+        file_types_frame.pack(fill="x", pady=10)
+        file_types_frame.grid_columnconfigure((0, 1), weight=1)
+
+        cats_header = ctk.CTkFrame(file_types_frame, fg_color="transparent")
+        cats_header.grid(row=0, column=0, columnspan=2, padx=16, pady=(14, 8), sticky="ew")
+
+        ctk.CTkLabel(cats_header, text="📋 Categories to Include", font=ctk.CTkFont(size=14, weight="bold"), text_color="#F8F9FA").pack(side="left")
+
+        # Quick select / deselect links
+        ctk.CTkButton(cats_header, text="None", width=45, height=22, fg_color="#2C2E33", hover_color="#373A40", font=ctk.CTkFont(size=10), command=self._deselect_all_categories).pack(side="right", padx=(4, 0))
+        ctk.CTkButton(cats_header, text="All", width=40, height=22, fg_color="#2C2E33", hover_color="#373A40", font=ctk.CTkFont(size=10), command=self._select_all_categories).pack(side="right")
+
         saved_cats = self.settings.get("included_categories", {})
         self.type_vars = {}
         for i, (category, extensions) in enumerate(FILE_TYPE_CATEGORIES.items()):
             is_enabled = saved_cats.get(category, True)
             self.type_vars[category] = ctk.BooleanVar(value=is_enabled)
             ext_display = ", ".join(extensions[:3]) + ("..." if len(extensions) > 3 else "")
-            ctk.CTkCheckBox(file_types_frame, text=f"{category} ({ext_display})", variable=self.type_vars[category]).grid(row=1 + i // 3, column=i % 3, padx=15, pady=4, sticky="w")
-        
-        # 4. Actions Frame
-        actions_frame = ctk.CTkFrame(self)
-        actions_frame.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
-        
-        self.analyze_btn = ctk.CTkButton(actions_frame, text="🔍 AI Organize", command=self._analyze, height=42, font=ctk.CTkFont(size=13, weight="bold"))
-        self.analyze_btn.pack(side="left", padx=(8, 4), pady=12)
-        
-        self.quick_btn = ctk.CTkButton(actions_frame, text="⚡ Quick Organize (No AI)", command=self._quick_organize, height=42, fg_color="#3B8ED0", font=ctk.CTkFont(size=13))
-        self.quick_btn.pack(side="left", padx=4, pady=12)
-        
-        self.execute_btn = ctk.CTkButton(actions_frame, text="🗂️ Preview & Execute", command=self._execute, height=42, state="disabled", fg_color="green", font=ctk.CTkFont(size=13, weight="bold"))
-        self.execute_btn.pack(side="left", padx=4, pady=12)
-        
-        self.undo_btn = ctk.CTkButton(actions_frame, text="↩ Undo Moves", command=self._undo_moves, height=42, state="disabled", fg_color="#6C757D", font=ctk.CTkFont(size=13))
-        self.undo_btn.pack(side="left", padx=4, pady=12)
+            cb = ctk.CTkCheckBox(file_types_frame, text=f"{category} ({ext_display})", variable=self.type_vars[category], font=ctk.CTkFont(size=11))
+            cb.grid(row=1 + (i // 2), column=i % 2, padx=16, pady=5, sticky="w")
 
-        self.dup_btn = ctk.CTkButton(actions_frame, text="🔍 Duplicates", command=self._open_duplicate_finder, height=42, fg_color="#495057", hover_color="#343A40", font=ctk.CTkFont(size=12))
-        self.dup_btn.pack(side="left", padx=4, pady=12)
+        ctk.CTkFrame(file_types_frame, height=8, fg_color="transparent").grid(row=99, column=0, columnspan=2)
 
-        self.clean_btn = ctk.CTkButton(actions_frame, text="🧹 Clean Junk", command=self._open_junk_cleaner, height=42, fg_color="#495057", hover_color="#343A40", font=ctk.CTkFont(size=12))
-        self.clean_btn.pack(side="left", padx=4, pady=12)
+        # Card 3: ⚡ Organization Control Center
+        actions_frame = ctk.CTkFrame(left_scroll, fg_color="#1A1B1E", corner_radius=10, border_width=1, border_color="#2C2E33")
+        actions_frame.pack(fill="x", pady=10)
+        actions_frame.grid_columnconfigure((0, 1), weight=1)
+
+        ctk.CTkLabel(actions_frame, text="⚡ Organization Control Center", font=ctk.CTkFont(size=14, weight="bold"), text_color="#F8F9FA").grid(row=0, column=0, columnspan=2, padx=16, pady=(14, 8), sticky="w")
+
+        # Primary Trigger Buttons
+        self.analyze_btn = ctk.CTkButton(
+            actions_frame,
+            text="🔍 AI Organize",
+            command=self._analyze,
+            height=46,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            fg_color="#1971C2",
+            hover_color="#1864AB",
+        )
+        self.analyze_btn.grid(row=1, column=0, padx=(16, 6), pady=6, sticky="ew")
+
+        self.quick_btn = ctk.CTkButton(
+            actions_frame,
+            text="⚡ Quick Organize (No AI)",
+            command=self._quick_organize,
+            height=46,
+            fg_color="#0C8599",
+            hover_color="#0B7285",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        )
+        self.quick_btn.grid(row=1, column=1, padx=(6, 16), pady=6, sticky="ew")
+
+        # Execution & Undo Buttons
+        self.execute_btn = ctk.CTkButton(
+            actions_frame,
+            text="🗂️ Preview & Execute",
+            command=self._execute,
+            height=42,
+            state="disabled",
+            fg_color="#2B8A3E",
+            hover_color="#237032",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        )
+        self.execute_btn.grid(row=2, column=0, padx=(16, 6), pady=6, sticky="ew")
+
+        self.undo_btn = ctk.CTkButton(
+            actions_frame,
+            text="↩ Undo Moves",
+            command=self._undo_moves,
+            height=42,
+            state="disabled",
+            fg_color="#495057",
+            hover_color="#343A40",
+            font=ctk.CTkFont(size=13),
+        )
+        self.undo_btn.grid(row=2, column=1, padx=(6, 16), pady=6, sticky="ew")
+
+        # Real-time Status Card row
+        status_box = ctk.CTkFrame(actions_frame, fg_color="#141517", corner_radius=6, border_width=1, border_color="#25262B")
+        status_box.grid(row=3, column=0, columnspan=2, padx=16, pady=(10, 16), sticky="ew")
 
         self.ai_plug_indicator = ctk.CTkLabel(
-            actions_frame,
+            status_box,
             text="⚪ Checking AI",
             font=ctk.CTkFont(size=11, weight="bold"),
-            text_color="gray"
+            text_color="gray",
+            padx=10,
         )
-        self.ai_plug_indicator.pack(side="left", padx=(10, 5), pady=12)
-        
-        self.status_label = ctk.CTkLabel(actions_frame, text="Select source folder to begin", text_color="gray", font=ctk.CTkFont(size=12))
-        self.status_label.pack(side="left", padx=10)
-        
-        # 5. Output Frame
-        output_frame = ctk.CTkFrame(self)
-        output_frame.grid(row=4, column=0, padx=20, pady=10, sticky="nsew")
-        self.grid_rowconfigure(4, weight=1)
-        
-        self.output_header = ctk.CTkLabel(output_frame, text="📝 Activity Log & Proposed Moves", font=ctk.CTkFont(size=13, weight="bold"))
-        self.output_header.pack(padx=15, pady=(12, 4), anchor="w")
-        
-        self.output_text = ctk.CTkTextbox(output_frame, wrap="none", font=ctk.CTkFont(family="Consolas", size=12))
-        self.output_text.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        self.ai_plug_indicator.pack(side="left", padx=4, pady=8)
+
+        self.status_label = ctk.CTkLabel(
+            status_box,
+            text="Select source folder to begin",
+            text_color="gray",
+            font=ctk.CTkFont(size=12),
+        )
+        self.status_label.pack(side="left", padx=6, pady=8, fill="x", expand=True)
+
+        # =============================================================
+        # RIGHT COLUMN: Live Activity Stream & Terminal
+        # =============================================================
+        output_frame = ctk.CTkFrame(workspace_grid, fg_color="#1A1B1E", corner_radius=10, border_width=1, border_color="#2C2E33")
+        output_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        output_frame.grid_columnconfigure(0, weight=1)
+        output_frame.grid_rowconfigure(1, weight=1)
+
+        # Console Header Bar
+        console_hdr = ctk.CTkFrame(output_frame, fg_color="transparent")
+        console_hdr.grid(row=0, column=0, padx=16, pady=(14, 8), sticky="ew")
+        console_hdr.grid_columnconfigure(1, weight=1)
+
+        self.output_header = ctk.CTkLabel(
+            console_hdr,
+            text="📝 Activity Stream & Real-Time Terminal",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color="#F8F9FA",
+        )
+        self.output_header.grid(row=0, column=0, sticky="w")
+
+        ctk.CTkButton(
+            console_hdr,
+            text="Clear Log",
+            width=80,
+            height=26,
+            fg_color="#2C2E33",
+            hover_color="#373A40",
+            font=ctk.CTkFont(size=11),
+            command=self._clear_log,
+        ).grid(row=0, column=2, sticky="e")
+
+        # Console Textbox
+        self.output_text = ctk.CTkTextbox(
+            output_frame,
+            wrap="none",
+            font=ctk.CTkFont(family="Consolas", size=12),
+            fg_color="#101113",
+            border_width=1,
+            border_color="#25262B",
+            corner_radius=6,
+        )
+        self.output_text.grid(row=1, column=0, padx=16, pady=(0, 14), sticky="nsew")
 
         # Check for persistent undo operations from previous sessions (Option 2)
         FileExecutor = get_FileExecutor()
