@@ -62,3 +62,17 @@ Establish `AGENTS.md` as the master canonical specification. Implement `scripts/
 ### Consequences
 - **Positive**: 100% consistency across all AI assistants; eliminates knowledge drift.
 - **Negative**: AI assistants must run sync scripts whenever principles or architecture change.
+
+---
+
+## ADR-005: Automated Test Verification & Continuous Test Coverage (Regression Shield)
+
+### Context
+Frequent additions, refactorings, or modifications made across disparate AI sessions risk breaking existing service interfaces, corrupting data mappings, or regressing path calculation logic.
+
+### Decision
+Codify `PRINCIPLE-011: Automated Test Verification & Continuous Test Coverage`. Every change must be paired with dedicated unit tests in `tests/`, and the complete test suite must be executed and confirmed 100% green before any commit is finalized.
+
+### Consequences
+- **Positive**: Complete regression protection, rapid feedback cycle (<0.1s run time), clean CI-ready test baseline.
+- **Negative**: Requires writing unit test fixtures for each new feature or refactor.

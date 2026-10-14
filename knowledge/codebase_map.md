@@ -21,8 +21,11 @@
 | `services/providers/registry.py` | 119 | 4218 | 1 | 3 |
 | `services/rlm_organizer.py` | 355 | 13935 | 2 | 0 |
 | `tests/test_file_executor.py` | 82 | 2915 | 1 | 0 |
+| `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
+| `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
 | `tests/test_providers.py` | 54 | 1795 | 1 | 0 |
 | `tests/test_rlm_organizer.py` | 78 | 3409 | 2 | 0 |
+| `tests/test_sync_and_knowledge.py` | 87 | 3297 | 1 | 0 |
 
 ---
 
@@ -187,6 +190,34 @@ Tests collision avoidance, safe moves, and undo management.
   - Method `.test_execute_move_and_undo()`
   - Method `.test_collision_avoidance()`
 
+### `tests/test_file_scanner.py`
+> Unit tests for FileScanner (PRINCIPLE-011).
+Tests shallow and recursive scanning, extension filtering, and category lookups.
+
+#### Classes
+- **`TestFileScanner`**
+  - Method `.setUp()`
+  - Method `.tearDown()`
+  - Method `.test_scan_folder_shallow()`
+  - Method `.test_scan_folder_shallow_filters_extensions()`
+  - Method `.test_scan_folder_recursive()`
+  - Method `.test_scan_empty_or_invalid_folder()`
+  - Method `.test_get_extension()`
+  - Method `.test_get_category()`
+
+### `tests/test_llm_service.py`
+> Unit tests for LLMService Facade (PRINCIPLE-011).
+Tests initialization, error encapsulation, and integration with RLM organizer.
+
+#### Classes
+- **`TestLLMService`**
+  - Method `.setUp()`
+  - Method `.test_initialization()`
+  - Method `.test_test_connection_delegation(mock_test)`
+  - Method `.test_analyze_files_empty()`
+  - Method `.test_analyze_files_error_wrapping()`
+  - Method `.test_analyze_files_destination_resolution()`
+
 ### `tests/test_providers.py`
 > Unit tests for AI Providers and Registry (PRINCIPLE-003, PRINCIPLE-008)
 
@@ -213,3 +244,13 @@ Tests collision avoidance, safe moves, and undo management.
   - Method `.test_heuristic_categorization()`
   - Method `.test_numbered_rename()`
   - Method `.test_organize_mock()`
+
+### `tests/test_sync_and_knowledge.py`
+> Unit tests for Principles and Knowledge Base Synchronization (PRINCIPLE-011).
+Tests principle parsing, guideline content generation, and AST symbol extraction.
+
+#### Classes
+- **`TestSyncAndKnowledge`**
+  - Method `.test_parse_principles()`
+  - Method `.test_generate_gemini_content()`
+  - Method `.test_extract_python_symbols()`

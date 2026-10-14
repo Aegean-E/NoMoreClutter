@@ -107,10 +107,20 @@ This document defines the architectural guidelines and design principles for **N
 
 ---
 
+### PRINCIPLE-011: Automated Test Verification & Continuous Test Coverage (Regression Shield)
+- **Problem**: Code changes made without automated tests easily introduce subtle regressions, break edge-case contracts, or crash in production. Manual testing is slow, incomplete, and error-prone.
+- **Guideline**:
+  - **Mandatory Test-Backed Changes**: Every code modification, new feature, bug fix, or refactoring must be accompanied by automated unit or integration tests in `tests/`.
+  - **Zero-Regression Gate**: The full test suite (`python -m unittest discover tests`) must be executed and confirmed 100% passing before any commit is finalized.
+  - **Deterministic, Fast, and Isolated**: Tests must run quickly (<1 second total), avoid brittle external network calls (use mocks or local fixtures), and clean up all temporary filesystem artifacts.
+  - **Comprehensive Coverage**: Incrementally expand test coverage for file scanning, error handling, provider fallback, and sync scripts.
+
+---
+
 ## 📝 How to Add New Principles
 
 To add a new principle:
-1. Assign the next sequential ID (`PRINCIPLE-011`, etc.).
+1. Assign the next sequential ID (`PRINCIPLE-012`, etc.).
 2. Define the **Problem/Concept** and concrete **Rules/Guidelines**.
 3. Update `GUIDELINES.md` and `AGENTS.md`.
 4. Run `py scripts/sync_principles.py` to auto-propagate across all AI guidelines.

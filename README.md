@@ -48,6 +48,7 @@ This project adheres to strict architectural and workflow principles:
 - **[PRINCIPLE-008: Zero-Friction Onboarding & Hybrid AI Access](GUIDELINES.md#principle-008-zero-friction-onboarding--hybrid-ai-access-one-click-start)**: One-click start without mandatory external software, while retaining full local server support.
 - **[PRINCIPLE-009: Token Frugality & Lean Code Architecture](GUIDELINES.md#principle-009-token-frugality--lean-code-architecture-context-budgeting)**: Concise code, strict token budgeting, dense payload serialization, and RLM clustering.
 - **[PRINCIPLE-010: AI Knowledge Base & Continuous Synchronization](GUIDELINES.md#principle-010-ai-knowledge-base--continuous-synchronization)**: Active codebase knowledge base in `knowledge/` auto-updated after every change via AST synchronization.
+- **[PRINCIPLE-011: Automated Test Verification & Continuous Test Coverage](GUIDELINES.md#principle-011-automated-test-verification--continuous-test-coverage-regression-shield)**: Mandatory test-backed changes and 100% test suite verification before committing.
 
 > **Universal AI Support**: These guidelines are automatically synchronized across all AI coding assistants (`AGENTS.md`, `GUIDELINES.md`, `GEMINI.md`, `CLAUDE.md`, `.cursorrules`, `.agents/rules/principles.md`, and `.github/copilot-instructions.md`) via `scripts/sync_principles.py`. Full specification in [GUIDELINES.md](GUIDELINES.md) and [AGENTS.md](AGENTS.md).
 
@@ -140,10 +141,13 @@ NoMoreClutter/
 │       ├── base.py            # BaseAIProvider abstract interface
 │       ├── registry.py        # Provider presets (Groq, Gemini, OpenAI, LM Studio, Ollama)
 │       └── openai_compatible.py # Standard OpenAI-compatible HTTP client
-├── tests/                     # Automated unit test suite
+├── tests/                     # Automated unit test suite (PRINCIPLE-011)
 │   ├── test_providers.py      # Provider registry & creation tests
 │   ├── test_rlm_organizer.py  # RLM engine & token payload tests
-│   └── test_file_executor.py  # Safe move, collision avoidance, and undo tests
+│   ├── test_file_executor.py  # Safe move, collision avoidance, and undo tests
+│   ├── test_file_scanner.py   # Shallow/recursive scan & extension filter tests
+│   ├── test_llm_service.py    # LLMService facade & error wrapping tests
+│   └── test_sync_and_knowledge.py # Principle parsing & AST symbol extraction tests
 ├── scripts/
 │   ├── sync_principles.py     # Cross-AI guidelines synchronizer (PRINCIPLE-004)
 │   └── update_knowledge_base.py # AST-based knowledge base auto-updater (PRINCIPLE-010)

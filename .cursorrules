@@ -23,3 +23,5 @@ Strictly read, respect, and enforce all principles defined in AGENTS.md and GUID
    - Code must be concise, expressive, and devoid of unnecessary bloat. All interactions with LLMs must be strictly budgeted for tokens—leveraging RLM decomposition, compact representations, and hierarchical batching so requests never exhaust context windows, exceed rate limits (TPM), or waste user tokens.
 10. PRINCIPLE-010: AI Knowledge Base & Continuous Synchronization
    - The repository must maintain an active, structured, and modular codebase knowledge base in `knowledge/`. Every AI assistant interacting with this codebase must consult the knowledge base for deep architectural context and systematically update it after any architectural, service, model, or UI change to eliminate knowledge drift.
+11. PRINCIPLE-011: Automated Test Verification & Continuous Test Coverage (Regression Shield)
+   - Every code modification, new feature, bug fix, or refactoring must be accompanied by automated unit or integration tests wherever technically feasible. Before finalizing any task, the full automated test suite must be executed and confirmed passing to guarantee zero regressions.
