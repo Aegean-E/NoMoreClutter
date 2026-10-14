@@ -151,6 +151,73 @@ class TestFileExecutor(unittest.TestCase):
         self.assertTrue(os.path.exists(src_file))
         self.assertFalse(os.path.exists(dst_file))
 
+    def test_crash_resilience_corrupted_history_quarantine(self):
+        """A half-written/corrupt history file from a power outage must be quarantined safely without crashing."""
+        # Simulate abrupt power outage producing a truncated corrupt JSON file
+        with open(self.test_history_path, "w", encoding="utf-8") as f:
+            f.write('[{"batch_id": "batch_partial", "timestamp": 12345, "moves": [["/path/a", "/path/b"]')  # Unterminated JSON
+
+        FileExecutor._history = []
+        FileExecutor._loaded = False
+
+        # Loading history must not crash
+        self.assertFalse(FileExecutor.has_undo())
+        self.assertEqual(len(FileExecutor._history), 0)
+
+        # Corrupt file must have been quarantined with a .corrupt_ timestamp suffix
+        corrupt_files = [fn for fn in os.listdir(self.test_dir) if "corrupt_" in fn]
+        self.assertGreater(len(corrupt_files), 0)
+
+    def test_incremental_wal_journaling_recovers_interrupted_batch(self):
+        """Incremental WAL records partial moves so an interrupted session can be undone."""
+        src1 = os.path.join(self.src_dir, "wal1.txt")
+        src2 = os.path.join(self.src_dir, "wal2.txt")
+        dst1 = os.path.join(self.dst_dir, "wal1.txt")
+        dst2 = os.path.join(self.dst_dir, "wal2.txt")
+
+        with open(src1, "w") as f:
+            f.write("wal1")
+        with open(src2, "w") as f:
+            f.write("wal2")
+
+        changes = [
+            FileChange(original=src1, action="move", new_path=dst1),
+            FileChange(original=src2, action="move", new_path=dst2),
+        ]
+
+        success, errors = FileExecutor.execute(changes)
+        self.assertEqual(success, 2)
+        self.assertEqual(errors, 0)
+
+        # Inspect disk representation: should have 'status': 'completed'
+        with open(self.test_history_path, "r", encoding="utf-8") as f:
+            import json
+            disk_data = json.load(f)
+
+        self.assertEqual(len(disk_data), 1)
+        self.assertEqual(disk_data[0]["status"], "completed")
+        self.assertEqual(len(disk_data[0]["moves"]), 2)
+
+        # Simulate simulated power outage in-progress marker
+        disk_data[0]["status"] = "in_progress"
+        with open(self.test_history_path, "w", encoding="utf-8") as f:
+            json.dump(disk_data, f)
+
+        # Reset cache and reload as if app restarted after crash
+        FileExecutor._history = []
+        FileExecutor._loaded = False
+
+        self.assertTrue(FileExecutor.has_undo())
+        # Status must have transitioned to interrupted_recovered
+        self.assertEqual(FileExecutor._history[0]["status"], "interrupted_recovered")
+
+        # Must still undo cleanly
+        reverted, undo_errors = FileExecutor.undo_last_batch()
+        self.assertEqual(reverted, 2)
+        self.assertEqual(undo_errors, 0)
+        self.assertTrue(os.path.exists(src1))
+        self.assertTrue(os.path.exists(src2))
+
 
 if __name__ == "__main__":
     unittest.main()

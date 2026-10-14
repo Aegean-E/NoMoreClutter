@@ -65,16 +65,29 @@ class NoMoreClutterApp(ctk.CTk):
         self._build_ui()
     
     def _load_settings(self):
+        """Load settings with self-healing crash resilience against power loss (PRINCIPLE-012)."""
         try:
             if os.path.exists(SETTINGS_FILE):
                 with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
                     self.settings = json.load(f)
             else:
                 self.settings = {}
-        except Exception:
+        except json.JSONDecodeError as jde:
+            print(f"Warning: Corrupted {SETTINGS_FILE} detected ({jde}). Quarantining corrupted file...")
+            try:
+                corrupt_backup = f"{SETTINGS_FILE}.corrupt_{int(time.time())}"
+                if os.path.exists(SETTINGS_FILE):
+                    import shutil
+                    shutil.copy2(SETTINGS_FILE, corrupt_backup)
+            except Exception:
+                pass
+            self.settings = {}
+        except Exception as e:
+            print(f"Warning: Failed to load settings: {e}")
             self.settings = {}
     
     def _save_settings(self, silent: bool = False):
+        """Atomically persist settings with buffer flush and fsync (PRINCIPLE-012)."""
         batch_val = str(int(round(float(self.batch_size_slider.get())))) if hasattr(self, "batch_size_slider") else self.batch_size_entry.get().strip()
         limit_val = str(int(round(float(self.limit_slider.get())))) if hasattr(self, "limit_slider") else self.limit_entry.get().strip()
         peek_val = int(round(float(self.peek_length_slider.get()))) if hasattr(self, "peek_length_slider") else int(self.settings.get("peek_length", 180) or 180)
@@ -97,8 +110,26 @@ class NoMoreClutterApp(ctk.CTk):
             "pacing_delay": pacing_val,
             "included_categories": {cat: var.get() for cat, var in self.type_vars.items()} if hasattr(self, "type_vars") else {},
         }
-        with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
-            json.dump(self.settings, f, indent=2)
+        
+        # Atomic staging and fsync
+        tmp_settings = SETTINGS_FILE + ".tmp"
+        try:
+            with open(tmp_settings, "w", encoding="utf-8") as f:
+                json.dump(self.settings, f, indent=2, ensure_ascii=False)
+                f.flush()
+                try:
+                    os.fsync(f.fileno())
+                except OSError:
+                    pass
+            os.replace(tmp_settings, SETTINGS_FILE)
+        except Exception as e:
+            print(f"Error saving settings atomically: {e}")
+            try:
+                if os.path.exists(tmp_settings):
+                    os.remove(tmp_settings)
+            except Exception:
+                pass
+
         self._refresh_ai_status_async()
         if not silent:
             messagebox.showinfo("Saved", "Settings saved successfully!")

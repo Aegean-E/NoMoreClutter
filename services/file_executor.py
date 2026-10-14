@@ -33,15 +33,27 @@ class FileExecutor:
 
     @classmethod
     def _load_history(cls):
-        """Load persistent history from disk."""
+        """Load persistent history from disk with crash self-healing (PRINCIPLE-012)."""
         if os.path.exists(cls.history_file_path):
             try:
                 with open(cls.history_file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     if isinstance(data, list):
+                        # Detect any batch left in_progress from an unclean shutdown/power outage
+                        for b in data:
+                            if isinstance(b, dict) and b.get("status") == "in_progress":
+                                b["status"] = "interrupted_recovered"
                         cls._history = data
                     else:
                         cls._history = []
+            except json.JSONDecodeError as jde:
+                print(f"FileExecutor Warning: Corrupted {cls.history_file_path} detected ({jde}). Quarantining...")
+                try:
+                    corrupt_backup = f"{cls.history_file_path}.corrupt_{int(time.time())}"
+                    shutil.copy2(cls.history_file_path, corrupt_backup)
+                except Exception:
+                    pass
+                cls._history = []
             except Exception as e:
                 print(f"FileExecutor Warning: Failed to load history from {cls.history_file_path}: {e}")
                 cls._history = []
@@ -50,7 +62,7 @@ class FileExecutor:
 
     @classmethod
     def _save_history(cls):
-        """Atomically persist operation history to disk."""
+        """Atomically persist operation history to disk with fsync (PRINCIPLE-012)."""
         try:
             if not cls._history:
                 if os.path.exists(cls.history_file_path):
@@ -63,6 +75,11 @@ class FileExecutor:
             tmp_path = cls.history_file_path + ".tmp"
             with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump(cls._history, f, indent=2, ensure_ascii=False)
+                f.flush()
+                try:
+                    os.fsync(f.fileno())
+                except OSError:
+                    pass
             
             # Atomic file replacement
             if os.path.exists(cls.history_file_path):
@@ -74,11 +91,25 @@ class FileExecutor:
 
     @classmethod
     def execute(cls, changes: List[FileChange]) -> Tuple[int, int]:
-        """Safely execute a list of file changes with collision resolution and persistent tracking."""
+        """Safely execute a list of file changes with incremental WAL journaling (PRINCIPLE-012)."""
         cls._ensure_loaded()
         success = 0
         errors = 0
         current_batch_moves: List[Tuple[str, str]] = []
+
+        now = time.time()
+        now_str = datetime.fromtimestamp(now).strftime("%Y-%m-%d %H:%M:%S")
+        batch_id = f"batch_{int(now)}"
+
+        # Write-Ahead Journaling: establish batch entry so any partial progress survives sudden power cut
+        batch_record = {
+            "batch_id": batch_id,
+            "timestamp": now,
+            "timestamp_str": now_str,
+            "moves": current_batch_moves,
+            "status": "in_progress"
+        }
+        cls._history.append(batch_record)
 
         for change in changes:
             try:
@@ -104,22 +135,21 @@ class FileExecutor:
                 current_batch_moves.append((change.original, safe_dest))
                 success += 1
 
+                # Incremental WAL checkpointing: persist move immediately to disk
+                cls._save_history()
+
             except Exception as e:
                 errors += 1
                 print(f"FileExecutor Error moving '{change.original}' -> '{change.new_path}': {e}")
 
+        # Finalize batch status
         if current_batch_moves:
-            now = time.time()
-            now_str = datetime.fromtimestamp(now).strftime("%Y-%m-%d %H:%M:%S")
-            batch_id = f"batch_{int(now)}_{len(current_batch_moves)}"
-            
-            cls._history.append({
-                "batch_id": batch_id,
-                "timestamp": now,
-                "timestamp_str": now_str,
-                "moves": current_batch_moves
-            })
+            batch_record["status"] = "completed"
             cls._save_history()
+        else:
+            if batch_record in cls._history:
+                cls._history.remove(batch_record)
+                cls._save_history()
 
         return success, errors
 

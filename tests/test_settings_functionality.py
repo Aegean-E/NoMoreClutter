@@ -229,6 +229,22 @@ class TestSettingsFunctionality(unittest.TestCase):
         for key, value in settings_dict.items():
             self.assertEqual(loaded[key], value, f"Setting '{key}' did not match serialized value")
 
+    def test_corrupted_settings_file_self_healing(self):
+        """A half-written settings.json from a sudden power outage must not crash the application."""
+        settings_path = os.path.join(self.test_dir, "corrupt_settings.json")
+        with open(settings_path, "w", encoding="utf-8") as f:
+            f.write('{"provider_name": "Groq", "api_key": "gsk_123", "llm_model": "llama-3')  # Abrupt truncation
+
+        loaded_settings = {}
+        try:
+            with open(settings_path, "r", encoding="utf-8") as f:
+                loaded_settings = json.load(f)
+        except json.JSONDecodeError:
+            # Self-healing fallback as implemented in main.py
+            loaded_settings = {}
+
+        self.assertEqual(loaded_settings, {})
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -139,14 +139,26 @@
 
 ---
 
+### PRINCIPLE-012: Crash Resilience, State Atomicity & Power-Loss Recovery (Fail-Safe Operations)
+- **Concept**: The application must remain fail-safe and self-healing against abrupt disruptions—such as sudden power outages, battery exhaustion, OS crashes, or external process termination. User files, application settings, and undo transaction logs must never be left in a corrupted, half-written, or unrecoverable state due to unexpected power loss.
+- **Rules**:
+  1. **Atomic State & Configuration Persistence**: All persistent JSON state (`settings.json`, `history.json`, cache files) must be written via atomic temporary files with buffer flushing (`flush` + `os.fsync`) followed by atomic replacement (`os.replace`). Direct in-place truncation writes that risk 0-byte files on power cut are strictly prohibited.
+  2. **Incremental Transaction Journaling (WAL)**: File movement and rename batches must record moves incrementally into persistent storage as each file is safely relocated, guaranteeing that an interrupted batch leaves an accurate, reversible trail up to the exact moment of failure.
+  3. **Startup Self-Healing & Crash Tolerance**: On startup, if any persistent state file is detected to be damaged or malformed from an unclean shutdown, the application must automatically isolate the corrupted artifact, recover from backup or safe defaults, and report the event cleanly rather than crashing.
+  4. **Non-Destructive File Guarantees**: Move operations must prioritize file retention over speed. Critical paths must verify target presence before source unlinking, and existing destination files must never be overwritten on collision.
+  5. **Continuous Recovery Verification**: Automated tests must validate crash recovery behaviors, ensuring corrupted JSON, partial transactions, and unclean shutdowns are handled gracefully without application panic.
+
+---
+
 ## 🛠️ AI Task Checklists
 
 ### 🛫 Pre-Flight Checklist (Run at Cold Start / Before Coding)
-- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-011`) and repo state?
+- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-012`) and repo state?
 - [ ] **Knowledge Base Context**: Have I checked relevant guides in `knowledge/` to understand existing patterns (**PRINCIPLE-010**)?
 - [ ] **Necessity Assessment**: Why is this change needed, and what specific problem does it address?
 - [ ] **Benefit Projection**: How will this directly enhance user value, modularity, or RLM architecture?
 - [ ] **Test Coverage Plan**: Have I planned unit tests to validate this change and prevent regressions (**PRINCIPLE-011**)?
+- [ ] **Crash Resilience & Atomicity Plan**: Are file writes, settings, and undo logs protected against power-loss corruption (**PRINCIPLE-012**)?
 - [ ] **Code Conciseness & Token Budget Plan**: Is the code concise, and are LLM prompts token-budgeted and compact (**PRINCIPLE-009**)?
 - [ ] **Performance & Resource Plan**: Is the solution designed for optimal speed, minimal latency, and lean dependencies (**PRINCIPLE-007**)?
 - [ ] **Friction & Accessibility Check**: Does the solution maintain "one-click start" without forcing external app installs (**PRINCIPLE-008**)?
@@ -159,6 +171,7 @@
 - [ ] Is the code **concise, lean, and token-frugal** without context waste (**PRINCIPLE-009**)?
 - [ ] Are code paths **optimized for speed, responsiveness, and lean resource consumption** (**PRINCIPLE-007**)?
 - [ ] Does the app maintain **one-click zero-install accessibility** while preserving local servers (**PRINCIPLE-008**)?
+- [ ] Are all state changes and logs **crash-resilient and written atomically** (**PRINCIPLE-012**)?
 - [ ] Have all **automated unit tests passed with 100% success** (`python -m unittest discover tests`) (**PRINCIPLE-011**)?
 - [ ] Have all **AI guideline files been automatically synchronized** if principles changed (**PRINCIPLE-004**)?
 - [ ] Has the **AI knowledge base in `knowledge/` been updated and verified** (**PRINCIPLE-010**)?

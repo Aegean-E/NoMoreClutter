@@ -117,10 +117,20 @@ This document defines the architectural guidelines and design principles for **N
 
 ---
 
+### PRINCIPLE-012: Crash Resilience, State Atomicity & Power-Loss Recovery (Fail-Safe Operations)
+- **Problem**: Sudden power cuts, electrical outages, process crashes, or battery failures mid-operation can corrupt `settings.json`, sever `history.json`, or leave file batches in an unrecoverable, untracked state.
+- **Guideline**:
+  - **Atomic File Operations**: All critical JSON configurations and logs must use atomic temporary staging (`.tmp`) with buffer flushing (`flush` + `os.fsync`) followed by atomic filesystem replacement (`os.replace`). Direct in-place overwrites are prohibited.
+  - **Write-Ahead Logging (WAL)**: Progress across file batches must be journaled incrementally as each operation succeeds, guaranteeing that an unexpected power cut leaves a complete undo record up to the instant of failure.
+  - **Startup Self-Healing**: On launch, corrupted or truncated state files caused by sudden crashes must be quarantined gracefully, with the app restoring safe defaults or backups without crashing.
+  - **Non-Destructive Operations**: Never overwrite colliding target files; guarantee source file persistence until destination moves are verified on disk.
+
+---
+
 ## 📝 How to Add New Principles
 
 To add a new principle:
-1. Assign the next sequential ID (`PRINCIPLE-012`, etc.).
+1. Assign the next sequential ID (`PRINCIPLE-013`, etc.).
 2. Define the **Problem/Concept** and concrete **Rules/Guidelines**.
 3. Update `GUIDELINES.md` and `AGENTS.md`.
 4. Run `py scripts/sync_principles.py` to auto-propagate across all AI guidelines.

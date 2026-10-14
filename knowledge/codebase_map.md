@@ -9,14 +9,14 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 1913 | 92036 | 1 | 0 |
+| `main.py` | 1944 | 93343 | 1 | 0 |
 | `models/__init__.py` | 87 | 2446 | 5 | 0 |
 | `services/__init__.py` | 47 | 1476 | 0 | 11 |
 | `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
 | `services/cleaner_service.py` | 211 | 8073 | 1 | 0 |
 | `services/deduplicator.py` | 259 | 10525 | 1 | 0 |
 | `services/document_peeker.py` | 151 | 5969 | 1 | 0 |
-| `services/file_executor.py` | 232 | 8492 | 1 | 0 |
+| `services/file_executor.py` | 262 | 9889 | 1 | 0 |
 | `services/file_scanner.py` | 40 | 1408 | 1 | 0 |
 | `services/llm_service.py` | 211 | 8710 | 2 | 0 |
 | `services/model_downloader.py` | 181 | 6535 | 2 | 0 |
@@ -37,12 +37,12 @@
 | `tests/test_deduplicator.py` | 138 | 5268 | 1 | 0 |
 | `tests/test_deploy_manager.py` | 189 | 7764 | 4 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
-| `tests/test_file_executor.py` | 156 | 6060 | 1 | 0 |
+| `tests/test_file_executor.py` | 223 | 8964 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
 | `tests/test_providers.py` | 67 | 2334 | 1 | 0 |
 | `tests/test_rlm_organizer.py` | 121 | 5209 | 2 | 0 |
-| `tests/test_settings_functionality.py` | 234 | 9382 | 1 | 0 |
+| `tests/test_settings_functionality.py` | 250 | 10130 | 1 | 0 |
 | `tests/test_sync_and_knowledge.py` | 87 | 3297 | 1 | 0 |
 | `tests/test_tree_preview_model.py` | 56 | 2344 | 1 | 0 |
 
@@ -558,6 +558,8 @@ Tests collision avoidance, safe moves, and undo management.
   - Method `.test_collision_avoidance()`
   - Method `.test_persistent_history_across_restarts()`
   - Method `.test_legacy_history_format_compatibility()`
+  - Method `.test_crash_resilience_corrupted_history_quarantine()`
+  - Method `.test_incremental_wal_journaling_recovers_interrupted_batch()`
 
 ### `tests/test_file_scanner.py`
 > Unit tests for FileScanner (PRINCIPLE-011).
@@ -636,6 +638,7 @@ batch sizes, embedded provider detection, and settings persistence.
   - Method `.test_content_peeking_setting_enabled_and_disabled()`
   - Method `.test_embedded_provider_auto_resolution()`
   - Method `.test_settings_persistence_all_keys()`
+  - Method `.test_corrupted_settings_file_self_healing()`
 
 ### `tests/test_sync_and_knowledge.py`
 > Unit tests for Principles and Knowledge Base Synchronization (PRINCIPLE-011).
