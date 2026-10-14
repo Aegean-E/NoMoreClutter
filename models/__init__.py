@@ -12,13 +12,19 @@ class FileChange:
 
 @dataclass
 class AppSettings:
-    llm_url: str = "http://localhost:1234/v1"
-    llm_model: str = "llama3"
+    provider: str = "groq"
+    api_key: str = ""
+    llm_url: str = "https://api.groq.com/openai/v1"
+    llm_model: str = "llama-3.3-70b-versatile"
     target_folder: str = ""
     selected_types: list = None
     create_new_folders: bool = True
     analyze_images: bool = False
     numbered_rename: bool = False
+    ai_rename: bool = True
+    auto_execute: bool = False
+    limit: str = "50"
+    batch_size: str = "15"
     
     def __post_init__(self):
         if self.selected_types is None:

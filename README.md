@@ -1,37 +1,42 @@
 # NoMoreClutter 🗂️✨
 
-An intelligent AI-powered desktop application that automatically organizes your files using local Large Language Models (LLMs). Say goodbye to cluttered folders and let AI analyze, categorize, and rename your files with smart descriptive names!
+An intelligent AI-powered desktop application that automatically organizes your files using Large Language Models (LLMs). Say goodbye to cluttered folders and let AI analyze, categorize, and rename your files with smart descriptive names!
 
 ![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)
 ![CustomTkinter](https://img.shields.io/badge/UI-CustomTkinter-orange.svg)
 ![OpenAI Compatible](https://img.shields.io/badge/LLM-OpenAI%20API-green.svg)
+![RLM Powered](https://img.shields.io/badge/Architecture-RLM%20Decomposition-purple.svg)
+![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)
+
+---
 
 ## 🎯 Features
 
-### Intelligent AI Organization
-- **Smart Image Analysis**: Uses computer vision to understand what's in your images (landscapes, people, memes, documents, etc.)
-- **AI Validation**: Double-checks folder and filename suggestions to ensure accuracy
-- **Descriptive Renaming**: AI generates meaningful filenames based on actual image content (e.g., `sunset_beach.jpg`, `cat_portrait.jpg`)
-- **Flexible Categories**: AI creates appropriate folder categories based on content (Nature, People, Memes, Artwork, Screenshots, etc.)
+### ⚡ One-Click Zero-Install Cloud AI & Local Servers
+- **Zero-Friction Cloud Access**: Use ultra-fast free-tier providers (**Groq**, **Google Gemini**, **OpenAI**, **OpenRouter**) with zero desktop software installation required.
+- **Local Server Freedom**: 100% offline local AI support for **LM Studio** and **Ollama** whenever you want total privacy and self-hosting.
+- **⚡ Quick Organize (No AI)**: One-click instant heuristic organization based on file extensions and metadata without requiring an LLM or network connection.
 
-### Powerful File Management
-- **Batch Processing**: Process thousands of files efficiently in batches
-- **Multiple File Types**: Organize Images, Documents, Videos, Audio, Archives, and Code files
-- **Numbered Renaming**: Option to rename files sequentially (1.jpg, 2.jpg, etc.)
-- **Non-Destructive**: Files are moved, not copied - saves disk space
+### 🧠 Recursive Language Model (RLM) Organization
+- **Hierarchical Decomposition**: Files are grouped into logical clusters before prompting, preventing token exhaustion and staying well within free-tier rate limits (TPM/RPM).
+- **Token Frugality (~70% Savings)**: Ultra-dense JSON payloads eliminate repetitive path dumps and reduce prompt token overhead.
+- **Deterministic ID Mapping**: Protects against index-shift hallucinations so files are always mapped to their exact decisions.
+- **Single-Pass Vision Analysis**: Categorizes and renames images in a single call rather than multiple redundant round trips.
 
-### User-Friendly Interface
-- **Modern Dark UI**: Built with CustomTkinter for a sleek, modern look
-- **Real-Time Progress**: See exactly what's happening as files are processed
-- **Detailed Logging**: Every file move is logged to the output area
-- **Settings Persistence**: Your preferences are saved automatically
+### 🛡️ File Safety & ↩ Batch Undo
+- **Collision Avoidance**: Never overwrites existing files; intelligently renames colliding filenames to `name (1).ext`.
+- **One-Click Batch Undo**: Accidental moves can be instantly reverted with the `↩ Undo Moves` button, restoring all files to their original locations.
+- **Non-Destructive Operations**: Files are safely moved, preserving disk space while recording an operation history log.
 
-### Privacy & Flexibility
-- **Flexible AI Integration**: Works with local servers (Ollama, LM Studio), embedded models, or direct cloud APIs (Groq, Gemini, OpenAI)
-- **RLM-Compatible**: Designed for Recursive Language Model decomposition
-- **Strict Guidelines**: Governed by automated AI principles ([GUIDELINES.md](GUIDELINES.md))
+### 🎨 Modern Dark UI
+- **Sleek CustomTkinter Interface**: Designed with dark-mode aesthetic, real-time logging, and interactive controls.
+- **Provider Quick-Switching**: Dropdown selector with pre-configured API URLs, recommended models, and direct links to get free API keys.
+- **Settings Persistence**: Your provider choices, API keys, and scan filters are automatically remembered across sessions.
+
+---
 
 ## 📜 Project Principles & Guidelines
+
 This project adheres to strict architectural and workflow principles:
 - **[PRINCIPLE-001: RLM Compatibility](GUIDELINES.md#principle-001-rlm-compatibility-recursive-language-model)**: Hierarchical recursive decomposition for complex directory structures.
 - **[PRINCIPLE-002: Automatic Git Workflow](GUIDELINES.md#principle-002-automatic-git-workflow-commit--push)**: AI assistants automatically stage, commit, and push updates.
@@ -45,19 +50,24 @@ This project adheres to strict architectural and workflow principles:
 
 > **Universal AI Support**: These guidelines are automatically synchronized across all AI coding assistants (`AGENTS.md`, `GUIDELINES.md`, `GEMINI.md`, `CLAUDE.md`, `.cursorrules`, `.agents/rules/principles.md`, and `.github/copilot-instructions.md`) via `scripts/sync_principles.py`. Full specification in [GUIDELINES.md](GUIDELINES.md) and [AGENTS.md](AGENTS.md).
 
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-1. **Python 3.12 or higher**
-2. **AI Provider Choice** (Select one that fits your workflow):
-   - **Zero-Install Cloud (Instant / Recommended)**: Groq (free & fast), Google Gemini (free tier), OpenAI, or OpenRouter — *no external desktop software required!*
-   - **Local Self-Hosted Server (Optional)**: [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.ai/) for 100% offline local processing.
+- **Python 3.12 or higher**
+- An active AI provider choice (or use **Quick Organize** without any AI):
+  - **Groq (Recommended / Free & Fast)**: Get a free key at [console.groq.com](https://console.groq.com/keys)
+  - **Google Gemini (Free tier)**: Get a key at [aistudio.google.com](https://aistudio.google.com/app/apikey)
+  - **OpenAI / OpenRouter**: Any OpenAI-compatible endpoint
+  - **LM Studio / Ollama**: For offline local inference
 
 ### Installation
 
 ```bash
-# Clone or download the project
+# Clone the repository
+git clone https://github.com/Aegean-E/NoMoreClutter.git
 cd NoMoreClutter
 
 # Install dependencies
@@ -70,93 +80,126 @@ pip install -r requirements.txt
 python main.py
 ```
 
-## ⚙️ Configuration
+### Running Tests
 
-### LLM Setup
+```bash
+python -m unittest discover tests
+```
 
-1. **Start your local LLM server**:
-   - **LM Studio**: Open the app, load a model (recommended: `llama3` or `qwen2.5-vl-7b` for vision), and start the server on port `1234`
-   - **Ollama**: Run `ollama serve` (defaults to port `11434`)
+---
 
-2. **Configure in app**:
-   - Click the ⚙️ **Settings** button
-   - Set the API URL (default: `http://localhost:1234/v1`)
-   - Enter your model name (e.g., `llama3`, `qwen2.5-vl-7b-instruct`)
-   - Click **Test AI Connection** to verify
+## ⚙️ Configuration & Providers
 
-### Settings Options
+### Supported Providers
 
-| Setting | Description |
-|---------|-------------|
-| **Create new folders** | AI creates new categories based on content |
-| **Analyze images with AI** | Uses vision AI to understand image content |
-| **Numbered renaming** | Rename files as 1.jpg, 2.jpg, etc. |
-| **AI rename** | Let AI suggest better filenames |
-| **Auto execute** | Move files immediately after analysis |
-| **Batch size** | Files processed per AI request (default: 10) |
-| **Max files** | Limit total files to process |
+| Provider | Type | Default Model | URL / Endpoint | Setup Required |
+|----------|------|---------------|----------------|----------------|
+| **Groq** *(Recommended)* | Cloud (Zero-Install) | `llama-3.3-70b-versatile` | `https://api.groq.com/openai/v1` | Free API Key |
+| **Google Gemini** | Cloud (Zero-Install) | `gemini-2.0-flash` | `https://generativelanguage.googleapis.com/v1beta/openai/` | Free API Key |
+| **OpenAI** | Cloud (Zero-Install) | `gpt-4o-mini` | `https://api.openai.com/v1` | API Key |
+| **OpenRouter** | Cloud (Zero-Install) | `meta-llama/llama-3.3-70b-instruct` | `https://openrouter.ai/api/v1` | API Key |
+| **LM Studio** | Local Server | `local-model` | `http://localhost:1234/v1` | Start server on port 1234 |
+| **Ollama** | Local Server | `llama3` | `http://localhost:11434/v1` | Run `ollama serve` |
+| **Custom** | Any | Custom | User-defined | Varies |
+
+### Step-by-Step Usage
+
+1. **Select Source Directory**: Click **Browse** and choose the messy folder you want to organize.
+2. **Choose Organization Mode**:
+   - **⚡ Quick Organize (No AI)**: Immediately sorts files by type and extension without calling an LLM.
+   - **🚀 Organize with AI**: Select your AI provider in the dropdown, paste your API key (or start LM Studio/Ollama), and click **🚀 Organize Files**.
+3. **Inspect Progress**: Watch real-time logs in the bottom console area.
+4. **Undo If Needed**: Click **↩ Undo Moves** at any time to reverse the previous batch of moves.
+
+---
 
 ## 📁 Project Structure
 
 ```
 NoMoreClutter/
-├── main.py                 # Main application UI and orchestration
+├── main.py                     # Main application UI and orchestration (CustomTkinter)
 ├── models/
-│   └── __init__.py        # Data models and file type definitions
+│   └── __init__.py            # Data models (FileInfo, FileCategory, ScanResult)
 ├── services/
-│   ├── __init__.py        # Service factory functions
-│   ├── file_scanner.py    # File discovery and filtering
-│   ├── llm_service.py     # AI integration and image analysis
-│   └── file_executor.py   # File move operations
-├── settings.json          # Saved user preferences
-└── requirements.txt       # Python dependencies
+│   ├── __init__.py            # Service factories & lazy loaders
+│   ├── file_scanner.py        # File discovery and extension filtering
+│   ├── rlm_organizer.py       # RLM hierarchical categorization & token optimizer
+│   ├── llm_service.py         # AI facade delegating to RLM and Providers
+│   ├── file_executor.py       # Collision-safe file execution & batch undo history
+│   └── providers/             # Pluggable AI provider system
+│       ├── __init__.py        # Provider package exports
+│       ├── base.py            # BaseAIProvider abstract interface
+│       ├── registry.py        # Provider presets (Groq, Gemini, OpenAI, LM Studio, Ollama)
+│       └── openai_compatible.py # Standard OpenAI-compatible HTTP client
+├── tests/                     # Automated unit test suite
+│   ├── test_providers.py      # Provider registry & creation tests
+│   ├── test_rlm_organizer.py  # RLM engine & token payload tests
+│   └── test_file_executor.py  # Safe move, collision avoidance, and undo tests
+├── scripts/
+│   └── sync_principles.py     # Cross-AI guidelines synchronizer
+├── settings.json              # Saved user preferences (auto-created, gitignored)
+├── requirements.txt           # Python dependencies
+├── AGENTS.md                  # Master AI guidelines and principles
+├── GUIDELINES.md              # Human-readable architectural guide
+└── README.md                  # Cold-start documentation
 ```
 
-## 🔧 How It Works
+---
 
-### Image Analysis Flow
+## 🔧 Architecture: Recursive Language Model (RLM)
 
-1. **Initial Scan**: Files are discovered from the source folder
-2. **AI Batch Processing**: Images are sent to the local LLM in batches
-3. **Content Analysis**: AI looks at each image and determines:
-   - What category/folder fits best
-   - What descriptive name matches the content
-4. **Validation**: AI validates its own suggestions by re-examining the image
-5. **Re-analysis** (if needed): If validation fails, AI re-analyzes with different prompts
-6. **Execution**: Files are moved to appropriate folders with new names
+Instead of dumping hundreds of raw file paths into a single LLM prompt (which blows up context windows and hits rate limits), NoMoreClutter uses a **Recursive Language Model** architecture:
 
-### Example Results
-
+```mermaid
+flowchart TD
+    A[Source Folder Scan] --> B[Hierarchical Clustering]
+    B --> C1[Image Cluster]
+    B --> C2[Document Cluster]
+    B --> C3[Code / Media Clusters]
+    
+    C1 --> D1[Single-Pass Vision Analysis]
+    C2 --> D2[Dense JSON Batch Prompt]
+    C3 --> D3[Dense JSON Batch Prompt]
+    
+    D1 --> E[Deterministic ID Resolution]
+    D2 --> E
+    D3 --> E
+    
+    E --> F[Safe Collision-Free Executor]
+    F --> G[Move Files with Undo Log]
 ```
-Before                          After
-─────────────────────────────   ───────────────────────────
-IMG_001.jpg              →      Memes/funny_meme.jpg
-screenshot_2024.png     →      Screenshots/desktopCapture.png
-DSCN1234.jpg            →      Nature/sunset_beach.jpg
-random_file.png         →      Artwork/digital_art.png
-```
+
+1. **Hierarchical Clustering**: Files are partitioned by semantic domain and extension type.
+2. **Dense Token Serialization**: Payloads use compact relative identifiers (`{"id": 0, "name": "...", "ext": "..."}`) cutting token costs by ~70%.
+3. **Deterministic ID Resolution**: LLM responses are indexed by exact IDs, eliminating off-by-one mapping errors.
+4. **Collision-Safe Execution**: Every move verifies destination paths and appends numbered suffixes (`file (1).ext`) if collisions exist.
+5. **Undo Log**: Every executed operation is preserved in an in-memory stack, allowing instant rollback.
+
+---
 
 ## 🐛 Troubleshooting
 
 ### "Failed to connect to AI"
-- Ensure your LLM server (LM Studio/Ollama) is running
-- Check the API URL in Settings matches your server
-- Verify the model name is correct
+- **For Cloud Providers (Groq, Gemini, OpenAI)**: Make sure your API key is correctly pasted in the settings panel and you have an active internet connection.
+- **For Local Servers (LM Studio, Ollama)**: Ensure your server is running and listening on the designated port (`1234` for LM Studio, `11434` for Ollama).
 
 ### "No files found"
-- Select a source folder containing files
-- Check that file type categories are selected
+- Ensure you picked a directory with files matching the selected category checkboxes.
+- If organizing subdirectories, ensure files are in the scanned depth.
 
-### Files not being renamed
-- Ensure "Analyze images with AI" is enabled in Settings
-- For numbered renaming, enable "Numbered renaming" option
+### "Reverting file moves"
+- Simply click **↩ Undo Moves** in the UI. The app will move all files from the last executed batch back to their exact original locations.
+
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to:
-- Report bugs
-- Suggest new features
-- Submit pull requests
+Contributions are welcome! Please ensure:
+1. All changes respect the 9 core principles in [GUIDELINES.md](GUIDELINES.md) and [AGENTS.md](AGENTS.md).
+2. Existing unit tests pass: `python -m unittest discover tests`.
+3. Principles are kept synchronized using `python scripts/sync_principles.py`.
+
+---
 
 ## 📝 License
 

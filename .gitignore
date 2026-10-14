@@ -1,0 +1,26 @@
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# User configuration & local secrets
+settings.json
+
+# IDE & Editor caches
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
