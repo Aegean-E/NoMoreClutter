@@ -50,10 +50,21 @@
 
 ---
 
+### PRINCIPLE-005: AI Cold-Start Readiness & Living Documentation (README Sync)
+- **Concept**: The repository must be permanently prepared for a "cold start" by any AI assistant or developer. Any new agent entering the project with zero prior conversational history must immediately understand the project state, run commands, architecture, and principles. To prevent knowledge drift, `README.md` must be systematically updated after every meaningful change.
+- **Rules**:
+  1. **Self-Describing Repository**: Every architectural decision, file structure, command, and configuration option must be documented explicitly in `README.md`, `GUIDELINES.md`, and code docstrings. No hidden or implicit assumptions are allowed.
+  2. **Mandatory README Update After Every Change**: After completing any feature, UI update, configuration change, refactoring, or architectural modification, the AI must immediately update `README.md` to reflect the new state.
+  3. **Zero-Ambiguity Quickstart**: The setup and run instructions in `README.md` must always remain functional and up to date for a cold-starting AI or user.
+
+---
+
 ## 🛠️ AI Task Checklist
 Before marking any user request complete:
 - [ ] Have I adhered to **RLM compatibility** (recursive decomposition where applicable)?
 - [ ] Is the architecture **modular** and decoupled?
 - [ ] Have all changes been verified for functionality and correctness?
+- [ ] Has **README.md been updated** to reflect all changes (**PRINCIPLE-005**)?
 - [ ] Has an **automatic commit** been created with a conventional commit message?
 - [ ] Has the commit been **automatically pushed** to the remote repository?
+

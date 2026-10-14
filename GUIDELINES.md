@@ -12,6 +12,7 @@ This document defines the architectural guidelines and design principles for **N
 | **[PRINCIPLE-002](#principle-002-automatic-git-workflow-commit--push)** | Automatic Git Workflow | Automated conventional commits and pushes upon task completion. |
 | **[PRINCIPLE-003](#principle-003-modularity--pluggable-architecture)** | Modularity | Pluggable providers (Cloud, Embedded, Local Server) and decoupled UI/services. |
 | **[PRINCIPLE-004](#principle-004-living-principles-system)** | Living Principles | Formal protocol for adding and evolving project principles over time. |
+| **[PRINCIPLE-005](#principle-005-ai-cold-start-readiness--living-documentation-readme-sync)** | AI Cold-Start Readiness & README Sync | Self-describing repo for instant agent onboarding; README updated after every change. |
 
 ---
 
@@ -50,11 +51,17 @@ This document defines the architectural guidelines and design principles for **N
   - When new architectural patterns or project requirements emerge, register a new principle following the `PRINCIPLE-XXX` template.
   - Keep both `AGENTS.md` and `GUIDELINES.md` in sync.
 
+### PRINCIPLE-005: AI Cold-Start Readiness & Living Documentation (README Sync)
+- **Problem**: New AI sessions and developers starting fresh ("cold start") lose context if documentation is stale, fragmented, or implicit.
+- **Guideline**:
+  - **Cold-Start Availability**: Keep the repository completely self-describing so any AI model can immediately understand architecture, run commands, principles, and configurations without external guesswork.
+  - **Mandatory README Update**: Update `README.md` immediately following any functional change, feature addition, refactoring, or architectural modification.
+
 ---
 
 ## 📝 How to Add New Principles
 
 To add a new principle:
-1. Assign the next sequential ID (`PRINCIPLE-005`, etc.).
+1. Assign the next sequential ID (`PRINCIPLE-006`, etc.).
 2. Define the **Problem/Concept** and concrete **Rules/Guidelines**.
-3. Update `GUIDELINES.md` and `AGENTS.md`.
+3. Update `GUIDELINES.md`, `AGENTS.md`, and `GEMINI.md`.

@@ -13,3 +13,6 @@ See full specification in [AGENTS.md](file:///c:/Users/Yunus-Emre/Desktop/NoMore
    - Clear separation between UI (`main.py`) and services (`services/`).
 4. **PRINCIPLE-004: Living Principles System**:
    - Extensible governance: new principles can be registered anytime under `PRINCIPLE-XXX`.
+5. **PRINCIPLE-005: AI Cold-Start Readiness & Living README Sync**:
+   - Repository must be 100% self-describing for any cold-starting AI agent.
+   - Mandatory `README.md` update after every single functional or architectural change.
