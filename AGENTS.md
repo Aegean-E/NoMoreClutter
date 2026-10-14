@@ -97,13 +97,24 @@
 
 ---
 
+### PRINCIPLE-008: Zero-Friction Onboarding & Hybrid AI Access (One-Click Start)
+- **Concept**: The application must be instantly usable out of the box ("one-click and start") without forcing users to download, install, or configure heavy external desktop applications (like LM Studio or Ollama). At the same time, the system must retain first-class support for local self-hosted servers (Ollama, LM Studio) for users who demand total local control.
+- **Rules**:
+  1. **Zero Mandatory External Installations**: Never force users to install third-party desktop software to experience core AI organization. Offer immediate cloud pathways (e.g., free-tier Groq, Google Gemini, OpenAI) and intelligent heuristic fallbacks.
+  2. **Preserve Local Power-User Freedom**: First-class support for Ollama, LM Studio, and custom local endpoints must remain intact, prominent, and easily selectable.
+  3. **One-Click Provider Switching**: A unified provider dropdown in the UI allows instant switching between cloud zero-install providers and local servers, with prepopulated URLs and model recommendations.
+  4. **Graceful Degradation**: If an AI provider is unreachable or unconfigured, the app must guide the user with clear instructions rather than crashing or freezing.
+
+---
+
 ## 🛠️ AI Task Checklists
 
 ### 🛫 Pre-Flight Checklist (Run at Cold Start / Before Coding)
-- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-007`) and repo state?
+- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-008`) and repo state?
 - [ ] **Necessity Assessment**: Why is this change needed, and what specific problem does it address?
 - [ ] **Benefit Projection**: How will this directly enhance user value, modularity, or RLM architecture?
 - [ ] **Performance & Resource Plan**: Is the solution designed for optimal speed, minimal latency, and lean dependencies (**PRINCIPLE-007**)?
+- [ ] **Friction & Accessibility Check**: Does the solution maintain "one-click start" without forcing external app installs (**PRINCIPLE-008**)?
 - [ ] **Risk / Harm Analysis**: What could break, regress, or introduce latency/fragility, and how will I prevent it?
 - [ ] **Quality Standard**: Does the proposed design uphold premium quality without cutting corners?
 
@@ -111,6 +122,7 @@
 - [ ] Have I adhered to **RLM compatibility** (recursive decomposition where applicable)?
 - [ ] Is the architecture **modular** and decoupled?
 - [ ] Are code paths **optimized for speed, responsiveness, and lean resource consumption** (**PRINCIPLE-007**)?
+- [ ] Does the app maintain **one-click zero-install accessibility** while preserving local servers (**PRINCIPLE-008**)?
 - [ ] Have all changes been verified for functionality and correctness?
 - [ ] Have all **AI guideline files been automatically synchronized** if principles changed (**PRINCIPLE-004**)?
 - [ ] Has **README.md been updated** to reflect all changes (**PRINCIPLE-005**)?

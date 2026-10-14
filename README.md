@@ -40,6 +40,7 @@ This project adheres to strict architectural and workflow principles:
 - **[PRINCIPLE-005: AI Cold-Start Readiness & Living README Sync](GUIDELINES.md#principle-005-ai-cold-start-readiness--living-documentation-readme-sync)**: 100% self-describing repository for cold-starting AI agents; mandatory README synchronization after every change.
 - **[PRINCIPLE-006: Pre-flight Impact & Quality Checklist](GUIDELINES.md#principle-006-pre-flight-impact--quality-checklist-cold-start-gate)**: Pre-flight checklist assessing motivation, benefits, risks/harm, and quality preservation.
 - **[PRINCIPLE-007: Performance & Resource Optimization](GUIDELINES.md#principle-007-performance--resource-optimization-speed--lean-architecture)**: High-speed execution, non-blocking I/O, lean dependencies, and token frugality.
+- **[PRINCIPLE-008: Zero-Friction Onboarding & Hybrid AI Access](GUIDELINES.md#principle-008-zero-friction-onboarding--hybrid-ai-access-one-click-start)**: One-click start without mandatory external software, while retaining full local server support.
 
 > **Universal AI Support**: These guidelines are automatically synchronized across all AI coding assistants (`AGENTS.md`, `GUIDELINES.md`, `GEMINI.md`, `CLAUDE.md`, `.cursorrules`, `.agents/rules/principles.md`, and `.github/copilot-instructions.md`) via `scripts/sync_principles.py`. Full specification in [GUIDELINES.md](GUIDELINES.md) and [AGENTS.md](AGENTS.md).
 
@@ -48,10 +49,9 @@ This project adheres to strict architectural and workflow principles:
 ### Prerequisites
 
 1. **Python 3.12 or higher**
-2. **A local LLM server** (one of):
-   - [LM Studio](https://lmstudio.ai/) - Recommended for beginners
-   - [Ollama](https://ollama.ai/)
-   - Any OpenAI-compatible local server
+2. **AI Provider Choice** (Select one that fits your workflow):
+   - **Zero-Install Cloud (Instant / Recommended)**: Groq (free & fast), Google Gemini (free tier), OpenAI, or OpenRouter — *no external desktop software required!*
+   - **Local Self-Hosted Server (Optional)**: [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.ai/) for 100% offline local processing.
 
 ### Installation
 

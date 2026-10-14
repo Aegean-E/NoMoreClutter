@@ -15,6 +15,7 @@ This document defines the architectural guidelines and design principles for **N
 | **[PRINCIPLE-005](#principle-005-ai-cold-start-readiness--living-documentation-readme-sync)** | AI Cold-Start Readiness & README Sync | Self-describing repo for instant agent onboarding; README updated after every change. |
 | **[PRINCIPLE-006](#principle-006-pre-flight-impact--quality-checklist-cold-start-gate)** | Impact & Quality Checklist | Pre-flight cold-start checklist evaluating why, benefits, risks, and quality preservation. |
 | **[PRINCIPLE-007](#principle-007-performance--resource-optimization-speed--lean-architecture)** | Speed & Lean Optimization | Maximum execution speed, non-blocking async operations, and lean dependency footprint. |
+| **[PRINCIPLE-008](#principle-008-zero-friction-onboarding--hybrid-ai-access-one-click-start)** | One-Click Zero-Install & Hybrid Access | Zero mandatory external apps; one-click cloud AI with full local server preservation. |
 
 ---
 
@@ -77,12 +78,19 @@ This document defines the architectural guidelines and design principles for **N
   - **Lean Dependencies**: Maintain a minimal dependency footprint; favor standard library solutions and lazy imports.
   - **Prompt Frugality**: Design token-efficient prompt structures to accelerate inference and reduce API costs.
 
+### PRINCIPLE-008: Zero-Friction Onboarding & Hybrid AI Access (One-Click Start)
+- **Problem**: Requiring external desktop software (like LM Studio or Ollama) adds huge friction and drives away potential users, but removing local servers alienates privacy-focused power users.
+- **Guideline**:
+  - **Zero Mandatory External Installations**: Enable users to run and organize files out-of-the-box with one click using zero-install cloud presets (Groq, Gemini, OpenAI) and smart local heuristics.
+  - **Preserve Local Freedom**: Retain full first-class support for Ollama, LM Studio, and custom local servers.
+  - **One-Click Provider Switching**: Provide an intuitive UI dropdown with prepopulated settings for both zero-install cloud and local server choices.
+
 ---
 
 ## 📝 How to Add New Principles
 
 To add a new principle:
-1. Assign the next sequential ID (`PRINCIPLE-008`, etc.).
+1. Assign the next sequential ID (`PRINCIPLE-009`, etc.).
 2. Define the **Problem/Concept** and concrete **Rules/Guidelines**.
 3. Update `GUIDELINES.md` and `AGENTS.md`.
 4. Run `py scripts/sync_principles.py` to auto-propagate across all AI guidelines.
