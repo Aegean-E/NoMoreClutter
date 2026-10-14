@@ -36,6 +36,14 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
         self._group_queue = queue.Queue()
         self._drain_scheduled: bool = False
 
+        # High-Performance Pagination (Eliminates CTk canvas redraw lag when scrolling)
+        self.PAGE_SIZE: int = 25
+        self._display_limit: int = 25
+        self._rendered_count: int = 0
+        self._load_more_frame: Optional[ctk.CTkFrame] = None
+        self._load_info_lbl: Optional[ctk.CTkLabel] = None
+        self._unrendered_dup_vars: Dict[str, bool] = {}
+
         self._build_ui()
 
     def _build_ui(self):
@@ -220,6 +228,12 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
         self.duplicate_groups.clear()
         self.total_reclaimable = 0
         self.total_dup_files = 0
+        self._display_limit = self.PAGE_SIZE
+        self._rendered_count = 0
+        self._load_more_frame = None
+        self._load_info_lbl = None
+        self._unrendered_dup_vars.clear()
+
         while not self._group_queue.empty():
             try:
                 self._group_queue.get_nowait()
@@ -278,7 +292,7 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             return
 
         batch_count = 0
-        MAX_PER_TICK = 4
+        MAX_PER_TICK = 8
 
         while batch_count < MAX_PER_TICK and not self._group_queue.empty():
             try:
@@ -289,7 +303,8 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             self.duplicate_groups.append(group)
             self.total_reclaimable += group.reclaimable_bytes
             self.total_dup_files += len(group.duplicates)
-            self._render_group_card(group, len(self.duplicate_groups))
+            for dup_p in group.duplicates:
+                self._unrendered_dup_vars[dup_p] = True
             batch_count += 1
 
         if batch_count > 0:
@@ -304,6 +319,14 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             self.delete_btn.configure(state="normal")
             self.select_all_btn.configure(state="normal")
             self.deselect_btn.configure(state="normal")
+
+            # Incrementally render cards up to display limit
+            while self._rendered_count < min(self._display_limit, len(self.duplicate_groups)):
+                idx = self._rendered_count
+                self._render_group_card(self.duplicate_groups[idx], idx + 1)
+                self._rendered_count += 1
+
+            self._update_load_more_bar()
 
         if not self._group_queue.empty():
             self._drain_scheduled = True
@@ -327,7 +350,8 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
                 self.duplicate_groups.append(group)
                 self.total_reclaimable += group.reclaimable_bytes
                 self.total_dup_files += len(group.duplicates)
-                self._render_group_card(group, len(self.duplicate_groups))
+                for dup_p in group.duplicates:
+                    self._unrendered_dup_vars[dup_p] = True
             except queue.Empty:
                 break
 
@@ -353,6 +377,14 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             self.deselect_btn.configure(state="disabled")
             return
 
+        # Render cards up to display limit
+        while self._rendered_count < min(self._display_limit, len(self.duplicate_groups)):
+            idx = self._rendered_count
+            self._render_group_card(self.duplicate_groups[idx], idx + 1)
+            self._rendered_count += 1
+
+        self._update_load_more_bar()
+
         self.reclaim_badge.configure(
             text=f"💾 Reclaimable: {DeduplicationService.format_bytes(self.total_reclaimable)}"
         )
@@ -364,6 +396,82 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
         self.delete_btn.configure(state="normal")
         self.select_all_btn.configure(state="normal")
         self.deselect_btn.configure(state="normal")
+
+    def _load_more_cards(self, count: int = 25):
+        if self._load_more_frame and self._load_more_frame.winfo_exists():
+            self._load_more_frame.destroy()
+            self._load_more_frame = None
+
+        self._display_limit += count
+        while self._rendered_count < min(self._display_limit, len(self.duplicate_groups)):
+            idx = self._rendered_count
+            self._render_group_card(self.duplicate_groups[idx], idx + 1)
+            self._rendered_count += 1
+
+        self._update_load_more_bar()
+
+    def _load_all_cards(self):
+        if self._load_more_frame and self._load_more_frame.winfo_exists():
+            self._load_more_frame.destroy()
+            self._load_more_frame = None
+
+        self._display_limit = len(self.duplicate_groups)
+        while self._rendered_count < len(self.duplicate_groups):
+            idx = self._rendered_count
+            self._render_group_card(self.duplicate_groups[idx], idx + 1)
+            self._rendered_count += 1
+
+        self._update_load_more_bar()
+
+    def _update_load_more_bar(self):
+        total = len(self.duplicate_groups)
+        if total <= self._rendered_count:
+            if self._load_more_frame and self._load_more_frame.winfo_exists():
+                self._load_more_frame.destroy()
+                self._load_more_frame = None
+            return
+
+        remaining = total - self._rendered_count
+        if self._load_more_frame and self._load_more_frame.winfo_exists():
+            self._load_info_lbl.configure(
+                text=f"Showing {self._rendered_count} of {total} sets ({remaining} hidden for smooth scrolling)"
+            )
+            return
+
+        self._load_more_frame = ctk.CTkFrame(
+            self.scroll_results, fg_color="#1E1E24", corner_radius=8, border_width=1, border_color="#373A40"
+        )
+        self._load_more_frame.pack(fill="x", padx=4, pady=12)
+
+        self._load_info_lbl = ctk.CTkLabel(
+            self._load_more_frame,
+            text=f"Showing {self._rendered_count} of {total} sets ({remaining} hidden for smooth scrolling)",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color="#ADB5BD",
+        )
+        self._load_info_lbl.pack(side="left", padx=16, pady=10)
+
+        ctk.CTkButton(
+            self._load_more_frame,
+            text=f"⚡ Load All ({total})",
+            width=110,
+            height=30,
+            font=ctk.CTkFont(size=11),
+            fg_color="#343A40",
+            hover_color="#495057",
+            command=self._load_all_cards,
+        ).pack(side="right", padx=(6, 16), pady=10)
+
+        ctk.CTkButton(
+            self._load_more_frame,
+            text=f"⬇️ Load Next {min(self.PAGE_SIZE, remaining)}",
+            width=130,
+            height=30,
+            font=ctk.CTkFont(size=11, weight="bold"),
+            fg_color="#1971C2",
+            hover_color="#1864AB",
+            command=lambda: self._load_more_cards(self.PAGE_SIZE),
+        ).pack(side="right", padx=6, pady=10)
 
     def _render_group_card(self, group: DuplicateGroup, set_index: int):
         card = ctk.CTkFrame(self.scroll_results, fg_color="#1E1E24", corner_radius=8, border_width=1, border_color="#2C2E33")
@@ -411,7 +519,7 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             anchor="w",
         )
         orig_lbl.pack(side="left", fill="x", expand=True, padx=4)
-        orig_lbl.bind("<Double-Button-1>", lambda event, p=group.original: self._open_file(p))
+        orig_lbl.bind("<Double-Button-1>", lambda event, p=group.original: self._open_viewer(p))
 
         ctk.CTkButton(
             orig_row,
@@ -421,12 +529,13 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             font=ctk.CTkFont(size=9, weight="bold"),
             fg_color="#25262B",
             hover_color="#373A40",
-            command=lambda p=group.original: self._open_file(p),
+            command=lambda p=group.original: self._open_viewer(p),
         ).pack(side="right", padx=6)
 
         # Duplicate Rows (Selected for action)
         for dup_path in group.duplicates:
-            dup_var = ctk.BooleanVar(value=True)
+            default_val = self._unrendered_dup_vars.get(dup_path, True)
+            dup_var = ctk.BooleanVar(value=default_val)
             self.dup_checkbox_vars[dup_path] = dup_var
 
             dup_row = ctk.CTkFrame(card, fg_color="#2B1D1D", corner_radius=4, height=30)
@@ -451,7 +560,7 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
                 anchor="w",
             )
             dup_lbl.pack(side="left", fill="x", expand=True, padx=4)
-            dup_lbl.bind("<Double-Button-1>", lambda event, p=dup_path: self._open_file(p))
+            dup_lbl.bind("<Double-Button-1>", lambda event, p=dup_path: self._open_viewer(p))
 
             ctk.CTkButton(
                 dup_row,
@@ -467,13 +576,25 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
     def _select_all_dups(self):
         for var in self.dup_checkbox_vars.values():
             var.set(True)
+        for key in self._unrendered_dup_vars:
+            self._unrendered_dup_vars[key] = True
 
     def _deselect_all_dups(self):
         for var in self.dup_checkbox_vars.values():
             var.set(False)
+        for key in self._unrendered_dup_vars:
+            self._unrendered_dup_vars[key] = False
 
     def _get_selected_duplicate_paths(self) -> List[str]:
-        return [p for p, var in self.dup_checkbox_vars.items() if var.get()]
+        # Collect from active rendered checkboxes
+        selected = [p for p, var in self.dup_checkbox_vars.items() if var.get()]
+        # Collect from pending unrendered groups
+        if self._rendered_count < len(self.duplicate_groups):
+            for group in self.duplicate_groups[self._rendered_count:]:
+                for dup_path in group.duplicates:
+                    if self._unrendered_dup_vars.get(dup_path, True):
+                        selected.append(dup_path)
+        return selected
 
     def _isolate_selected(self):
         selected = self._get_selected_duplicate_paths()
@@ -538,7 +659,7 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             print(f"Could not open file: {e}")
 
     def _open_viewer(self, filepath: str, compare_filepath: Optional[str] = None):
-        """Open the aesthetic in-app file viewer or side-by-side duplicate comparator."""
+        """Open the aesthetic in-app file viewer or side-by-side duplicate comparator with foreground lift."""
         from .file_viewer import FileViewerDialog
 
         def on_action(action: str, target_file: str):
@@ -546,9 +667,14 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
                 # Automatically refresh duplicate list after removing a file
                 self.after(300, self._start_scan)
 
-        FileViewerDialog(
+        dlg = FileViewerDialog(
             parent=self,
             filepath=filepath,
             compare_filepath=compare_filepath,
             on_action_performed=on_action,
         )
+        try:
+            dlg.lift()
+            dlg.focus_force()
+        except Exception:
+            pass

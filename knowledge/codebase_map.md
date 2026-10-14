@@ -28,10 +28,10 @@
 | `services/providers/registry.py` | 135 | 4892 | 1 | 3 |
 | `services/rlm_organizer.py` | 432 | 18699 | 2 | 0 |
 | `ui/__init__.py` | 10 | 347 | 0 | 0 |
-| `ui/duplicate_finder.py` | 554 | 21647 | 1 | 0 |
-| `ui/file_viewer.py` | 628 | 24173 | 1 | 5 |
+| `ui/duplicate_finder.py` | 680 | 26799 | 1 | 0 |
+| `ui/file_viewer.py` | 677 | 26082 | 1 | 5 |
 | `ui/junk_cleaner.py` | 360 | 13874 | 1 | 0 |
-| `ui/tree_preview.py` | 479 | 18199 | 1 | 0 |
+| `ui/tree_preview.py` | 492 | 18589 | 1 | 0 |
 | `tests/test_ai_status.py` | 118 | 5346 | 1 | 0 |
 | `tests/test_benchmark_service.py` | 152 | 6518 | 3 | 0 |
 | `tests/test_cleaner_service.py` | 85 | 3024 | 1 | 0 |
@@ -41,7 +41,7 @@
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
 | `tests/test_file_executor.py` | 223 | 8964 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
-| `tests/test_file_viewer.py` | 152 | 6672 | 1 | 0 |
+| `tests/test_file_viewer.py` | 198 | 9071 | 2 | 0 |
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
 | `tests/test_providers.py` | 73 | 2626 | 1 | 0 |
 | `tests/test_rlm_organizer.py` | 121 | 5209 | 2 | 0 |
@@ -394,6 +394,9 @@ and isolate or safely delete duplicate files.
   - Method `._drain_discovered_groups()`
   - Method `._on_scan_error(err_msg)`
   - Method `._on_scan_complete(groups)`
+  - Method `._load_more_cards(count)`
+  - Method `._load_all_cards()`
+  - Method `._update_load_more_bar()`
   - Method `._render_group_card(group, set_index)`
   - Method `._select_all_dups()`
   - Method `._deselect_all_dups()`
@@ -412,6 +415,7 @@ and binary files with side-by-side duplicate comparison support.
 - **`FileViewerDialog`**
   - *Rich in-app File Viewer and Side-by-Side Duplicate Comparator.*
   - Method `.__init__(parent, filepath, compare_filepath, on_action_performed)`
+  - Method `.destroy()`
   - Method `._build_ui()`
   - Method `._get_category_badge(ext)`
   - Method `._get_file_meta_summary(path)`
@@ -659,6 +663,9 @@ without initializing GUI/Tkinter widgets (preventing headless memory exhaustion)
   - Method `.test_image_dimension_scaling()`
   - Method `.test_compare_mode_determination()`
   - Method `.test_open_file_launches_system_default()`
+  - Method `.test_image_color_mode_conversion()`
+- **`TestDuplicatePaginationLogic`**
+  - Method `.test_selection_across_unrendered_groups()`
 
 ### `tests/test_llm_service.py`
 > Unit tests for LLMService Facade (PRINCIPLE-011).

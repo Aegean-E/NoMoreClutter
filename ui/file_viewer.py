@@ -141,6 +141,37 @@ class FileViewerDialog(ctk.CTkToplevel):
 
         self._build_ui()
 
+        # Handle modal grab safely: transfer grab if parent held it so dialog is interactive
+        self._parent_grabbed = False
+        try:
+            if parent and hasattr(parent, "grab_current") and parent.grab_current():
+                self._parent_grabbed = True
+                parent.grab_release()
+            self.grab_set()
+        except Exception:
+            pass
+
+        # Lift dialog directly to the foreground so the preview image is immediately visible
+        self.lift()
+        self.focus_force()
+        try:
+            self.attributes("-topmost", True)
+            self.after(200, lambda: self.attributes("-topmost", False) if self.winfo_exists() else None)
+        except Exception:
+            pass
+
+    def destroy(self):
+        try:
+            self.grab_release()
+        except Exception:
+            pass
+        if getattr(self, "_parent_grabbed", False) and self.master and self.master.winfo_exists():
+            try:
+                self.master.grab_set()
+            except Exception:
+                pass
+        super().destroy()
+
     def _build_ui(self):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -458,7 +489,14 @@ class FileViewerDialog(ctk.CTkToplevel):
                 orig_w, orig_h = pil_img.size
                 mode = pil_img.mode
                 disp_w, disp_h, scale = compute_image_preview_size(orig_w, orig_h, max_w, max_h)
-                resized = pil_img.copy().resize((disp_w, disp_h), Image.Resampling.BILINEAR)
+
+                # Ensure image mode is compatible with Tkinter PhotoImage (RGB or RGBA)
+                if pil_img.mode in ("RGBA", "LA") or (pil_img.mode == "P" and "transparency" in pil_img.info):
+                    converted = pil_img.convert("RGBA")
+                else:
+                    converted = pil_img.convert("RGB")
+
+                resized = converted.resize((disp_w, disp_h), Image.Resampling.BILINEAR)
 
             ctk_img = ctk.CTkImage(light_image=resized, dark_image=resized, size=(disp_w, disp_h))
             self._image_refs.append(ctk_img)
@@ -477,12 +515,23 @@ class FileViewerDialog(ctk.CTkToplevel):
             ).pack(pady=(4, 0))
 
         except Exception as e:
+            err_box = ctk.CTkFrame(parent, fg_color="transparent")
+            err_box.pack(expand=True, fill="both", padx=12, pady=12)
             ctk.CTkLabel(
-                parent,
-                text=f"🖼️ Image Preview Failed:\n{e}",
+                err_box,
+                text=f"🖼️ In-App Image Preview Unavailable:\n{e}",
                 text_color="#FFA94D",
                 font=ctk.CTkFont(size=12),
-            ).pack(expand=True)
+            ).pack(expand=True, pady=(10, 6))
+            ctk.CTkButton(
+                err_box,
+                text="📂 Open with Default System Application",
+                command=lambda: self._open_system_default(filepath),
+                fg_color="#1971C2",
+                hover_color="#1864AB",
+                width=240,
+                height=32,
+            ).pack(pady=6)
 
     def _render_text(self, parent, filepath: str):
         textbox = ctk.CTkTextbox(

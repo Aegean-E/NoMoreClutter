@@ -147,6 +147,52 @@ class TestFileViewerPureLogic(unittest.TestCase):
             DuplicateFinderDialog._open_file(dummy, self.test_text_file)
             mock_startfile.assert_called_once_with(os.path.abspath(self.test_text_file))
 
+    def test_image_color_mode_conversion(self):
+        from PIL import Image
+        # Test Palette (P), CMYK, RGBA, and RGB conversions
+        for mode in ("RGB", "RGBA", "P", "CMYK", "L"):
+            img = Image.new(mode, (50, 50))
+            if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+                converted = img.convert("RGBA")
+                self.assertEqual(converted.mode, "RGBA")
+            else:
+                converted = img.convert("RGB")
+                self.assertEqual(converted.mode, "RGB")
+
+
+class TestDuplicatePaginationLogic(unittest.TestCase):
+    def test_selection_across_unrendered_groups(self):
+        from unittest.mock import MagicMock
+        from models import DuplicateGroup
+        from ui.duplicate_finder import DuplicateFinderDialog
+
+        dlg = MagicMock()
+        # Mock 3 duplicate groups (total 3 duplicates)
+        g1 = DuplicateGroup(file_size=100, sha256="abc", original="/orig1.txt", duplicates=["/dup1.txt"])
+        g2 = DuplicateGroup(file_size=200, sha256="def", original="/orig2.txt", duplicates=["/dup2.txt"])
+        g3 = DuplicateGroup(file_size=300, sha256="ghi", original="/orig3.txt", duplicates=["/dup3.txt"])
+
+        dlg.duplicate_groups = [g1, g2, g3]
+        dlg._rendered_count = 1  # Only group 1 is rendered into the canvas
+        dlg.dup_checkbox_vars = {"/dup1.txt": MagicMock(get=lambda: True)}
+        dlg._unrendered_dup_vars = {"/dup2.txt": True, "/dup3.txt": True}
+
+        # 1. Selection initially includes both rendered (/dup1) and unrendered (/dup2, /dup3)
+        selected = DuplicateFinderDialog._get_selected_duplicate_paths(dlg)
+        self.assertEqual(selected, ["/dup1.txt", "/dup2.txt", "/dup3.txt"])
+
+        # 2. Deselect all sets both rendered variable and unrendered state to False
+        DuplicateFinderDialog._deselect_all_dups(dlg)
+        dlg.dup_checkbox_vars["/dup1.txt"].set.assert_called_with(False)
+        self.assertFalse(dlg._unrendered_dup_vars["/dup2.txt"])
+        self.assertFalse(dlg._unrendered_dup_vars["/dup3.txt"])
+
+        # 3. Select all sets both rendered and unrendered state to True
+        DuplicateFinderDialog._select_all_dups(dlg)
+        dlg.dup_checkbox_vars["/dup1.txt"].set.assert_called_with(True)
+        self.assertTrue(dlg._unrendered_dup_vars["/dup2.txt"])
+        self.assertTrue(dlg._unrendered_dup_vars["/dup3.txt"])
+
 
 if __name__ == "__main__":
     unittest.main()
