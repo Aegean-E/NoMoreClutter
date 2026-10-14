@@ -59,12 +59,38 @@
 
 ---
 
-## 🛠️ AI Task Checklist
-Before marking any user request complete:
+### PRINCIPLE-006: Pre-flight Impact & Quality Checklist (Cold-Start Gate)
+- **Concept**: Before implementing code modifications, refactorings, or architecture changes—especially upon a cold start—the AI must evaluate a structured pre-flight impact checklist. This assessment ensures the AI clarifies the *why*, maximizes project *benefits*, preemptively identifies potential *harm/regressions*, and proactively guards quality.
+- **Rules**:
+  1. **Mandatory Cold-Start Assessment**:
+     - **Why is this required?**: Articulate the exact user goal, pain point, or architectural gap being solved.
+     - **How does it benefit the project?**: Identify concrete improvements to user experience, performance, RLM compatibility, or modularity.
+     - **How could it harm the project?**: Preemptively analyze potential downsides (e.g., breaking changes, performance drops, API rate limit exposure, thread blocking, UI freezes, or complexity bloat).
+     - **Mitigation Plan**: Implement defensive designs to neutralize identified risks before applying changes.
+  2. **Quality Non-Diminution**:
+     - Principles and checklists must **never** be used as an excuse to deliver substandard, crippled, or lazy implementations.
+     - All code must maintain high visual polish, complete type safety, robust exception handling, and non-blocking asynchronous execution where applicable.
+  3. **Continuous Enforcement**:
+     - Run the pre-flight checklist mentally or in scratch plans at every cold start.
+     - Complete all items in the task checklist before marking work finished.
+
+---
+
+## 🛠️ AI Task Checklists
+
+### 🛫 Pre-Flight Checklist (Run at Cold Start / Before Coding)
+- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-006`) and repo state?
+- [ ] **Necessity Assessment**: Why is this change needed, and what specific problem does it address?
+- [ ] **Benefit Projection**: How will this directly enhance user value, modularity, or RLM architecture?
+- [ ] **Risk / Harm Analysis**: What could break, regress, or introduce latency/fragility, and how will I prevent it?
+- [ ] **Quality Standard**: Does the proposed design uphold premium quality without cutting corners?
+
+### 🛬 Post-Flight Checklist (Run Before Completion)
 - [ ] Have I adhered to **RLM compatibility** (recursive decomposition where applicable)?
 - [ ] Is the architecture **modular** and decoupled?
 - [ ] Have all changes been verified for functionality and correctness?
 - [ ] Has **README.md been updated** to reflect all changes (**PRINCIPLE-005**)?
-- [ ] Has an **automatic commit** been created with a conventional commit message?
-- [ ] Has the commit been **automatically pushed** to the remote repository?
+- [ ] Has an **automatic commit** been created with a conventional commit message (**PRINCIPLE-002**)?
+- [ ] Has the commit been **automatically pushed** to the remote repository (**PRINCIPLE-002**)?
+
 

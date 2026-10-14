@@ -13,6 +13,7 @@ This document defines the architectural guidelines and design principles for **N
 | **[PRINCIPLE-003](#principle-003-modularity--pluggable-architecture)** | Modularity | Pluggable providers (Cloud, Embedded, Local Server) and decoupled UI/services. |
 | **[PRINCIPLE-004](#principle-004-living-principles-system)** | Living Principles | Formal protocol for adding and evolving project principles over time. |
 | **[PRINCIPLE-005](#principle-005-ai-cold-start-readiness--living-documentation-readme-sync)** | AI Cold-Start Readiness & README Sync | Self-describing repo for instant agent onboarding; README updated after every change. |
+| **[PRINCIPLE-006](#principle-006-pre-flight-impact--quality-checklist-cold-start-gate)** | Impact & Quality Checklist | Pre-flight cold-start checklist evaluating why, benefits, risks, and quality preservation. |
 
 ---
 
@@ -57,11 +58,20 @@ This document defines the architectural guidelines and design principles for **N
   - **Cold-Start Availability**: Keep the repository completely self-describing so any AI model can immediately understand architecture, run commands, principles, and configurations without external guesswork.
   - **Mandatory README Update**: Update `README.md` immediately following any functional change, feature addition, refactoring, or architectural modification.
 
+### PRINCIPLE-006: Pre-flight Impact & Quality Checklist (Cold-Start Gate)
+- **Problem**: Rushing into implementation without understanding context, risks, or rationale leads to broken contracts, regressions, or cheapened designs.
+- **Guideline**:
+  - Before writing code, execute a pre-flight assessment:
+    - **Why required**: Understand root cause and motivation.
+    - **Expected benefits**: Identify improvements to UX, RLM compatibility, or performance.
+    - **Potential harm/risks**: Anticipate failure modes, high latency, context window exhaustion, or thread locks.
+    - **Quality Non-Diminution**: Checklists must strictly elevate standards and prevent corners from being cut; they must never justify degraded quality.
+
 ---
 
 ## 📝 How to Add New Principles
 
 To add a new principle:
-1. Assign the next sequential ID (`PRINCIPLE-006`, etc.).
+1. Assign the next sequential ID (`PRINCIPLE-007`, etc.).
 2. Define the **Problem/Concept** and concrete **Rules/Guidelines**.
 3. Update `GUIDELINES.md`, `AGENTS.md`, and `GEMINI.md`.

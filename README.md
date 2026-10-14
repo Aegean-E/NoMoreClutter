@@ -38,6 +38,7 @@ This project adheres to strict architectural and workflow principles:
 - **[PRINCIPLE-003: Modularity & Pluggable Architecture](GUIDELINES.md#principle-003-modularity--pluggable-architecture)**: Decoupled AI providers, engines, and UI layers.
 - **[PRINCIPLE-004: Living Principles System](GUIDELINES.md#principle-004-living-principles-system)**: Extensible guidelines that adapt as the project grows.
 - **[PRINCIPLE-005: AI Cold-Start Readiness & Living README Sync](GUIDELINES.md#principle-005-ai-cold-start-readiness--living-documentation-readme-sync)**: 100% self-describing repository for cold-starting AI agents; mandatory README synchronization after every change.
+- **[PRINCIPLE-006: Pre-flight Impact & Quality Checklist](GUIDELINES.md#principle-006-pre-flight-impact--quality-checklist-cold-start-gate)**: Pre-flight checklist assessing motivation, benefits, risks/harm, and quality preservation.
 
 For the full specification, see [GUIDELINES.md](GUIDELINES.md) and [AGENTS.md](AGENTS.md).
 
