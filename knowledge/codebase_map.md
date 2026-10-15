@@ -29,7 +29,7 @@
 | `services/providers/registry.py` | 135 | 4892 | 1 | 3 |
 | `services/rlm_organizer.py` | 484 | 21116 | 2 | 0 |
 | `ui/__init__.py` | 10 | 347 | 0 | 0 |
-| `ui/duplicate_finder.py` | 738 | 29589 | 1 | 0 |
+| `ui/duplicate_finder.py` | 755 | 30062 | 1 | 0 |
 | `ui/file_viewer.py` | 707 | 27209 | 1 | 5 |
 | `ui/junk_cleaner.py` | 401 | 15554 | 1 | 0 |
 | `ui/tree_preview.py` | 492 | 18589 | 1 | 0 |
@@ -40,7 +40,7 @@
 | `tests/test_deploy_manager.py` | 241 | 10685 | 4 | 0 |
 | `tests/test_disruption_recovery.py` | 114 | 4682 | 1 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
-| `tests/test_dogfood.py` | 75 | 3274 | 1 | 0 |
+| `tests/test_dogfood.py` | 109 | 5209 | 1 | 0 |
 | `tests/test_file_executor.py` | 223 | 8964 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
 | `tests/test_file_viewer.py` | 198 | 9071 | 2 | 0 |
@@ -679,6 +679,13 @@ Verifies that the dogfood engine executes, captures errors, and cleans up proper
   - Method `.test_blast_radius_security_jail()`
   - Method `.test_blast_radius_jail_blocks_critical_paths()`
   - Method `.test_synthetic_fixture_factory()`
+  - Method `.test_tree_preview_and_undo_rollback()`
+  - Method `.test_file_viewer_dialog_rendering()`
+  - Method `.test_junk_cleaner_full_purge()`
+  - Method `.test_duplicate_isolation_action()`
+  - Method `.test_settings_and_slider_persistence()`
+  - Method `.test_quick_deploy_window_navigation()`
+  - Method `.test_live_or_simulated_ai_organization()`
   - Method `.test_full_dogfood_run()`
 
 ### `tests/test_file_executor.py`

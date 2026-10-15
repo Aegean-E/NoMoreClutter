@@ -298,6 +298,10 @@ Respond ONLY with a valid JSON array of objects:
         for idx, img_path in enumerate(files):
             try:
                 if os.path.exists(img_path) and os.path.getsize(img_path) < 100:
+                    folder = self._get_smart_image_folder(img_path)
+                    new_filename = os.path.basename(img_path)
+                    new_path = os.path.join(output_folder, folder, new_filename) if create_new_folders else os.path.join(output_folder, new_filename)
+                    results.append(FileChange(original=img_path, action="move", new_path=new_path))
                     continue
 
                 raw = self.provider.analyze_image(image_path=img_path, prompt=prompt, model=model)

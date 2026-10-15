@@ -253,11 +253,19 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
 
     def _scan_worker(self, folder: str, recursive: bool):
         def progress_cb(msg: str, frac: float):
-            self.after(0, lambda m=msg, f=frac: self._update_progress(m, f))
+            try:
+                if self.winfo_exists():
+                    self.after(0, lambda m=msg, f=frac: self._update_progress(m, f))
+            except Exception:
+                pass
 
         def group_found_cb(group: DuplicateGroup):
-            self._group_queue.put(group)
-            self.after(0, self._schedule_drain)
+            try:
+                if self.winfo_exists():
+                    self._group_queue.put(group)
+                    self.after(0, self._schedule_drain)
+            except Exception:
+                pass
 
         try:
             groups = DeduplicationService.scan_duplicates(
@@ -266,9 +274,18 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
                 progress_callback=progress_cb,
                 on_group_found=group_found_cb,
             )
-            self.after(0, lambda g=groups: self._on_scan_complete(g))
+            try:
+                if self.winfo_exists():
+                    self.after(0, lambda g=groups: self._on_scan_complete(g))
+            except Exception:
+                pass
         except Exception as e:
-            self.after(0, lambda err=str(e): self._on_scan_error(err))
+            try:
+                if self.winfo_exists():
+                    self.after(0, lambda err=str(e): self._on_scan_error(err))
+            except Exception:
+                pass
+
 
     def _update_progress(self, msg: str, frac: float):
         if not self.winfo_exists():

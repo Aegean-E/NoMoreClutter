@@ -220,17 +220,22 @@ NoMoreClutter/
 
 ## 🐶 Interactive Dogfooding & Chaos Verification (PRINCIPLE-016)
 
-The repository includes a live operational dogfooding runner that directly mounts and drives the real CustomTkinter window, stresses edge-case human actions, and fuzzes dirty LLM outputs at zero token cost:
+The repository includes a live operational dogfooding runner that directly mounts and drives the real CustomTkinter window, exercises every application subsystem and dialog end-to-end, and tests dirty LLM outputs under realistic conditions:
 
 ```bash
-# Run full interactive dogfooding suite (<4 seconds, 0 tokens)
+# Run full interactive dogfooding suite across all 12 corners
 python scripts/dogfood_app.py
 ```
 
-- **🖥️ Live GUI Event Pumping**: Spawns `NoMoreClutterApp`, verifies button invocations, drives dialogs, and traps unhandled Tkinter callback exceptions (`_tkinter.TclError`).
-- **⚡ Chaos Stressing**: Tests mid-scan window destruction and background thread cancellation to guarantee zero widget memory leaks or orphan callbacks.
-- **🗂️ Duplicate Reclaiming**: Programmatically tests duplicate clustering and the ⭐ **"Set as Original"** toggle.
-- **🧪 Zero-Cost API Chaos Fuzzing**: Feeds realistic non-deterministic LLM quirks (integer timestamps, markdown backtick fences, truncated JSON) to verify 100% sanitization before shipping.
+- **🛡️ Zero-Blast-Radius Safety Jail**: Strictly confines all test operations to isolated ephemeral sandboxes (`%TEMP%/nmc_dogfood_*`), blocking any mutation or access to real user folders (`Desktop`, `Documents`, user profile roots).
+- **🖥️ Live GUI Lifecycle & Event Pumping**: Spawns `NoMoreClutterApp`, verifies directory selection, Quick Organize, category toggling, appearance modes, and traps unhandled Tkinter callback exceptions (`_tkinter.TclError`).
+- **🗂️ Tree Preview & Multi-Session Undo**: Interactively tests per-file selection checkmarks, folder preview rendering, execution, and persistent atomic undo rollback.
+- **👁️ Multi-Format File Viewer**: Exercises preview generation for images, PDFs, source code, and plain text documents.
+- **🧹 Storage Reclamation**: Tests Junk Cleaner scanning, mid-scan abort resilience, and full disk purging of temporary debris, empty folders, and OS artifacts.
+- **👥 Duplicate Management**: Tests deep hash duplicate clustering, setting primary originals, and duplicate isolation actions.
+- **⚙️ Settings & Sliders Persistence**: Validates UI sliders (batch size, limits, peek length, pacing) and guarantees atomic persistence with buffer flushing and `fsync`.
+- **🚀 1-Click Quick Deploy Navigation**: Tests embedded local model launcher and Ollama manager modals.
+- **🤖 Realistic AI Organization & Chaos Fuzzing**: Exercises realistic multi-category batches, smart renames, and vision routing (live or simulated) alongside offline chaos fuzzing of dirty and broken LLM outputs.
 
 ---
 

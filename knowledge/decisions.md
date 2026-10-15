@@ -384,23 +384,38 @@ Implement a multi-path 1-Click Quick Deploy architecture:
    - Closing a dialog while a worker thread is running caused unhandled `_tkinter.TclError`s.
    - Non-deterministic LLM APIs returned integer timestamps instead of strings, triggering `TypeError` in regex sanitization.
    - Missing symbol imports in UI callbacks (e.g., `get_RLMOrganizer` in `_quick_organize`) passed unit tests completely undetected because GUI event handlers were never mounted or invoked.
-2. **Token Economy**: Live dogfooding must not bloat conversational token context (which accelerates compaction and attentional drift) or burn developer API credits/quotas.
+2. **Blast-Radius Risk**: AI dogfooding executing operations on a user's machine must have zero chance of scanning, mutating, or damaging user personal files (`Desktop`, `Documents`, or user profile roots).
+3. **Exhaustive Corner Verification & Realistic Live Budgeting**: Artificial micro-limits (like testing only 1-2 files) fail to verify complex multi-format workflows. Comprehensive verification requires testing every corner (all dialogs, controls, sliders, persistence, and error paths) under realistic conditions, prioritizing thoroughness over token penny-pinching, while strictly avoiding ridiculous operations (e.g. dumping 10,000 files into prompts or runaway loops).
 
 ### Decision
-1. **Interactive Event-Loop Driving (`scripts/dogfood_app.py`)**:
-   - Programmatically mount `NoMoreClutterApp` in-process, update the event loop, invoke buttons, and drive dialog workflows.
+1. **Zero-Blast-Radius Ephemeral Sandboxing (`DogfoodBlastRadiusJail`)**:
+   - Strictly confines dogfooding runs to isolated temporary directories (`%TEMP%/nmc_dogfood_*`).
+   - Asserts that all source and output paths are strictly within the sandbox and blocks any path in personal or system directories with `PermissionError`.
+2. **Interactive Multi-Corner Event-Loop Driving (`scripts/dogfood_app.py`)**:
+   - Programmatically mount `NoMoreClutterApp` in-process, update the event loop, invoke buttons, and drive dialog workflows across 12+ distinct corners:
+     1. Blast-Radius Safety Jail
+     2. GUI Lifecycle & Quick Organize
+     3. Tree Preview Dialog & Undo Rollback
+     4. File Viewer Multi-Format Dialog Rendering (Images, PDFs, Code, Text)
+     5. Junk Cleaner Mid-Scan Abort & Memory Unmount
+     6. Junk Cleaner Full Disk Purge
+     7. Duplicate Finder & Set Original
+     8. Duplicate Isolation Action
+     9. Settings & Slider Persistence (Atomic flush + fsync)
+     10. 1-Click Quick Deploy Navigation
+     11. Realistic AI Organization Pass (Live or rich simulation with multi-format batches, smart renames, and vision routing)
+     12. Offline API Chaos Fuzzing (Integers, markdown codeblocks, truncated JSON)
    - Stress-test mid-operation window destruction and background thread cancellation.
    - Hook `app.report_callback_exception` to mechanically trap any Tkinter callback failure or unhandled exception.
-2. **Zero-Token Offline API Chaos Fuzzing**:
-   - Test LLM response extraction against malformed payloads (integer timestamps, markdown backtick blocks, truncated JSON) using zero-cost deterministic mock fuzzers.
 3. **Terse Context Reporting Protocol**:
-   - Emit compact <10 line health dashboards to stdout/chat context.
+   - Emit compact <15 line health dashboards to stdout/chat context.
    - Externalize all verbose debug traces and exception logs to persistent disk files (`.agents/dogfood_last_run.log`).
 4. **Universal Master Template**:
-   - Created portable template in `.agents/templates/UNIVERSAL_PRINCIPLES.md` providing a project-agnostic ruleset for Desktop GUI, Web, CLI, and Backend API applications.
+   - Maintained portable specification in `.agents/templates/UNIVERSAL_PRINCIPLES.md` providing a project-agnostic ruleset for Desktop GUI, Web, CLI, and Backend API applications.
 
 ### Consequences
-- **Positive**: 100% elimination of silent Tkinter callback crashes; immediate detection of missing GUI callback symbols; zero API credit waste; conversation context protected from log bloat.
+- **Positive**: 100% elimination of silent Tkinter callback crashes; immediate detection of missing GUI callback symbols; all dialogs, sliders, and purge actions verified; zero blast-radius risk to user personal data; conversation context protected from log bloat.
+
 
 
 
