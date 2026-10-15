@@ -13,7 +13,7 @@
 | `models/__init__.py` | 97 | 2903 | 5 | 0 |
 | `services/__init__.py` | 51 | 1672 | 0 | 12 |
 | `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
-| `services/cleaner_service.py` | 211 | 8073 | 1 | 0 |
+| `services/cleaner_service.py` | 221 | 8479 | 1 | 0 |
 | `services/deduplicator.py` | 259 | 10525 | 1 | 0 |
 | `services/document_peeker.py` | 151 | 5969 | 1 | 0 |
 | `services/file_executor.py` | 262 | 9889 | 1 | 0 |
@@ -27,15 +27,15 @@
 | `services/providers/embedded.py` | 193 | 8491 | 1 | 0 |
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
 | `services/providers/registry.py` | 135 | 4892 | 1 | 3 |
-| `services/rlm_organizer.py` | 481 | 20857 | 2 | 0 |
+| `services/rlm_organizer.py` | 484 | 21116 | 2 | 0 |
 | `ui/__init__.py` | 10 | 347 | 0 | 0 |
 | `ui/duplicate_finder.py` | 738 | 29589 | 1 | 0 |
 | `ui/file_viewer.py` | 707 | 27209 | 1 | 5 |
-| `ui/junk_cleaner.py` | 360 | 13874 | 1 | 0 |
+| `ui/junk_cleaner.py` | 401 | 15554 | 1 | 0 |
 | `ui/tree_preview.py` | 492 | 18589 | 1 | 0 |
 | `tests/test_ai_status.py` | 118 | 5346 | 1 | 0 |
 | `tests/test_benchmark_service.py` | 152 | 6518 | 3 | 0 |
-| `tests/test_cleaner_service.py` | 85 | 3024 | 1 | 0 |
+| `tests/test_cleaner_service.py` | 93 | 3269 | 1 | 0 |
 | `tests/test_deduplicator.py` | 172 | 6773 | 1 | 0 |
 | `tests/test_deploy_manager.py` | 241 | 10685 | 4 | 0 |
 | `tests/test_disruption_recovery.py` | 114 | 4682 | 1 | 0 |
@@ -46,7 +46,7 @@
 | `tests/test_llama_server_manager.py` | 229 | 8419 | 1 | 0 |
 | `tests/test_llm_service.py` | 88 | 3573 | 1 | 0 |
 | `tests/test_providers.py` | 73 | 2626 | 1 | 0 |
-| `tests/test_rlm_organizer.py` | 178 | 8278 | 2 | 0 |
+| `tests/test_rlm_organizer.py` | 209 | 9694 | 2 | 0 |
 | `tests/test_settings_functionality.py` | 250 | 10130 | 1 | 0 |
 | `tests/test_sync_and_knowledge.py` | 87 | 3297 | 1 | 0 |
 | `tests/test_tree_preview_model.py` | 56 | 2344 | 1 | 0 |
@@ -185,7 +185,7 @@ and OS debris (Thumbs.db, .DS_Store, desktop.ini) with zero external dependencie
 - **`CleanerService`**
   - *Safely cleans empty folders, zero-byte artifacts, and system junk.*
   - Method `.is_os_debris(cls, filename)`
-  - Method `.scan(cls, folder, scan_empty_dirs, scan_zero_byte, scan_os_debris, progress_callback)`
+  - Method `.scan(cls, folder, scan_empty_dirs, scan_zero_byte, scan_os_debris, progress_callback, cancel_event)`
   - Method `.prune(cls, items, progress_callback)`
 
 ### `services/deduplicator.py`
@@ -495,6 +495,7 @@ zero-byte orphaned files, and OS debris (Thumbs.db, .DS_Store).
 - **`JunkCleanerDialog`**
   - *Interactive Orphan Folder & Junk Pruner Dialog.*
   - Method `.__init__(parent, initial_folder)`
+  - Method `.destroy()`
   - Method `._build_ui()`
   - Method `._browse_folder()`
   - Method `._start_scan()`
@@ -578,6 +579,7 @@ Tests latency measurement, optimal batch calculation, vision detection, and came
   - Method `.test_detect_empty_folders()`
   - Method `.test_detect_zero_byte_and_os_debris()`
   - Method `.test_prune_removes_debris_and_empty_dirs()`
+  - Method `.test_scan_cancellation()`
 
 ### `tests/test_deduplicator.py`
 > Unit tests for DeduplicationService (PRINCIPLE-007, PRINCIPLE-011)
@@ -775,6 +777,8 @@ Tests initialization, error encapsulation, and integration with RLM organizer.
   - Method `.test_organize_vision_runtime_error_aborts_immediately_and_routes_to_text_rlm()`
   - Method `.test_smart_image_folder_extraction()`
   - Method `.test_heuristic_fallback_batch_image_albums()`
+  - Method `.test_sanitize_non_string_types()`
+  - Method `.test_process_images_with_integer_json_fields()`
 
 ### `tests/test_settings_functionality.py`
 > Unit tests verifying the function of EVERY setting in NoMoreClutter (PRINCIPLE-011).

@@ -80,6 +80,14 @@ class TestCleanerService(unittest.TestCase):
         self.assertIn(empty_folder, report.empty_dirs_removed)
         self.assertIn(zero_file, report.zero_byte_files_removed)
 
+    def test_scan_cancellation(self):
+        import threading
+        cancel_evt = threading.Event()
+        cancel_evt.set()
+
+        items = CleanerService.scan(self.test_dir, cancel_event=cancel_evt)
+        self.assertEqual(len(items), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

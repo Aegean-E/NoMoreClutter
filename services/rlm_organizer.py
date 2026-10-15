@@ -307,8 +307,9 @@ Respond ONLY with a valid JSON array of objects:
                     parsed = parsed[0]
 
                 if isinstance(parsed, dict):
-                    folder = self._sanitize_folder_name(parsed.get("folder", "Images"))
-                    raw_name = parsed.get("name", "")
+                    raw_folder = parsed.get("folder", "Images")
+                    folder = self._sanitize_folder_name(raw_folder)
+                    raw_name = str(parsed.get("name", "") if parsed.get("name") is not None else "").strip()
                     ext = os.path.splitext(img_path)[1].lower()
                     
                     if ai_rename and raw_name:
@@ -317,7 +318,7 @@ Respond ONLY with a valid JSON array of objects:
                     else:
                         new_filename = os.path.basename(img_path)
                 else:
-                    folder = "Images"
+                    folder = self._get_smart_image_folder(img_path)
                     new_filename = os.path.basename(img_path)
 
                 if not create_new_folders:
@@ -443,14 +444,16 @@ Respond ONLY with a valid JSON array of objects:
         return existing_folders[0]
 
     @staticmethod
-    def _sanitize_folder_name(name: str) -> str:
-        clean = re.sub(r'[<>:"/\\|?*]', '_', name).strip().strip('.')
+    def _sanitize_folder_name(name: Any) -> str:
+        name_str = str(name if name is not None else "General").strip()
+        clean = re.sub(r'[<>:"/\\|?*]', '_', name_str).strip().strip('.')
         return clean if clean else "General"
 
     @staticmethod
-    def _sanitize_filename(name: str, original_path: str) -> str:
+    def _sanitize_filename(name: Any, original_path: str) -> str:
         orig_ext = os.path.splitext(original_path)[1]
-        clean = re.sub(r'[<>:"/\\|?*]', '_', name).strip()
+        name_str = str(name if name is not None else "").strip()
+        clean = re.sub(r'[<>:"/\\|?*]', '_', name_str).strip()
         if not clean:
             return os.path.basename(original_path)
         if not os.path.splitext(clean)[1]:
@@ -458,11 +461,11 @@ Respond ONLY with a valid JSON array of objects:
         return clean
 
     @staticmethod
-    def _extract_json(text: str) -> Any:
+    def _extract_json(text: Any) -> Any:
         """Cleanly extract JSON payloads from markdown blocks or raw text."""
-        if not text or not text.strip():
+        if not text:
             return None
-        t = text.strip()
+        t = str(text).strip()
         if "```json" in t:
             t = t.split("```json", 1)[1].split("```", 1)[0]
         elif "```" in t:

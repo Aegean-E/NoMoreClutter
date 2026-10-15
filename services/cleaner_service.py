@@ -44,6 +44,7 @@ class CleanerService:
         scan_zero_byte: bool = True,
         scan_os_debris: bool = True,
         progress_callback: Optional[Callable[[str, float], None]] = None,
+        cancel_event: Optional[Any] = None,
     ) -> List[CleanupItem]:
         """Scan directory and return a structured list of cleanup candidates.
         
@@ -53,6 +54,7 @@ class CleanerService:
             scan_zero_byte: Flag to detect 0-byte orphaned files.
             scan_os_debris: Flag to detect OS metadata/debris (Thumbs.db, .DS_Store).
             progress_callback: Optional progress reporter.
+            cancel_event: Optional threading.Event to signal abort.
             
         Returns:
             List[CleanupItem]: List of proposed cleanup items.
@@ -68,9 +70,15 @@ class CleanerService:
 
         # 1. Walk top-down to find OS debris and zero-byte files
         for root, dirs, files in os.walk(folder):
+            if cancel_event and cancel_event.is_set():
+                return cleanup_items
+
             all_dirs.append(root)
 
             for f in files:
+                if cancel_event and cancel_event.is_set():
+                    return cleanup_items
+
                 full_path = os.path.join(root, f)
                 try:
                     size = os.path.getsize(full_path)
@@ -110,6 +118,8 @@ class CleanerService:
             sorted_dirs = sorted(all_dirs, key=lambda p: p.count(os.sep), reverse=True)
 
             for d in sorted_dirs:
+                if cancel_event and cancel_event.is_set():
+                    return cleanup_items
                 # Do not delete the root scan directory itself
                 if os.path.abspath(d) == os.path.abspath(folder):
                     continue

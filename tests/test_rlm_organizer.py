@@ -174,5 +174,36 @@ class TestRLMOrganizer(unittest.TestCase):
         self.assertEqual(os.path.normpath(changes[2].new_path), os.path.normpath("/dest/Documents/notes.txt"))
 
 
+    def test_sanitize_non_string_types(self):
+        self.assertEqual(RLMOrganizer._sanitize_folder_name(2017), "2017")
+        self.assertEqual(RLMOrganizer._sanitize_folder_name(None), "General")
+        self.assertEqual(RLMOrganizer._sanitize_filename(142809, "/path/img.jpg"), "142809.jpg")
+        self.assertEqual(RLMOrganizer._sanitize_filename(None, "/path/img.jpg"), "img.jpg")
+
+    def test_process_images_with_integer_json_fields(self):
+        class IntVisionProvider(BaseAIProvider):
+            def __init__(self):
+                super().__init__(base_url="http://mock", api_key="mock")
+            def test_connection(self, model=None):
+                return True, "Mock"
+            def complete(self, prompt, model, **kwargs):
+                return ""
+            def analyze_image(self, image_path, prompt, model, **kwargs):
+                return '{"folder": 2017, "name": 142809}'
+
+        organizer = RLMOrganizer(provider=IntVisionProvider())
+        results = organizer._process_images_hierarchical(
+            files=["/source/20171026_142809.jpg"],
+            model="mock",
+            output_folder="/dest",
+            existing_folders=[],
+            create_new_folders=True,
+            ai_rename=True,
+        )
+        import os
+        self.assertEqual(len(results), 1)
+        self.assertEqual(os.path.normpath(results[0].new_path), os.path.normpath("/dest/2017/142809.jpg"))
+
+
 if __name__ == "__main__":
     unittest.main()

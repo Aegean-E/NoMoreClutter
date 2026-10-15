@@ -22,13 +22,20 @@ class JunkCleanerDialog(ctk.CTkToplevel):
         self.initial_folder = initial_folder or os.getcwd()
         self.cleanup_items: List[CleanupItem] = []
         self.item_vars: Dict[int, ctk.BooleanVar] = {}
+        self._cancel_event = threading.Event()
 
         self.title("🧹 Orphan Folder & Junk Pruner (Deep Clean)")
         self.geometry("880x680")
         self.minsize(740, 520)
         self.transient(parent)
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
 
         self._build_ui()
+
+    def destroy(self):
+        """Cleanly abort in-flight scan thread and unbind widgets."""
+        self._cancel_event.set()
+        super().destroy()
 
     def _build_ui(self):
         self.grid_columnconfigure(0, weight=1)
@@ -215,7 +222,13 @@ class JunkCleanerDialog(ctk.CTkToplevel):
 
     def _scan_worker(self, folder: str, empty_dirs: bool, zero_byte: bool, os_debris: bool):
         def progress_cb(msg: str, frac: float):
-            self.after(0, lambda m=msg, f=frac: self._update_progress(m, f))
+            if self._cancel_event.is_set():
+                return
+            try:
+                if self.winfo_exists():
+                    self.after(0, lambda m=msg, f=frac: self._update_progress(m, f))
+            except Exception:
+                pass
 
         try:
             items = CleanerService.scan(
@@ -224,101 +237,129 @@ class JunkCleanerDialog(ctk.CTkToplevel):
                 scan_zero_byte=zero_byte,
                 scan_os_debris=os_debris,
                 progress_callback=progress_cb,
+                cancel_event=self._cancel_event,
             )
-            self.after(0, lambda it=items: self._on_scan_complete(it))
+            if not self._cancel_event.is_set():
+                try:
+                    if self.winfo_exists():
+                        self.after(0, lambda it=items: self._on_scan_complete(it))
+                except Exception:
+                    pass
         except Exception as e:
-            self.after(0, lambda err=str(e): self._on_scan_error(err))
+            if not self._cancel_event.is_set():
+                try:
+                    if self.winfo_exists():
+                        self.after(0, lambda err=str(e): self._on_scan_error(err))
+                except Exception:
+                    pass
 
     def _update_progress(self, msg: str, frac: float):
-        self.progress_bar.set(frac)
-        self.status_label.configure(text=msg)
+        if not self.winfo_exists() or self._cancel_event.is_set():
+            return
+        try:
+            self.progress_bar.set(frac)
+            self.status_label.configure(text=msg)
+        except Exception:
+            pass
 
     def _on_scan_error(self, err_msg: str):
-        self.scan_btn.configure(state="normal", text="🔍 Scan for Junk")
-        self.status_label.configure(text=f"Error: {err_msg}", text_color="#FFA94D")
-        messagebox.showerror("Scan Error", f"An error occurred while scanning:\n{err_msg}")
+        if not self.winfo_exists() or self._cancel_event.is_set():
+            return
+        try:
+            self.scan_btn.configure(state="normal", text="🔍 Scan for Junk")
+            self.status_label.configure(text=f"Error: {err_msg}", text_color="#FFA94D")
+            messagebox.showerror("Scan Error", f"An error occurred while scanning:\n{err_msg}")
+        except Exception:
+            pass
 
     def _on_scan_complete(self, items: List[CleanupItem]):
-        self.cleanup_items = items
-        self.scan_btn.configure(state="normal", text="🔍 Scan for Junk")
-        self.progress_bar.set(1.0)
+        if not self.winfo_exists() or self._cancel_event.is_set():
+            return
+        try:
+            self.cleanup_items = items
+            self.scan_btn.configure(state="normal", text="🔍 Scan for Junk")
+            self.progress_bar.set(1.0)
 
-        empty_dir_count = sum(1 for it in items if it.item_type == "empty_dir")
-        zero_byte_count = sum(1 for it in items if it.item_type == "zero_byte_file")
-        debris_count = sum(1 for it in items if it.item_type == "os_debris")
+            empty_dir_count = sum(1 for it in items if it.item_type == "empty_dir")
+            zero_byte_count = sum(1 for it in items if it.item_type == "zero_byte_file")
+            debris_count = sum(1 for it in items if it.item_type == "os_debris")
 
-        self.count_badge.configure(text=f"Found: {len(items)} items")
-        self.status_label.configure(
-            text=f"✅ Scan finished: {empty_dir_count} empty folders, {zero_byte_count} 0-byte files, {debris_count} OS debris.",
-            text_color="#69DB7C",
-        )
-
-        if not items:
-            lbl = ctk.CTkLabel(
-                self.scroll_results,
-                text="✨ Directory is completely clean! No empty folders or junk files found.",
-                font=ctk.CTkFont(size=14, weight="bold"),
+            self.count_badge.configure(text=f"Found: {len(items)} items")
+            self.status_label.configure(
+                text=f"✅ Scan finished: {empty_dir_count} empty folders, {zero_byte_count} 0-byte files, {debris_count} OS debris.",
                 text_color="#69DB7C",
             )
-            lbl.pack(pady=40)
-            self.prune_btn.configure(state="disabled")
-            self.select_all_btn.configure(state="disabled")
-            self.deselect_btn.configure(state="disabled")
-            return
 
-        self.prune_btn.configure(state="normal")
-        self.select_all_btn.configure(state="normal")
-        self.deselect_btn.configure(state="normal")
+            if not items:
+                lbl = ctk.CTkLabel(
+                    self.scroll_results,
+                    text="✨ Directory is completely clean! No empty folders or junk files found.",
+                    font=ctk.CTkFont(size=14, weight="bold"),
+                    text_color="#69DB7C",
+                )
+                lbl.pack(pady=40)
+                self.prune_btn.configure(state="disabled")
+                self.select_all_btn.configure(state="disabled")
+                self.deselect_btn.configure(state="disabled")
+                return
 
-        # Render list of cleanup items
-        for idx, item in enumerate(items):
-            var = ctk.BooleanVar(value=True)
-            self.item_vars[idx] = var
+            self.prune_btn.configure(state="normal")
+            self.select_all_btn.configure(state="normal")
+            self.deselect_btn.configure(state="normal")
 
-            row = ctk.CTkFrame(self.scroll_results, fg_color="#1F2023", corner_radius=6, height=36)
-            row.pack(fill="x", padx=4, pady=3)
-            row.pack_propagate(False)
+            # Render list of cleanup items
+            for idx, item in enumerate(items):
+                if not self.winfo_exists() or self._cancel_event.is_set():
+                    return
+                var = ctk.BooleanVar(value=True)
+                self.item_vars[idx] = var
 
-            cb = ctk.CTkCheckBox(row, text="", variable=var, width=22)
-            cb.pack(side="left", padx=(8, 4))
+                row = ctk.CTkFrame(self.scroll_results, fg_color="#1F2023", corner_radius=6, height=36)
+                row.pack(fill="x", padx=4, pady=3)
+                row.pack_propagate(False)
 
-            # Item Type Badge
-            if item.item_type == "empty_dir":
-                badge_text = "📁 EMPTY DIR"
-                badge_color = "#FFD43B"
-            elif item.item_type == "zero_byte_file":
-                badge_text = "📄 0-BYTE FILE"
-                badge_color = "#74C0FC"
-            else:
-                badge_text = "🗑️ OS DEBRIS"
-                badge_color = "#FF8787"
+                cb = ctk.CTkCheckBox(row, text="", variable=var, width=22)
+                cb.pack(side="left", padx=(8, 4))
 
-            ctk.CTkLabel(
-                row,
-                text=badge_text,
-                font=ctk.CTkFont(size=10, weight="bold"),
-                text_color=badge_color,
-                width=110,
-                anchor="w",
-            ).pack(side="left", padx=4)
+                # Item Type Badge
+                if item.item_type == "empty_dir":
+                    badge_text = "📁 EMPTY DIR"
+                    badge_color = "#FFD43B"
+                elif item.item_type == "zero_byte_file":
+                    badge_text = "📄 0-BYTE FILE"
+                    badge_color = "#74C0FC"
+                else:
+                    badge_text = "🗑️ OS DEBRIS"
+                    badge_color = "#FF8787"
 
-            # Path & Reason
-            ctk.CTkLabel(
-                row,
-                text=item.path,
-                font=ctk.CTkFont(family="Segoe UI", size=11),
-                text_color="#E9ECEF",
-                anchor="w",
-            ).pack(side="left", fill="x", expand=True, padx=6)
-
-            if item.size_bytes > 0:
-                sz_str = DeduplicationService.format_bytes(item.size_bytes)
                 ctk.CTkLabel(
                     row,
-                    text=sz_str,
-                    font=ctk.CTkFont(size=11),
-                    text_color="gray",
-                ).pack(side="right", padx=10)
+                    text=badge_text,
+                    font=ctk.CTkFont(size=10, weight="bold"),
+                    text_color=badge_color,
+                    width=110,
+                    anchor="w",
+                ).pack(side="left", padx=4)
+
+                # Path & Reason
+                ctk.CTkLabel(
+                    row,
+                    text=item.path,
+                    font=ctk.CTkFont(family="Segoe UI", size=11),
+                    text_color="#E9ECEF",
+                    anchor="w",
+                ).pack(side="left", fill="x", expand=True, padx=6)
+
+                if item.size_bytes > 0:
+                    sz_str = DeduplicationService.format_bytes(item.size_bytes)
+                    ctk.CTkLabel(
+                        row,
+                        text=sz_str,
+                        font=ctk.CTkFont(size=11),
+                        text_color="gray",
+                    ).pack(side="right", padx=10)
+        except Exception:
+            pass
 
     def _select_all(self):
         for var in self.item_vars.values():
