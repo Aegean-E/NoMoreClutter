@@ -181,13 +181,29 @@
 
 ---
 
+### PRINCIPLE-016: Universal Operational Dogfooding & Chaos Verification (The AI Must Use What It Builds)
+- **Concept**: A task is never complete simply because code compiles or unit tests pass. Before shipping any feature, refactor, or architectural change, the AI must actively execute, drive, and "live inside" the software it creates—simulating real human interaction, chaotic user behavior, and dirty external data while maintaining strict token frugality.
+- **Rules**:
+  1. **Domain-Specific Interactive Dogfooding**:
+     - *Desktop GUI*: Spawns the live window in-process, pumps the event loop, invokes buttons, traverses tabs, stress-tests mid-operation window destruction, and mechanically traps unhandled callback exceptions (e.g., `_tkinter.TclError`).
+     - *Web Apps*: Launches the local dev server, uses browser/headless tools to interact with DOM elements, verifies forms and routing, and asserts zero console errors (`console.error`).
+     - *CLI Applications*: Executes the binary in subshells with arguments, pipes stdin/stdout, tests interrupt signals (SIGINT), and verifies exit codes and error formatting.
+     - *Backend APIs*: Boots the service, executes real HTTP requests with test clients, and asserts status codes and response contracts.
+  2. **Zero-Token Chaos Fuzzing & Error Sanitization**: Test API parsing and resilience against malformed or non-deterministic outputs (integers, markdown codeblocks, truncated payloads, 429 rate limits, 504 timeouts) using deterministic offline chaos mocks at zero API token cost.
+  3. **Micro-Canary Live Budgeting**: When testing against live cloud APIs or local model endpoints, strictly budget test runs to a maximum of 2 micro-files and `<150` prompt tokens. Never dump raw unbounded directory paths into live test prompts.
+  4. **Terse Context Reporting**: Dogfood runner outputs in terminal/chat must be dense status dashboards (<10 lines). Verbose diagnostics and stack traces must be externalized to persistent disk logs (`.agents/dogfood_last_run.log`) to prevent conversational attentional drift and context compaction (**PRINCIPLE-009**, **PRINCIPLE-015**).
+  5. **Pre-Ship Dogfooding Gate**: The interactive dogfooding suite must be executed and confirmed passing with 100% success alongside standard unit tests before staging changes.
+
+---
+
 ## 🛠️ AI Task Checklists
 
 ### 🛫 Pre-Flight Checklist (Run at Cold Start / Before Coding)
-- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-015`) and repo state?
+- [ ] **Context Verification**: Have I reviewed active principles (`PRINCIPLE-001` through `PRINCIPLE-016`) and repo state?
 - [ ] **Compaction & Disruption Audit**: Have I inspected `git status`, `git log -n 1`, and `.agents/task_ledger.json` to ground myself after any compaction or disruption (**PRINCIPLE-013**, **PRINCIPLE-015**)?
 - [ ] **Empirical Grounding**: Have I verified relevant file paths, signatures, and imports on disk before proposing edits (**PRINCIPLE-014**)?
 - [ ] **Knowledge Base Context**: Have I checked relevant guides in `knowledge/` to understand existing patterns (**PRINCIPLE-010**)?
+- [ ] **Dogfooding & Operational Verification Plan**: How will the AI actively drive, test, and stress-test the real application (GUI/API/CLI/Web) before shipping (**PRINCIPLE-016**)?
 - [ ] **Necessity Assessment**: Why is this change needed, and what specific problem does it address?
 - [ ] **Benefit Projection**: How will this directly enhance user value, modularity, or RLM architecture?
 - [ ] **Test Coverage Plan**: Have I planned unit tests to validate this change and prevent regressions (**PRINCIPLE-011**)?
@@ -208,11 +224,13 @@
 - [ ] Are all state changes and logs **crash-resilient and written atomically** (**PRINCIPLE-012**, **PRINCIPLE-013**)?
 - [ ] Have intermediate milestones been **safely checkpointed and disruption-protected** (**PRINCIPLE-013**, **PRINCIPLE-015**)?
 - [ ] Have all **automated unit tests passed with 100% success** (`python -m unittest discover tests`) (**PRINCIPLE-011**)?
+- [ ] Has the **interactive dogfooding suite executed and passed with 100% operational success** (`python scripts/dogfood_app.py` or equivalent) (**PRINCIPLE-016**)?
 - [ ] Have all **AI guideline files been automatically synchronized** if principles changed (**PRINCIPLE-004**)?
 - [ ] Has the **AI knowledge base in `knowledge/` been updated and verified** (**PRINCIPLE-010**)?
 - [ ] Has **README.md been updated** to reflect all changes (**PRINCIPLE-005**)?
 - [ ] Has an **automatic commit** been created with a conventional commit message (**PRINCIPLE-002**)?
 - [ ] Has the commit been **automatically pushed** to the remote repository (**PRINCIPLE-002**)?
+
 
 
 

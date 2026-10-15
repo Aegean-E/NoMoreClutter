@@ -164,10 +164,26 @@ This document defines the architectural guidelines and design principles for **N
 
 ---
 
+### PRINCIPLE-016: Universal Operational Dogfooding & Chaos Verification (The AI Must Use What It Builds)
+- **Problem**: Headless unit tests test components in an idealized vacuum with synthetic data, leaving real-world interaction bugs undetected (e.g. closing a dialog mid-scan triggering unhandled GUI callback errors, or non-deterministic LLM APIs returning unexpected types like integer timestamps).
+- **Guideline**:
+  - **Domain-Specific Interactive Dogfooding**:
+    - *Desktop GUI*: Spawns the live window in-process, pumps the event loop, invokes buttons, traverses tabs, stress-tests mid-operation window destruction, and mechanically traps unhandled callback exceptions (e.g., `_tkinter.TclError`).
+    - *Web Apps*: Launches the local dev server, uses browser/headless tools to interact with DOM elements, verifies forms and routing, and asserts zero console errors (`console.error`).
+    - *CLI Applications*: Executes the binary in subshells with arguments, pipes stdin/stdout, tests interrupt signals (SIGINT), and verifies exit codes and error formatting.
+    - *Backend APIs*: Boots the service, executes real HTTP requests with test clients, and asserts status codes and response contracts.
+  - **Zero-Token Chaos Fuzzing & Error Sanitization**: Test API parsing and resilience against malformed or non-deterministic outputs (integers, markdown codeblocks, truncated payloads, 429 rate limits, 504 timeouts) using deterministic offline chaos mocks at zero API token cost.
+  - **Micro-Canary Live Budgeting**: When testing against live cloud APIs or local model endpoints, strictly budget test runs to a maximum of 2 micro-files and `<150` prompt tokens. Never dump raw unbounded directory paths into live test prompts.
+  - **Terse Context Reporting**: Dogfood runner outputs in terminal/chat must be dense status dashboards (<10 lines). Verbose diagnostics and stack traces must be externalized to persistent disk logs (`.agents/dogfood_last_run.log`) to prevent conversational attentional drift and context compaction (**PRINCIPLE-009**, **PRINCIPLE-015**).
+  - **Pre-Ship Dogfooding Gate**: The interactive dogfooding suite must be executed and confirmed passing with 100% success alongside standard unit tests before staging changes.
+
+---
+
 ## 📝 How to Add New Principles
 
 To add a new principle:
-1. Assign the next sequential ID (`PRINCIPLE-016`, etc.).
+1. Assign the next sequential ID (`PRINCIPLE-017`, etc.).
 2. Define the **Problem/Concept** and concrete **Rules/Guidelines**.
 3. Update `GUIDELINES.md` and `AGENTS.md`.
 4. Run `py scripts/sync_principles.py` to auto-propagate across all AI guidelines.
+

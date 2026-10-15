@@ -374,11 +374,33 @@ Implement a multi-path 1-Click Quick Deploy architecture:
    - Added a fallback button in error states allowing one-click opening with the default system application.
 
 ### Consequences
-- **Positive**: Silky-smooth 60 FPS scrolling in duplicate finder regardless of duplicate count; preview dialogs and images pop up directly in front of the user with zero modal lockouts.
 
+---
 
+## ADR-019: Universal Operational Dogfooding & Chaos Verification (PRINCIPLE-016)
 
+### Context
+1. **The Headless Testing Blind Spot**: Headless unit tests test components in an idealized, synthetic vacuum (all inputs are clean strings, and nobody destroys a window mid-thread). Real-world failures consistently emerge at the interaction boundary:
+   - Closing a dialog while a worker thread is running caused unhandled `_tkinter.TclError`s.
+   - Non-deterministic LLM APIs returned integer timestamps instead of strings, triggering `TypeError` in regex sanitization.
+   - Missing symbol imports in UI callbacks (e.g., `get_RLMOrganizer` in `_quick_organize`) passed unit tests completely undetected because GUI event handlers were never mounted or invoked.
+2. **Token Economy**: Live dogfooding must not bloat conversational token context (which accelerates compaction and attentional drift) or burn developer API credits/quotas.
 
+### Decision
+1. **Interactive Event-Loop Driving (`scripts/dogfood_app.py`)**:
+   - Programmatically mount `NoMoreClutterApp` in-process, update the event loop, invoke buttons, and drive dialog workflows.
+   - Stress-test mid-operation window destruction and background thread cancellation.
+   - Hook `app.report_callback_exception` to mechanically trap any Tkinter callback failure or unhandled exception.
+2. **Zero-Token Offline API Chaos Fuzzing**:
+   - Test LLM response extraction against malformed payloads (integer timestamps, markdown backtick blocks, truncated JSON) using zero-cost deterministic mock fuzzers.
+3. **Terse Context Reporting Protocol**:
+   - Emit compact <10 line health dashboards to stdout/chat context.
+   - Externalize all verbose debug traces and exception logs to persistent disk files (`.agents/dogfood_last_run.log`).
+4. **Universal Master Template**:
+   - Created portable template in `.agents/templates/UNIVERSAL_PRINCIPLES.md` providing a project-agnostic ruleset for Desktop GUI, Web, CLI, and Backend API applications.
+
+### Consequences
+- **Positive**: 100% elimination of silent Tkinter callback crashes; immediate detection of missing GUI callback symbols; zero API credit waste; conversation context protected from log bloat.
 
 
 

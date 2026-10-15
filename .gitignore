@@ -23,10 +23,13 @@ history.json
 *.sublime-project
 *.sublime-workspace
 
-# Testing & Coverage
+# Testing, Coverage & Logs
 .pytest_cache/
 .coverage
 htmlcov/
+*.log
+.agents/*.log
+
 
 # Local Model Weights & Binaries
 models/weights/

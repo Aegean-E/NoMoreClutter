@@ -199,12 +199,14 @@ NoMoreClutter/
 │   ├── test_providers.py      # Provider registry & creation tests
 │   ├── test_deploy_manager.py # Model downloader, Ollama manager & embedded provider tests
 │   ├── test_document_peeker.py # PDF, DOCX, and text snippet extraction tests
+│   ├── test_dogfood.py        # Interactive dogfooding & chaos verification tests
 │   ├── test_rlm_organizer.py  # RLM engine & token payload tests
 │   ├── test_file_executor.py  # Safe move, collision avoidance, and persistent undo tests
 │   ├── test_file_scanner.py   # Shallow/recursive scan & extension filter tests
 │   ├── test_llm_service.py    # LLMService facade & error wrapping tests
 │   └── test_sync_and_knowledge.py # Principle parsing & AST symbol extraction tests
 ├── scripts/
+│   ├── dogfood_app.py         # Live GUI dogfooding & offline API chaos fuzzer (PRINCIPLE-016)
 │   ├── sync_principles.py     # Cross-AI guidelines synchronizer (PRINCIPLE-004)
 │   └── update_knowledge_base.py # AST-based knowledge base auto-updater (PRINCIPLE-010)
 ├── settings.json              # Saved user preferences (auto-created, gitignored)
@@ -213,6 +215,22 @@ NoMoreClutter/
 ├── GUIDELINES.md              # Human-readable architectural guide
 └── README.md                  # Cold-start documentation
 ```
+
+---
+
+## 🐶 Interactive Dogfooding & Chaos Verification (PRINCIPLE-016)
+
+The repository includes a live operational dogfooding runner that directly mounts and drives the real CustomTkinter window, stresses edge-case human actions, and fuzzes dirty LLM outputs at zero token cost:
+
+```bash
+# Run full interactive dogfooding suite (<4 seconds, 0 tokens)
+python scripts/dogfood_app.py
+```
+
+- **🖥️ Live GUI Event Pumping**: Spawns `NoMoreClutterApp`, verifies button invocations, drives dialogs, and traps unhandled Tkinter callback exceptions (`_tkinter.TclError`).
+- **⚡ Chaos Stressing**: Tests mid-scan window destruction and background thread cancellation to guarantee zero widget memory leaks or orphan callbacks.
+- **🗂️ Duplicate Reclaiming**: Programmatically tests duplicate clustering and the ⭐ **"Set as Original"** toggle.
+- **🧪 Zero-Cost API Chaos Fuzzing**: Feeds realistic non-deterministic LLM quirks (integer timestamps, markdown backtick fences, truncated JSON) to verify 100% sanitization before shipping.
 
 ---
 
@@ -280,9 +298,11 @@ flowchart TD
 ## 🤝 Contributing
 
 Contributions are welcome! Please ensure:
-1. All changes respect the 9 core principles in [GUIDELINES.md](GUIDELINES.md) and [AGENTS.md](AGENTS.md).
+1. All changes respect the 16 core principles in [GUIDELINES.md](GUIDELINES.md) and [AGENTS.md](AGENTS.md).
 2. Existing unit tests pass: `python -m unittest discover tests`.
-3. Principles are kept synchronized using `python scripts/sync_principles.py`.
+3. The interactive dogfooding suite passes: `python scripts/dogfood_app.py`.
+4. Principles are kept synchronized using `python scripts/sync_principles.py`.
+
 
 ---
 

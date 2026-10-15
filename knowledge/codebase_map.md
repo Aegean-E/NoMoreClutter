@@ -9,7 +9,7 @@
 
 | Module Path | Lines | Size (Bytes) | Classes | Functions |
 |-------------|-------|--------------|---------|-----------|
-| `main.py` | 2095 | 100085 | 1 | 0 |
+| `main.py` | 2110 | 100481 | 1 | 0 |
 | `models/__init__.py` | 97 | 2903 | 5 | 0 |
 | `services/__init__.py` | 51 | 1672 | 0 | 12 |
 | `services/benchmark_service.py` | 223 | 10469 | 2 | 0 |
@@ -40,6 +40,7 @@
 | `tests/test_deploy_manager.py` | 241 | 10685 | 4 | 0 |
 | `tests/test_disruption_recovery.py` | 114 | 4682 | 1 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
+| `tests/test_dogfood.py` | 48 | 1954 | 1 | 0 |
 | `tests/test_file_executor.py` | 223 | 8964 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
 | `tests/test_file_viewer.py` | 198 | 9071 | 2 | 0 |
@@ -662,6 +663,20 @@ Tests plain text, docx, pdf stream extraction, truncation, and RLM dense payload
   - Method `.test_pdf_peeking_uncompressed()`
   - Method `.test_nonexistent_or_empty_file()`
   - Method `.test_rlm_organizer_content_peeking_integration()`
+
+### `tests/test_dogfood.py`
+> Unit and integration tests for the interactive dogfooding harness (PRINCIPLE-016).
+Verifies that the dogfood engine executes, captures errors, and cleans up properly.
+
+#### Classes
+- **`TestDogfoodHarness`**
+  - Method `.setUp()`
+  - Method `.tearDown()`
+  - Method `.test_offline_api_chaos_fuzzing()`
+  - Method `.test_junk_cleaner_chaos_abort()`
+  - Method `.test_gui_lifecycle_and_quick_organize()`
+  - Method `.test_duplicate_finder_and_set_original()`
+  - Method `.test_full_dogfood_run()`
 
 ### `tests/test_file_executor.py`
 > Unit tests for FileExecutor (PRINCIPLE-007)

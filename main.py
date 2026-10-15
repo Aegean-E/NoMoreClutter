@@ -15,6 +15,7 @@ import customtkinter as ctk
 from services import (
     get_FileScanner,
     get_LLMService,
+    get_RLMOrganizer,
     get_FileExecutor,
     get_provider_registry,
     get_model_downloader,
@@ -837,6 +838,12 @@ class NoMoreClutterApp(ctk.CTk):
 
     def _ai_status_worker(self):
         try:
+            try:
+                if not self.winfo_exists():
+                    return
+            except Exception:
+                return
+
             provider_name = (
                 self.provider_var.get()
                 if hasattr(self, "provider_var")
@@ -865,9 +872,17 @@ class NoMoreClutterApp(ctk.CTk):
                 api_key=api_key,
                 model=model,
             )
-            self.after(0, self._apply_ai_status_ui, is_plugged, badge_label, detail_msg)
+            try:
+                if self.winfo_exists():
+                    self.after(0, self._apply_ai_status_ui, is_plugged, badge_label, detail_msg)
+            except Exception:
+                pass
         except Exception as e:
-            self.after(0, self._apply_ai_status_ui, False, "Check Failed", str(e))
+            try:
+                if self.winfo_exists():
+                    self.after(0, self._apply_ai_status_ui, False, "Check Failed", str(e))
+            except Exception:
+                pass
 
     def _apply_ai_status_ui(self, is_plugged: bool, badge_label: str, detail_msg: str):
         self.ai_is_plugged = is_plugged
