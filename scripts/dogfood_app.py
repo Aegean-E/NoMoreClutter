@@ -27,6 +27,76 @@ sys.path.insert(0, str(REPO_ROOT))
 LOG_FILE = REPO_ROOT / ".agents" / "dogfood_last_run.log"
 
 
+class DogfoodBlastRadiusJail:
+    """Enforces zero-blast-radius containment to guarantee no harm to the user's PC (PRINCIPLE-016)."""
+
+    @staticmethod
+    def assert_confined(target_path: str, sandbox_root: str):
+        if not target_path or not sandbox_root:
+            raise ValueError("Target path and sandbox root must be specified.")
+        
+        resolved_target = os.path.realpath(os.path.abspath(target_path))
+        resolved_root = os.path.realpath(os.path.abspath(sandbox_root))
+
+        # Blacklist of critical user and system directories that must NEVER be touched
+        forbidden_roots = [
+            os.path.realpath(os.path.expanduser("~")),
+            os.path.realpath(os.path.expanduser("~/Desktop")),
+            os.path.realpath(os.path.expanduser("~/Documents")),
+            os.path.realpath(os.path.expanduser("~/Downloads")),
+            os.path.realpath(os.path.expanduser("~/Pictures")),
+            os.path.realpath(os.path.expanduser("~/Videos")),
+            os.path.realpath("C:\\"),
+            os.path.realpath("C:\\Windows"),
+            os.path.realpath("C:\\Program Files"),
+            os.path.realpath("D:\\"),
+        ]
+
+        for forbidden in forbidden_roots:
+            if resolved_target == forbidden:
+                raise PermissionError(
+                    f"[BLAST-RADIUS SECURITY VIOLATION]: Path '{resolved_target}' is a critical user system folder! "
+                    "Dogfooding must only run inside an ephemeral sandbox."
+                )
+
+        # Must be strictly within sandbox_root
+        if not (resolved_target == resolved_root or resolved_target.startswith(resolved_root + os.sep)):
+            raise PermissionError(
+                f"[BLAST-RADIUS SECURITY VIOLATION]: Path '{resolved_target}' is outside sandbox jail '{resolved_root}'! "
+                "Dogfooding is strictly prohibited from mutating external files."
+            )
+
+
+class SyntheticTestFixtureFactory:
+    """Generates 100% synthetic, harmless test files for operational dogfooding."""
+
+    @classmethod
+    def populate(cls, target_dir: str):
+        jail = DogfoodBlastRadiusJail
+        root = Path(target_dir)
+
+        # 1. Standard documents and code
+        (root / "notes.txt").write_text("SYNTHETIC_TEST_FILE: Team sync notes", encoding="utf-8")
+        (root / "script.py").write_text("print('SYNTHETIC_TEST_CODE')", encoding="utf-8")
+        (root / "data.csv").write_text("id,val\n1,10\n2,20", encoding="utf-8")
+
+        # 2. Synthetic camera photos with timestamps (tests date album routing)
+        (root / "20171026_142809.jpg").write_bytes(b"SYNTHETIC_EXIF_IMAGE_CAMERA_2017")
+        (root / "IMG_20210515_110022.png").write_bytes(b"SYNTHETIC_EXIF_IMAGE_CAMERA_2021")
+
+        # 3. Exact byte-for-byte duplicate pair
+        dup_payload = b"SYNTHETIC_EXACT_DUPLICATE_PAYLOAD_HASH_99999"
+        (root / "report_original.pdf").write_bytes(dup_payload)
+        (root / "report_copy.pdf").write_bytes(dup_payload)
+
+        # 4. Junk and orphan items (tests JunkCleaner)
+        empty_dir = root / "empty_orphan_folder"
+        empty_dir.mkdir(parents=True, exist_ok=True)
+        (root / "0_byte_leftover.tmp").write_bytes(b"")
+        (root / "cache.tmp").write_text("temporary cache debris", encoding="utf-8")
+        (root / "Thumbs.db").write_bytes(b"SYNTHETIC_OS_DEBRIS")
+
+
 class DogfoodHarness:
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
@@ -62,31 +132,23 @@ class DogfoodHarness:
         except Exception:
             pass
 
-
     def setup_sandbox(self):
+        """Creates an ephemeral sandbox strictly isolated from user files."""
         self.temp_dir = tempfile.mkdtemp(prefix="nmc_dogfood_")
-        self.log(f"Created sandbox at {self.temp_dir}")
-        
-        # Create test files
-        (Path(self.temp_dir) / "notes.txt").write_text("Meeting notes", encoding="utf-8")
-        (Path(self.temp_dir) / "script.py").write_text("print('hello')", encoding="utf-8")
-        (Path(self.temp_dir) / "data.csv").write_text("id,val\n1,10", encoding="utf-8")
-        
-        # Duplicates
-        (Path(self.temp_dir) / "photo_a.jpg").write_bytes(b"EXIF_IMAGE_DUPLICATE_PAYLOAD_12345")
-        (Path(self.temp_dir) / "photo_b.jpg").write_bytes(b"EXIF_IMAGE_DUPLICATE_PAYLOAD_12345")
-        
-        # Empty folder and junk
-        os.makedirs(os.path.join(self.temp_dir, "empty_dir"), exist_ok=True)
-        (Path(self.temp_dir) / "cache.tmp").write_text("temp junk", encoding="utf-8")
+        DogfoodBlastRadiusJail.assert_confined(self.temp_dir, tempfile.gettempdir())
+        self.log(f"Created isolated sandbox at {self.temp_dir}")
+        SyntheticTestFixtureFactory.populate(self.temp_dir)
 
     def teardown_sandbox(self):
+        """Cleanly wipes ephemeral sandbox, leaving zero clutter on the user's PC."""
         if self.temp_dir and os.path.exists(self.temp_dir):
             try:
+                DogfoodBlastRadiusJail.assert_confined(self.temp_dir, tempfile.gettempdir())
                 shutil.rmtree(self.temp_dir, ignore_errors=True)
-                self.log("Cleaned up sandbox.")
+                self.log("Cleaned up sandbox completely. Zero residual clutter on disk.")
             except Exception as e:
                 self.log(f"Sandbox cleanup error: {e}")
+
 
     def test_gui_lifecycle_and_quick_organize(self):
         """Test CTk window initialization, event loop, and Quick Organize."""
@@ -268,6 +330,27 @@ class DogfoodHarness:
         self.results["api_chaos_fuzzing"] = "PASS"
         self.log("Offline API Chaos Fuzzing passed all scenarios.")
 
+    def test_blast_radius_security_jail(self):
+        """Verify that blast-radius safety checks block any mutation to user's real folders."""
+        self.log("Verifying blast-radius security jail...")
+        desktop_dir = os.path.expanduser("~/Desktop")
+        
+        # Must block personal user directory
+        blocked = False
+        try:
+            DogfoodBlastRadiusJail.assert_confined(desktop_dir, self.temp_dir)
+        except PermissionError:
+            blocked = True
+        
+        if not blocked:
+            raise RuntimeError("Blast-radius jail failed to block access to user's Desktop!")
+
+        # Must allow paths inside temp_dir
+        sub_temp = os.path.join(self.temp_dir, "safe_subfolder")
+        DogfoodBlastRadiusJail.assert_confined(sub_temp, self.temp_dir)
+        
+        self.results["blast_radius_jail"] = "PASS"
+        self.log("Blast-radius security jail passed: real user files are 100% protected.")
 
     def run_all(self) -> bool:
         start_time = time.time()
@@ -275,11 +358,13 @@ class DogfoodHarness:
         all_passed = True
         
         tests = [
+            ("Blast-Radius Safety Jail", self.test_blast_radius_security_jail),
             ("UI Lifecycle & Quick Organize", self.test_gui_lifecycle_and_quick_organize),
             ("Junk Cleaner & Chaos Abort", self.test_junk_cleaner_and_chaos_abort),
             ("Duplicate Finder & Set Original", self.test_duplicate_finder_and_set_original),
             ("API Chaos Fuzzing (0 Tokens)", self.test_offline_api_chaos_fuzzing),
         ]
+
         
         for name, test_fn in tests:
             try:
@@ -308,6 +393,7 @@ class DogfoodHarness:
             print(f"Warning: Failed to write {LOG_FILE}: {log_err}")
         
         # Print terse, context-budgeted dashboard to stdout (<10 lines)
+        print(f"[DOGFOOD] 🛡️  Blast-Radius Safety Jail:  {self.results.get('blast_radius_jail', 'FAIL')}")
         print(f"[DOGFOOD] 🖥️  UI Lifecycle & Event Loop:   {self.results.get('gui_lifecycle', 'FAIL')}")
         print(f"[DOGFOOD] ⚡ Junk Cleaner & Chaos Abort:  {self.results.get('junk_cleaner_chaos', 'FAIL')}")
         print(f"[DOGFOOD] 🗂️  Duplicate & Set Original:   {self.results.get('duplicate_finder', 'FAIL')}")
@@ -315,6 +401,7 @@ class DogfoodHarness:
         print(f"[DOGFOOD] ⏱️  Duration: {elapsed}s | Tkinter Errors: {len(self.captured_exceptions)}")
         verdict = "100% OPERATIONAL (Zero Regressions)" if all_passed else "FAILURES DETECTED (See .agents/dogfood_last_run.log)"
         print(f"[DOGFOOD] 🏆 Final Verdict: {verdict}")
+
         
         return all_passed
 

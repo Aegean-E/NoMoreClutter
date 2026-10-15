@@ -193,6 +193,8 @@
   3. **Micro-Canary Live Budgeting**: When testing against live cloud APIs or local model endpoints, strictly budget test runs to a maximum of 2 micro-files and `<150` prompt tokens. Never dump raw unbounded directory paths into live test prompts.
   4. **Terse Context Reporting**: Dogfood runner outputs in terminal/chat must be dense status dashboards (<10 lines). Verbose diagnostics and stack traces must be externalized to persistent disk logs (`.agents/dogfood_last_run.log`) to prevent conversational attentional drift and context compaction (**PRINCIPLE-009**, **PRINCIPLE-015**).
   5. **Pre-Ship Dogfooding Gate**: The interactive dogfooding suite must be executed and confirmed passing with 100% success alongside standard unit tests before staging changes.
+  6. **Zero-Blast-Radius & Ephemeral Sandboxing (Safety Jail)**: Dogfooding must NEVER touch, scan, or mutate real user directories (Desktop, Documents, personal folders, or system files). All operational tests must run strictly inside ephemeral, isolated temporary sandboxes populated exclusively with synthetic test files, guarded by strict containment assertions, and wiped clean upon test completion.
+
 
 ---
 

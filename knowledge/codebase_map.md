@@ -40,7 +40,7 @@
 | `tests/test_deploy_manager.py` | 241 | 10685 | 4 | 0 |
 | `tests/test_disruption_recovery.py` | 114 | 4682 | 1 | 0 |
 | `tests/test_document_peeker.py` | 122 | 4569 | 2 | 0 |
-| `tests/test_dogfood.py` | 48 | 1954 | 1 | 0 |
+| `tests/test_dogfood.py` | 75 | 3274 | 1 | 0 |
 | `tests/test_file_executor.py` | 223 | 8964 | 1 | 0 |
 | `tests/test_file_scanner.py` | 96 | 3707 | 1 | 0 |
 | `tests/test_file_viewer.py` | 198 | 9071 | 2 | 0 |
@@ -676,6 +676,9 @@ Verifies that the dogfood engine executes, captures errors, and cleans up proper
   - Method `.test_junk_cleaner_chaos_abort()`
   - Method `.test_gui_lifecycle_and_quick_organize()`
   - Method `.test_duplicate_finder_and_set_original()`
+  - Method `.test_blast_radius_security_jail()`
+  - Method `.test_blast_radius_jail_blocks_critical_paths()`
+  - Method `.test_synthetic_fixture_factory()`
   - Method `.test_full_dogfood_run()`
 
 ### `tests/test_file_executor.py`

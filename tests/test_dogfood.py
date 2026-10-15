@@ -36,12 +36,39 @@ class TestDogfoodHarness(unittest.TestCase):
         self.harness.test_duplicate_finder_and_set_original()
         self.assertEqual(self.harness.results.get("duplicate_finder"), "PASS")
 
+    def test_blast_radius_security_jail(self):
+        """Verify that blast-radius jail blocks external user directories."""
+        self.harness.test_blast_radius_security_jail()
+        self.assertEqual(self.harness.results.get("blast_radius_jail"), "PASS")
+
+    def test_blast_radius_jail_blocks_critical_paths(self):
+        """Verify that the jail raises PermissionError when critical paths are targeted."""
+        from scripts.dogfood_app import DogfoodBlastRadiusJail
+        import os
+        
+        with self.assertRaises(PermissionError):
+            DogfoodBlastRadiusJail.assert_confined(os.path.expanduser("~"), self.harness.temp_dir)
+            
+        with self.assertRaises(PermissionError):
+            DogfoodBlastRadiusJail.assert_confined("C:\\Windows", self.harness.temp_dir)
+
+    def test_synthetic_fixture_factory(self):
+        """Verify that synthetic test fixtures are created and 100% synthetic."""
+        from pathlib import Path
+        root = Path(self.harness.temp_dir)
+        self.assertTrue((root / "notes.txt").exists())
+        self.assertTrue((root / "20171026_142809.jpg").exists())
+        self.assertTrue((root / "report_original.pdf").exists())
+        self.assertTrue((root / "report_copy.pdf").exists())
+        self.assertTrue((root / "0_byte_leftover.tmp").exists())
+
     def test_full_dogfood_run(self):
         """Verify that full harness execution reports 100% operational success."""
         harness = DogfoodHarness(verbose=False)
         success = harness.run_all()
         self.assertTrue(success)
         self.assertEqual(len(harness.captured_exceptions), 0)
+
 
 
 if __name__ == "__main__":
