@@ -27,7 +27,7 @@
 | `services/providers/embedded.py` | 193 | 8491 | 1 | 0 |
 | `services/providers/openai_compatible.py` | 108 | 4397 | 1 | 0 |
 | `services/providers/registry.py` | 135 | 4892 | 1 | 3 |
-| `services/rlm_organizer.py` | 484 | 21116 | 2 | 0 |
+| `services/rlm_organizer.py` | 488 | 21496 | 2 | 0 |
 | `ui/__init__.py` | 10 | 347 | 0 | 0 |
 | `ui/duplicate_finder.py` | 755 | 30062 | 1 | 0 |
 | `ui/file_viewer.py` | 707 | 27209 | 1 | 5 |
