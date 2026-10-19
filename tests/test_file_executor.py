@@ -33,7 +33,7 @@ class TestFileExecutor(unittest.TestCase):
     def test_execute_move_and_undo(self):
         # Create test file
         src_file = os.path.join(self.src_dir, "sample.txt")
-        with open(src_file, "w") as f:
+        with open(src_file, "w", encoding="utf-8") as f:
             f.write("hello world")
 
         dst_file = os.path.join(self.dst_dir, "Docs", "sample.txt")
@@ -59,12 +59,12 @@ class TestFileExecutor(unittest.TestCase):
         target_dir = os.path.join(self.dst_dir, "Docs")
         os.makedirs(target_dir, exist_ok=True)
         existing_target = os.path.join(target_dir, "conflict.txt")
-        with open(existing_target, "w") as f:
+        with open(existing_target, "w", encoding="utf-8") as f:
             f.write("existing content")
 
         # Source file with same name
         src_file = os.path.join(self.src_dir, "conflict.txt")
-        with open(src_file, "w") as f:
+        with open(src_file, "w", encoding="utf-8") as f:
             f.write("new content")
 
         change = FileChange(original=src_file, action="move", new_path=existing_target)
@@ -74,19 +74,19 @@ class TestFileExecutor(unittest.TestCase):
         self.assertEqual(errors, 0)
         
         # Existing file must NOT be overwritten
-        with open(existing_target, "r") as f:
+        with open(existing_target, "r", encoding="utf-8") as f:
             self.assertEqual(f.read(), "existing content")
 
         # New file should have been placed at conflict (1).txt
         expected_collision_path = os.path.join(target_dir, "conflict (1).txt")
         self.assertTrue(os.path.exists(expected_collision_path))
-        with open(expected_collision_path, "r") as f:
+        with open(expected_collision_path, "r", encoding="utf-8") as f:
             self.assertEqual(f.read(), "new content")
 
     def test_persistent_history_across_restarts(self):
         # 1. Execute a move
         src_file = os.path.join(self.src_dir, "persist_test.txt")
-        with open(src_file, "w") as f:
+        with open(src_file, "w", encoding="utf-8") as f:
             f.write("persistence payload")
 
         dest_folder = os.path.join(self.dst_dir, "SubArchive")
@@ -99,8 +99,7 @@ class TestFileExecutor(unittest.TestCase):
         self.assertTrue(os.path.exists(self.test_history_path))
 
         # 2. Simulate application restart: purge in-memory cache and reset flag
-        FileExecutor._history = []
-        FileExecutor._loaded = False
+        FileExecutor.reset_state()
 
         # Verify history reloaded from disk on access
         self.assertTrue(FileExecutor.has_undo())
@@ -127,7 +126,7 @@ class TestFileExecutor(unittest.TestCase):
         src_file = os.path.join(self.src_dir, "legacy.txt")
         dst_file = os.path.join(self.dst_dir, "Legacy", "legacy.txt")
         os.makedirs(os.path.dirname(dst_file), exist_ok=True)
-        with open(dst_file, "w") as f:
+        with open(dst_file, "w", encoding="utf-8") as f:
             f.write("legacy content")
 
         legacy_data = [
@@ -137,8 +136,7 @@ class TestFileExecutor(unittest.TestCase):
             json.dump(legacy_data, f)
 
         # Reset in-memory cache to force loading legacy data
-        FileExecutor._history = []
-        FileExecutor._loaded = False
+        FileExecutor.reset_state()
 
         self.assertTrue(FileExecutor.has_undo())
         summaries = FileExecutor.get_history_summary()
@@ -157,8 +155,7 @@ class TestFileExecutor(unittest.TestCase):
         with open(self.test_history_path, "w", encoding="utf-8") as f:
             f.write('[{"batch_id": "batch_partial", "timestamp": 12345, "moves": [["/path/a", "/path/b"]')  # Unterminated JSON
 
-        FileExecutor._history = []
-        FileExecutor._loaded = False
+        FileExecutor.reset_state()
 
         # Loading history must not crash
         self.assertFalse(FileExecutor.has_undo())
@@ -175,9 +172,9 @@ class TestFileExecutor(unittest.TestCase):
         dst1 = os.path.join(self.dst_dir, "wal1.txt")
         dst2 = os.path.join(self.dst_dir, "wal2.txt")
 
-        with open(src1, "w") as f:
+        with open(src1, "w", encoding="utf-8") as f:
             f.write("wal1")
-        with open(src2, "w") as f:
+        with open(src2, "w", encoding="utf-8") as f:
             f.write("wal2")
 
         changes = [
@@ -204,8 +201,7 @@ class TestFileExecutor(unittest.TestCase):
             json.dump(disk_data, f)
 
         # Reset cache and reload as if app restarted after crash
-        FileExecutor._history = []
-        FileExecutor._loaded = False
+        FileExecutor.reset_state()
 
         self.assertTrue(FileExecutor.has_undo())
         # Status must have transitioned to interrupted_recovered

@@ -148,7 +148,7 @@ class FileViewerDialog(ctk.CTkToplevel):
                 self._parent_grabbed = True
                 parent.grab_release()
             self.grab_set()
-        except Exception:
+        except Exception:  # hygiene: allow window manager grab failure on headless or virtual displays
             pass
 
         # Lift dialog directly to the foreground so the preview image is immediately visible
@@ -157,18 +157,18 @@ class FileViewerDialog(ctk.CTkToplevel):
         try:
             self.attributes("-topmost", True)
             self.after(200, lambda: self.attributes("-topmost", False) if self.winfo_exists() else None)
-        except Exception:
+        except Exception:  # hygiene: allow window manager topmost attribute failure on platform
             pass
 
     def destroy(self):
         try:
             self.grab_release()
-        except Exception:
+        except Exception:  # hygiene: allow grab release on already destroyed dialog
             pass
         if getattr(self, "_parent_grabbed", False) and self.master and self.master.winfo_exists():
             try:
                 self.master.grab_set()
-            except Exception:
+            except Exception:  # hygiene: allow grab transfer failure when restoring parent dialog
                 pass
         super().destroy()
 
@@ -324,7 +324,7 @@ class FileViewerDialog(ctk.CTkToplevel):
             sz1 = os.path.getsize(self.compare_filepath)
             sz2 = os.path.getsize(self.filepath)
             identical = (sz1 == sz2)
-        except Exception:
+        except Exception:  # hygiene: allow file stat failure defaults identical flag to False
             pass
 
         if identical:
@@ -495,7 +495,7 @@ class FileViewerDialog(ctk.CTkToplevel):
 
     def _render_image(self, parent, filepath: str, max_w: int, max_h: int):
         try:
-            with Image.open(filepath) as pil_img:
+            with Image.open(filepath) as pil_img:  # hygiene: allow PIL Image.open binary image file
                 orig_w, orig_h = pil_img.size
                 mode = pil_img.mode
                 disp_w, disp_h, scale = compute_image_preview_size(orig_w, orig_h, max_w, max_h)
@@ -636,11 +636,11 @@ class FileViewerDialog(ctk.CTkToplevel):
             return
         try:
             if sys.platform == "win32":
-                subprocess.Popen(f'explorer /select,"{os.path.normpath(filepath)}"')
+                subprocess.Popen(f'explorer /select,"{os.path.normpath(filepath)}"')  # hygiene: allow native system file launcher launches explorer asynchronously
             elif sys.platform == "darwin":
-                subprocess.Popen(["open", "-R", filepath])
+                subprocess.Popen(["open", "-R", filepath])  # hygiene: allow native system file launcher launches external viewer asynchronously
             else:
-                subprocess.Popen(["xdg-open", os.path.dirname(filepath)])
+                subprocess.Popen(["xdg-open", os.path.dirname(filepath)])  # hygiene: allow native system file launcher launches external viewer asynchronously
         except Exception as e:
             print(f"Reveal error: {e}")
 
@@ -651,9 +651,9 @@ class FileViewerDialog(ctk.CTkToplevel):
             if sys.platform == "win32":
                 os.startfile(filepath)
             elif sys.platform == "darwin":
-                subprocess.Popen(["open", filepath])
+                subprocess.Popen(["open", filepath])  # hygiene: allow native system file launcher launches external viewer asynchronously
             else:
-                subprocess.Popen(["xdg-open", filepath])
+                subprocess.Popen(["xdg-open", filepath])  # hygiene: allow native system file launcher launches external viewer asynchronously
         except Exception as e:
             print(f"Open error: {e}")
 

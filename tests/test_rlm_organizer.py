@@ -100,6 +100,7 @@ class TestRLMOrganizer(unittest.TestCase):
     def test_organize_vision_not_implemented_graceful_fallback(self):
         class NotImplementedVisionProvider(MockProvider):
             def analyze_image(self, image_path, prompt, model, max_tokens=150):
+                _ = (image_path, prompt, model, max_tokens)
                 raise NotImplementedError("Text-only model")
 
         mock_resp = '[{"id": 0, "folder": "Artwork", "name": "admin_icon.svg"}]'

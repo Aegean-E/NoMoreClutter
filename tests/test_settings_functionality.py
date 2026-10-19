@@ -132,7 +132,7 @@ class TestSettingsFunctionality(unittest.TestCase):
         """Setting 'numbered_rename=True' renames files sequentially per directory."""
         mock_provider = MagicMock()
         file2 = os.path.join(self.test_dir, "doc2.txt")
-        with open(file2, "w") as f:
+        with open(file2, "w", encoding="utf-8") as f:
             f.write("Second document")
 
         mock_provider.complete.return_value = json.dumps([

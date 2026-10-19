@@ -116,9 +116,9 @@ class TestBenchmarkService(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             file_1 = os.path.join(tmpdir, "20170926_112101.jpg")
             file_2 = os.path.join(tmpdir, "20180416_103236.jpg")
-            with open(file_1, "w") as f:
+            with open(file_1, "w", encoding="utf-8") as f:
                 f.write("fake photo 1")
-            with open(file_2, "w") as f:
+            with open(file_2, "w", encoding="utf-8") as f:
                 f.write("fake photo 2")
 
             provider = MockAnimalsHallucinatingProvider()

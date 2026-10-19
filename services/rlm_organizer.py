@@ -369,7 +369,7 @@ Respond ONLY with a valid JSON array of objects:
                 y = int(date_match.group(1))
                 if 1970 <= y <= 2035:
                     return str(y)
-            except ValueError:
+            except ValueError:  # hygiene: allow non-integer year parse is skipped to next heuristic
                 pass
 
         try:
@@ -379,7 +379,7 @@ Respond ONLY with a valid JSON array of objects:
                 m_year = datetime.datetime.fromtimestamp(mtime).year
                 if 1990 <= m_year <= 2035:
                     return str(m_year)
-        except Exception:
+        except (OSError, OverflowError, ValueError):  # hygiene: allow unreadable mtime falls back to generic folder
             pass
         return None
 
@@ -483,6 +483,6 @@ Respond ONLY with a valid JSON array of objects:
             if match:
                 try:
                     return json.loads(match.group(1))
-                except Exception:
+                except (json.JSONDecodeError, ValueError):  # hygiene: allow invalid json in regex match falls back to None
                     pass
             return None

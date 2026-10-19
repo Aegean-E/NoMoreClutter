@@ -1,8 +1,8 @@
 import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
-os.environ['OMP_NUM_THREADS'] = '1'
-os.environ['MKL_NUM_THREADS'] = '1'
-os.environ['NUMEXPR_NUM_THREADS'] = '1'
+os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
+os.environ.setdefault('OMP_NUM_THREADS', '1')
+os.environ.setdefault('MKL_NUM_THREADS', '1')
+os.environ.setdefault('NUMEXPR_NUM_THREADS', '1')
 
 import json
 import threading
@@ -42,7 +42,7 @@ class NoMoreClutterApp(ctk.CTk):
         try:
             # Maximizes window gracefully on Windows as user requested
             self.after(100, lambda: self.state("zoomed"))
-        except Exception:
+        except Exception:  # hygiene: allow zoomed state is platform-dependent and optional on startup
             pass
         
         self.source_folder = ""
@@ -80,7 +80,7 @@ class NoMoreClutterApp(ctk.CTk):
                 if os.path.exists(SETTINGS_FILE):
                     import shutil
                     shutil.copy2(SETTINGS_FILE, corrupt_backup)
-            except Exception:
+            except Exception:  # hygiene: allow quarantine backup is best-effort and must not abort startup
                 pass
             self.settings = {}
         except Exception as e:
@@ -120,7 +120,7 @@ class NoMoreClutterApp(ctk.CTk):
                 f.flush()
                 try:
                     os.fsync(f.fileno())
-                except OSError:
+                except OSError:  # hygiene: allow fsync failure on non-supporting filesystems is best-effort
                     pass
             os.replace(tmp_settings, SETTINGS_FILE)
         except Exception as e:
@@ -128,7 +128,7 @@ class NoMoreClutterApp(ctk.CTk):
             try:
                 if os.path.exists(tmp_settings):
                     os.remove(tmp_settings)
-            except Exception:
+            except Exception:  # hygiene: allow cleanup of tempfile is best-effort
                 pass
 
         self._refresh_ai_status_async()
@@ -791,7 +791,7 @@ class NoMoreClutterApp(ctk.CTk):
         _, _, get_by_name, _, _ = get_provider_registry()
         preset = get_by_name(self.provider_var.get())
         if preset and preset.signup_url:
-            webbrowser.open(preset.signup_url)
+            webbrowser.open_new_tab(preset.signup_url)
 
     def _test_connection(self):
         self.connection_status.configure(text="Testing connection...", text_color="yellow")
@@ -841,7 +841,7 @@ class NoMoreClutterApp(ctk.CTk):
             try:
                 if not self.winfo_exists():
                     return
-            except Exception:
+            except Exception:  # hygiene: allow background worker checks widget liveness before updating
                 return
 
             provider_name = (
@@ -875,13 +875,13 @@ class NoMoreClutterApp(ctk.CTk):
             try:
                 if self.winfo_exists():
                     self.after(0, self._apply_ai_status_ui, is_plugged, badge_label, detail_msg)
-            except Exception:
+            except Exception:  # hygiene: allow window may be destroyed while background worker completes
                 pass
         except Exception as e:
             try:
                 if self.winfo_exists():
                     self.after(0, self._apply_ai_status_ui, False, "Check Failed", str(e))
-            except Exception:
+            except Exception:  # hygiene: allow window may be destroyed during background error dispatch
                 pass
 
     def _apply_ai_status_ui(self, is_plugged: bool, badge_label: str, detail_msg: str):
@@ -1400,7 +1400,7 @@ class NoMoreClutterApp(ctk.CTk):
                     text_color="#FFA94D"
                 )
                 self.embed_engine_dl_btn.configure(text="⬇️ Download Engine (~18 MB)", state="normal", fg_color="#D9480F")
-        except Exception:
+        except Exception:  # hygiene: allow engine inspection is optional and defaults to uninstalled state
             pass
 
         is_dl = ModelDownloader.is_model_downloaded(selected_item.filename)
@@ -1686,9 +1686,9 @@ class NoMoreClutterApp(ctk.CTk):
     def _open_cloud_key_url(self):
         choice = self.cloud_provider_var.get()
         if "groq" in choice.lower():
-            webbrowser.open("https://console.groq.com/keys")
+            webbrowser.open_new_tab("https://console.groq.com/keys")
         else:
-            webbrowser.open("https://aistudio.google.com/app/apikey")
+            webbrowser.open_new_tab("https://aistudio.google.com/app/apikey")
 
     def _activate_cloud_action(self):
         choice = self.cloud_provider_var.get()

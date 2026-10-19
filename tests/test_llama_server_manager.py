@@ -81,7 +81,7 @@ class TestLlamaServerManager(unittest.TestCase):
             def __enter__(self):
                 return self
             def __exit__(self, *args):
-                pass
+                return False
 
         class MockDownloadResponse:
             headers = {"Content-Length": str(len(zip_bytes))}
@@ -97,7 +97,7 @@ class TestLlamaServerManager(unittest.TestCase):
                 return self
 
             def __exit__(self, *args):
-                pass
+                return False
 
         def urlopen_side_effect(req, *args, **kwargs):
             url = req.full_url if hasattr(req, "full_url") else str(req)
@@ -145,7 +145,7 @@ class TestLlamaServerManager(unittest.TestCase):
                 return self
 
             def __exit__(self, *args):
-                pass
+                return False
 
         with patch.object(LlamaServerManager, "get_effective_exe_path", return_value=fake_exe), \
              patch("subprocess.Popen", return_value=mock_proc), \
@@ -180,7 +180,7 @@ class TestLlamaServerManager(unittest.TestCase):
                 return self
 
             def __exit__(self, *args):
-                pass
+                return False
 
         with patch.object(LlamaServerManager, "start_server", return_value=(True, "Ready")), \
              patch("urllib.request.urlopen", return_value=MockResp()):
@@ -211,7 +211,7 @@ class TestLlamaServerManager(unittest.TestCase):
                 return self
 
             def __exit__(self, *args):
-                pass
+                return False
 
         with patch.object(LlamaServerManager, "start_server", return_value=(True, "Ready")), \
              patch("urllib.request.urlopen", return_value=MockResp()):

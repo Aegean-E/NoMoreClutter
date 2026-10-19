@@ -256,7 +256,7 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             try:
                 if self.winfo_exists():
                     self.after(0, lambda m=msg, f=frac: self._update_progress(m, f))
-            except Exception:
+            except Exception:  # hygiene: allow window destroyed while worker thread is posting progress
                 pass
 
         def group_found_cb(group: DuplicateGroup):
@@ -264,7 +264,7 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
                 if self.winfo_exists():
                     self._group_queue.put(group)
                     self.after(0, self._schedule_drain)
-            except Exception:
+            except Exception:  # hygiene: allow window destroyed while worker thread is queuing group
                 pass
 
         try:
@@ -277,13 +277,13 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             try:
                 if self.winfo_exists():
                     self.after(0, lambda g=groups: self._on_scan_complete(g))
-            except Exception:
+            except Exception:  # hygiene: allow window destroyed while worker thread is posting completion
                 pass
         except Exception as e:
             try:
                 if self.winfo_exists():
                     self.after(0, lambda err=str(e): self._on_scan_error(err))
-            except Exception:
+            except Exception:  # hygiene: allow window destroyed while worker thread is posting error
                 pass
 
 
@@ -715,9 +715,9 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
             if sys.platform == "win32":
                 os.startfile(target)
             elif sys.platform == "darwin":
-                subprocess.Popen(["open", target])
+                subprocess.Popen(["open", target])  # hygiene: allow native system file launcher launches external viewer asynchronously
             else:
-                subprocess.Popen(["xdg-open", target])
+                subprocess.Popen(["xdg-open", target])  # hygiene: allow native system file launcher launches external viewer asynchronously
         except Exception as e:
             print(f"Could not open file: {e}")
 
@@ -751,5 +751,5 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
         try:
             dlg.lift()
             dlg.focus_force()
-        except Exception:
+        except Exception:  # hygiene: allow window manager focus failure on destroyed or unfocused dialog
             pass

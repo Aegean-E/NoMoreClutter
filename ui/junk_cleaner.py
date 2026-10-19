@@ -227,7 +227,7 @@ class JunkCleanerDialog(ctk.CTkToplevel):
             try:
                 if self.winfo_exists():
                     self.after(0, lambda m=msg, f=frac: self._update_progress(m, f))
-            except Exception:
+            except Exception:  # hygiene: allow window destroyed while worker thread posts progress
                 pass
 
         try:
@@ -243,14 +243,14 @@ class JunkCleanerDialog(ctk.CTkToplevel):
                 try:
                     if self.winfo_exists():
                         self.after(0, lambda it=items: self._on_scan_complete(it))
-                except Exception:
+                except Exception:  # hygiene: allow window destroyed while worker thread posts completion
                     pass
         except Exception as e:
             if not self._cancel_event.is_set():
                 try:
                     if self.winfo_exists():
                         self.after(0, lambda err=str(e): self._on_scan_error(err))
-                except Exception:
+                except Exception:  # hygiene: allow window destroyed while worker thread posts error
                     pass
 
     def _update_progress(self, msg: str, frac: float):
@@ -259,7 +259,7 @@ class JunkCleanerDialog(ctk.CTkToplevel):
         try:
             self.progress_bar.set(frac)
             self.status_label.configure(text=msg)
-        except Exception:
+        except Exception:  # hygiene: allow widget update error when window is destroyed
             pass
 
     def _on_scan_error(self, err_msg: str):
@@ -269,7 +269,7 @@ class JunkCleanerDialog(ctk.CTkToplevel):
             self.scan_btn.configure(state="normal", text="🔍 Scan for Junk")
             self.status_label.configure(text=f"Error: {err_msg}", text_color="#FFA94D")
             messagebox.showerror("Scan Error", f"An error occurred while scanning:\n{err_msg}")
-        except Exception:
+        except Exception:  # hygiene: allow widget update error when window is destroyed
             pass
 
     def _on_scan_complete(self, items: List[CleanupItem]):
@@ -358,7 +358,7 @@ class JunkCleanerDialog(ctk.CTkToplevel):
                         font=ctk.CTkFont(size=11),
                         text_color="gray",
                     ).pack(side="right", padx=10)
-        except Exception:
+        except Exception:  # hygiene: allow window destroyed or aborted during result card rendering
             pass
 
     def _select_all(self):

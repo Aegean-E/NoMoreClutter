@@ -94,7 +94,7 @@ class TestDocumentPeeker(unittest.TestCase):
         self.assertEqual(DocumentPeeker.peek(os.path.join(self.root, "does_not_exist.txt")), "")
 
         empty_file = os.path.join(self.root, "empty.txt")
-        with open(empty_file, "w") as f:
+        with open(empty_file, "w", encoding="utf-8") as f:
             pass
         self.assertEqual(DocumentPeeker.peek(empty_file), "")
 

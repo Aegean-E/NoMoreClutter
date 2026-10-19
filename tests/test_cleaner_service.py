@@ -26,7 +26,7 @@ class TestCleanerService(unittest.TestCase):
         os.makedirs(nested_empty)
         os.makedirs(non_empty)
 
-        with open(os.path.join(non_empty, "real_document.pdf"), "w") as f:
+        with open(os.path.join(non_empty, "real_document.pdf"), "w", encoding="utf-8") as f:
             f.write("Important document content")
 
         items = CleanerService.scan(self.test_dir, scan_empty_dirs=True, scan_zero_byte=False, scan_os_debris=False)
@@ -41,19 +41,19 @@ class TestCleanerService(unittest.TestCase):
         os.makedirs(folder)
 
         zero_byte = os.path.join(folder, "empty.tmp")
-        with open(zero_byte, "w") as f:
+        with open(zero_byte, "w", encoding="utf-8") as f:
             pass  # 0 bytes
 
         thumbs = os.path.join(folder, "Thumbs.db")
-        with open(thumbs, "w") as f:
+        with open(thumbs, "w", encoding="utf-8") as f:
             f.write("thumbnail binary cache")
 
         ds_store = os.path.join(folder, ".DS_Store")
-        with open(ds_store, "w") as f:
+        with open(ds_store, "w", encoding="utf-8") as f:
             f.write("macOS metadata")
 
         real_file = os.path.join(folder, "user_photo.jpg")
-        with open(real_file, "w") as f:
+        with open(real_file, "w", encoding="utf-8") as f:
             f.write("Real photo data")
 
         items = CleanerService.scan(self.test_dir, scan_empty_dirs=False, scan_zero_byte=True, scan_os_debris=True)
@@ -69,7 +69,7 @@ class TestCleanerService(unittest.TestCase):
         os.makedirs(empty_folder)
 
         zero_file = os.path.join(self.test_dir, "trash.tmp")
-        with open(zero_file, "w") as f:
+        with open(zero_file, "w", encoding="utf-8") as f:
             pass
 
         items = CleanerService.scan(self.test_dir, scan_empty_dirs=True, scan_zero_byte=True, scan_os_debris=True)

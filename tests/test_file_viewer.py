@@ -173,9 +173,9 @@ class TestDuplicatePaginationLogic(unittest.TestCase):
         g3 = DuplicateGroup(file_size=300, sha256="ghi", original="/orig3.txt", duplicates=["/dup3.txt"])
 
         dlg.duplicate_groups = [g1, g2, g3]
-        dlg._rendered_count = 1  # Only group 1 is rendered into the canvas
+        setattr(dlg, "_rendered_count", 1)  # Only group 1 is rendered into the canvas
         dlg.dup_checkbox_vars = {"/dup1.txt": MagicMock(get=lambda: True)}
-        dlg._unrendered_dup_vars = {"/dup2.txt": True, "/dup3.txt": True}
+        setattr(dlg, "_unrendered_dup_vars", {"/dup2.txt": True, "/dup3.txt": True})
 
         # 1. Selection initially includes both rendered (/dup1) and unrendered (/dup2, /dup3)
         selected = DuplicateFinderDialog._get_selected_duplicate_paths(dlg)

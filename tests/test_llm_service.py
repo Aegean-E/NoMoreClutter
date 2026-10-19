@@ -58,7 +58,7 @@ class TestLLMService(unittest.TestCase):
         """If output_folder is empty, destination should default to the first file's parent directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             file_path = os.path.join(tmpdir, "photo.jpg")
-            with open(file_path, "w") as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write("content")
 
             # Mock organizer.organize to inspect the output_folder parameter

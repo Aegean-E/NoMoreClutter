@@ -109,7 +109,7 @@ class DocumentPeeker:
                         decoded = tm.decode("utf-8", errors="ignore")
                         if len(decoded.strip()) > 2:
                             extracted_fragments.append(decoded)
-                    except Exception:
+                    except Exception:  # hygiene: allow malformed raw PDF fragment decode is skipped
                         pass
                 if len(" ".join(extracted_fragments)) >= 300:
                     break
@@ -129,7 +129,7 @@ class DocumentPeeker:
                                 extracted_fragments.append(decoded)
                         if len(" ".join(extracted_fragments)) >= 300:
                             break
-                    except Exception:
+                    except Exception:  # hygiene: allow non-zlib streams in PDF are skipped
                         continue
 
             return " ".join(extracted_fragments)

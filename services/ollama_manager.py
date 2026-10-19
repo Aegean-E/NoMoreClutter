@@ -150,7 +150,7 @@ class OllamaManager:
 
                     try:
                         chunk = json.loads(line.decode("utf-8"))
-                    except Exception:
+                    except (json.JSONDecodeError, UnicodeDecodeError):  # hygiene: allow malformed streaming chunk in ollama stream is skipped
                         continue
 
                     status = chunk.get("status", "")

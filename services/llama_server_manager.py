@@ -133,15 +133,14 @@ def download_server(
                 filename = os.path.basename(file_info.filename)
                 # Extract only executable binaries and supporting DLLs
                 if filename and (filename.endswith(".exe") or filename.endswith(".dll")):
-                    source = z.open(file_info)
                     dest_file = bin_dir / filename
-                    with open(dest_file, "wb") as target:
+                    with z.open(file_info) as source, open(dest_file, "wb") as target:  # hygiene: allow zip member stream is binary
                         shutil.copyfileobj(source, target)
     finally:
         if part_path.exists():
             try:
                 part_path.unlink()
-            except OSError:
+            except OSError:  # hygiene: allow cleanup of temp download part is best-effort
                 pass
 
     if progress_callback:
@@ -246,7 +245,7 @@ class LlamaServerManager:
             creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
 
         try:
-            cls._process = subprocess.Popen(
+            cls._process = subprocess.Popen(  # hygiene: allow background server daemon whose lifecycle is managed by stop_server
                 cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
@@ -265,7 +264,7 @@ class LlamaServerManager:
 
         while time.time() - start_time < timeout:
             if cls._process.poll() is not None:
-                _, stderr = cls._process.communicate()
+                _, stderr = cls._process.communicate(timeout=2.0)
                 cls._process = None
                 return False, f"llama-server exited abruptly: {stderr[:300] if stderr else 'unknown error'}"
 
@@ -278,7 +277,7 @@ class LlamaServerManager:
                 # HTTP 503 means server is running and actively loading weights into RAM
                 if e.code == 503:
                     pass
-            except Exception:
+            except Exception:  # hygiene: allow health check connection probe error is retried until timeout
                 pass
 
             time.sleep(0.4)
@@ -298,7 +297,7 @@ class LlamaServerManager:
                         cls._process.wait(timeout=2.0)
                     except subprocess.TimeoutExpired:
                         cls._process.kill()
-            except Exception:
+            except Exception:  # hygiene: allow process termination is best-effort during teardown
                 pass
             finally:
                 cls._process = None

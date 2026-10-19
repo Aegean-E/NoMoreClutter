@@ -25,24 +25,24 @@ class TestFileScanner(unittest.TestCase):
         #       script.py
         self.img1 = os.path.join(self.root, "img1.jpg")
         self.doc1 = os.path.join(self.root, "doc1.pdf")
-        with open(self.img1, "w") as f:
+        with open(self.img1, "w", encoding="utf-8") as f:
             f.write("image1")
-        with open(self.doc1, "w") as f:
+        with open(self.doc1, "w", encoding="utf-8") as f:
             f.write("doc1")
 
         self.subfolder = os.path.join(self.root, "subfolder")
         os.makedirs(self.subfolder)
         self.img2 = os.path.join(self.subfolder, "img2.png")
         self.doc2 = os.path.join(self.subfolder, "doc2.txt")
-        with open(self.img2, "w") as f:
+        with open(self.img2, "w", encoding="utf-8") as f:
             f.write("image2")
-        with open(self.doc2, "w") as f:
+        with open(self.doc2, "w", encoding="utf-8") as f:
             f.write("doc2")
 
         self.nested = os.path.join(self.subfolder, "nested")
         os.makedirs(self.nested)
         self.script = os.path.join(self.nested, "script.py")
-        with open(self.script, "w") as f:
+        with open(self.script, "w", encoding="utf-8") as f:
             f.write("print('hello')")
 
     def tearDown(self):

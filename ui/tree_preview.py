@@ -458,9 +458,9 @@ class TreePreviewDialog(ctk.CTkToplevel):
             if sys.platform == "win32":
                 os.startfile(target)
             elif sys.platform == "darwin":
-                subprocess.Popen(["open", target])
+                subprocess.Popen(["open", target])  # hygiene: allow native system file launcher launches external viewer asynchronously
             else:
-                subprocess.Popen(["xdg-open", target])
+                subprocess.Popen(["xdg-open", target])  # hygiene: allow native system file launcher launches external viewer asynchronously
         except Exception as e:
             print(f"Could not open file: {e}")
 
@@ -478,7 +478,7 @@ class TreePreviewDialog(ctk.CTkToplevel):
         try:
             dlg.lift()
             dlg.focus_force()
-        except Exception:
+        except Exception:  # hygiene: allow window manager focus failure on destroyed or unfocused dialog
             pass
 
     def _confirm_execution(self):

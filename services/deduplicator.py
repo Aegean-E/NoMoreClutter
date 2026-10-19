@@ -186,7 +186,7 @@ class DeduplicationService:
                     if on_group_found:
                         try:
                             on_group_found(group)
-                        except Exception:
+                        except Exception:  # hygiene: allow streaming UI callback error must not abort disk deduplication
                             pass
 
         # Sort groups by total reclaimable bytes descending for final return

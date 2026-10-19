@@ -26,9 +26,9 @@ class TestDeduplicationService(unittest.TestCase):
     def test_no_duplicates(self):
         f1 = os.path.join(self.test_dir, "file1.txt")
         f2 = os.path.join(self.test_dir, "file2.txt")
-        with open(f1, "w") as f:
+        with open(f1, "w", encoding="utf-8") as f:
             f.write("Alpha content")
-        with open(f2, "w") as f:
+        with open(f2, "w", encoding="utf-8") as f:
             f.write("Beta longer content")
 
         groups = DeduplicationService.scan_duplicates(self.test_dir)
@@ -70,9 +70,9 @@ class TestDeduplicationService(unittest.TestCase):
         content = "Data to duplicate"
         f1 = os.path.join(self.test_dir, "doc.txt")
         f2 = os.path.join(self.test_dir, "doc (1).txt")
-        with open(f1, "w") as f:
+        with open(f1, "w", encoding="utf-8") as f:
             f.write(content)
-        with open(f2, "w") as f:
+        with open(f2, "w", encoding="utf-8") as f:
             f.write(content)
 
         groups = DeduplicationService.scan_duplicates(self.test_dir)
@@ -91,9 +91,9 @@ class TestDeduplicationService(unittest.TestCase):
         content = "Data to delete"
         f1 = os.path.join(self.test_dir, "file_a.txt")
         f2 = os.path.join(self.test_dir, "file_b.txt")
-        with open(f1, "w") as f:
+        with open(f1, "w", encoding="utf-8") as f:
             f.write(content)
-        with open(f2, "w") as f:
+        with open(f2, "w", encoding="utf-8") as f:
             f.write(content)
 
         groups = DeduplicationService.scan_duplicates(self.test_dir)

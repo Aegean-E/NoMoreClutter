@@ -32,7 +32,7 @@ from unittest.mock import patch
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-LOG_FILE = REPO_ROOT / ".agents" / "dogfood_last_run.log"
+LOG_FILE = REPO_ROOT / ".aikit" / "dogfood_last_run.log"
 
 
 class DogfoodBlastRadiusJail:
@@ -130,13 +130,13 @@ class DogfoodHarness:
                 for after_id in widget.tk.call("after", "info"):
                     try:
                         widget.after_cancel(after_id)
-                    except Exception:
+                    except Exception:  # hygiene: allow widget already destroyed or after_id expired during teardown
                         pass
-        except Exception:
+        except Exception:  # hygiene: allow best-effort cancel of pending after callbacks
             pass
         try:
             widget.destroy()
-        except Exception:
+        except Exception:  # hygiene: allow best-effort widget destruction during teardown
             pass
 
     def setup_sandbox(self):
@@ -657,7 +657,7 @@ class DogfoodHarness:
                         live_provider = prov
                         self.log(f"Live provider '{prov_id}' detected and verified online. Using live AI!")
                         break
-                except Exception:
+                except Exception:  # hygiene: allow provider probe failure falls back to next provider or mock
                     pass
 
         if not live_provider:
@@ -788,19 +788,19 @@ class DogfoodHarness:
             print(f"Warning: Failed to write {LOG_FILE}: {log_err}")
         
         # Print terse, context-budgeted dashboard to stdout (<15 lines)
-        print(f"[DOGFOOD] 🛡️  Blast-Radius Safety Jail:      {self.results.get('blast_radius_jail', 'FAIL')}")
-        print(f"[DOGFOOD] 🖥️  UI Lifecycle & Quick Organize: {self.results.get('gui_lifecycle', 'FAIL')}")
-        print(f"[DOGFOOD] 🗂️  Tree Preview & Undo Rollback:   {self.results.get('tree_preview_and_undo', 'FAIL')}")
-        print(f"[DOGFOOD] 👁️  File Viewer Rendering:         {self.results.get('file_viewer', 'FAIL')}")
-        print(f"[DOGFOOD] ⚡ Junk Cleaner (Abort & Purge):   {self.results.get('junk_cleaner_purge', 'FAIL')}")
-        print(f"[DOGFOOD] 👥 Duplicate (Original & Isolate):  {self.results.get('duplicate_isolation', 'FAIL')}")
-        print(f"[DOGFOOD] ⚙️  Settings & Slider Persistence:  {self.results.get('settings_persistence', 'FAIL')}")
-        print(f"[DOGFOOD] 🚀 1-Click Quick Deploy Navigation: {self.results.get('quick_deploy_window', 'FAIL')}")
-        print(f"[DOGFOOD] 🤖 AI Organization Pass:           {self.results.get('ai_organization_pass', 'FAIL')}")
-        print(f"[DOGFOOD] 🧪 API Chaos Fuzzing:              {self.results.get('api_chaos_fuzzing', 'FAIL')}")
-        print(f"[DOGFOOD] ⏱️  Duration: {elapsed}s | Tkinter Errors: {len(self.captured_exceptions)}")
-        verdict = "100% OPERATIONAL (All 12 Corners Verified)" if all_passed else "FAILURES DETECTED (See .agents/dogfood_last_run.log)"
-        print(f"[DOGFOOD] 🏆 Final Verdict: {verdict}")
+        print(f"[DOGFOOD] [JAIL]   Blast-Radius Safety Jail:      {self.results.get('blast_radius_jail', 'FAIL')}")
+        print(f"[DOGFOOD] [UI]     UI Lifecycle & Quick Organize: {self.results.get('gui_lifecycle', 'FAIL')}")
+        print(f"[DOGFOOD] [TREE]   Tree Preview & Undo Rollback:   {self.results.get('tree_preview_and_undo', 'FAIL')}")
+        print(f"[DOGFOOD] [VIEW]   File Viewer Rendering:         {self.results.get('file_viewer', 'FAIL')}")
+        print(f"[DOGFOOD] [JUNK]   Junk Cleaner (Abort & Purge):   {self.results.get('junk_cleaner_purge', 'FAIL')}")
+        print(f"[DOGFOOD] [DUP]    Duplicate (Original & Isolate):  {self.results.get('duplicate_isolation', 'FAIL')}")
+        print(f"[DOGFOOD] [SETT]   Settings & Slider Persistence:  {self.results.get('settings_persistence', 'FAIL')}")
+        print(f"[DOGFOOD] [DEPLOY] 1-Click Quick Deploy Navigation: {self.results.get('quick_deploy_window', 'FAIL')}")
+        print(f"[DOGFOOD] [AI]     AI Organization Pass:           {self.results.get('ai_organization_pass', 'FAIL')}")
+        print(f"[DOGFOOD] [CHAOS]  API Chaos Fuzzing:              {self.results.get('api_chaos_fuzzing', 'FAIL')}")
+        print(f"[DOGFOOD] [TIME]   Duration: {elapsed}s | Tkinter Errors: {len(self.captured_exceptions)}")
+        verdict = "100% OPERATIONAL (All 12 Corners Verified)" if all_passed else f"FAILURES DETECTED (See {LOG_FILE})"
+        print(f"[DOGFOOD] [VERDICT] Final Verdict: {verdict}")
         
         return all_passed
 

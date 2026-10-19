@@ -25,6 +25,12 @@ class FileExecutor:
     _loaded: bool = False
 
     @classmethod
+    def reset_state(cls):
+        """Purge in-memory history cache and reset load state (for testing / restart simulation)."""
+        cls._history = []
+        cls._loaded = False
+
+    @classmethod
     def _ensure_loaded(cls):
         """Lazy load history from disk on first access."""
         if not cls._loaded:
@@ -51,7 +57,7 @@ class FileExecutor:
                 try:
                     corrupt_backup = f"{cls.history_file_path}.corrupt_{int(time.time())}"
                     shutil.copy2(cls.history_file_path, corrupt_backup)
-                except Exception:
+                except Exception:  # hygiene: allow quarantine copy failure is best-effort and must not abort startup
                     pass
                 cls._history = []
             except Exception as e:
@@ -68,7 +74,7 @@ class FileExecutor:
                 if os.path.exists(cls.history_file_path):
                     try:
                         os.remove(cls.history_file_path)
-                    except Exception:
+                    except Exception:  # hygiene: allow best-effort deletion of empty history file
                         pass
                 return
 
@@ -78,7 +84,7 @@ class FileExecutor:
                 f.flush()
                 try:
                     os.fsync(f.fileno())
-                except OSError:
+                except OSError:  # hygiene: allow fsync failure on unsupported filesystem is best-effort
                     pass
             
             # Atomic file replacement
@@ -202,7 +208,7 @@ class FileExecutor:
             try:
                 if os.path.exists(folder) and not os.listdir(folder):
                     os.rmdir(folder)
-            except Exception:
+            except Exception:  # hygiene: allow best-effort cleanup of newly empty directory
                 pass
 
         cls._save_history()
@@ -242,7 +248,7 @@ class FileExecutor:
         if os.path.exists(cls.history_file_path):
             try:
                 os.remove(cls.history_file_path)
-            except Exception:
+            except Exception:  # hygiene: allow best-effort deletion of cleared history file
                 pass
 
     @staticmethod

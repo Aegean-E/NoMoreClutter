@@ -155,7 +155,7 @@ class ModelDownloader:
         if part_file.exists():
             try:
                 part_file.unlink()
-            except Exception:
+            except Exception:  # hygiene: allow cleanup of stale part file before download is best-effort
                 pass
 
         req = urllib.request.Request(
@@ -204,7 +204,7 @@ class ModelDownloader:
             if part_file.exists():
                 try:
                     part_file.unlink()
-                except Exception:
+                except Exception:  # hygiene: allow cleanup of partial download on error is best-effort
                     pass
             raise e
 
