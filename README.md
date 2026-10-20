@@ -154,4 +154,4 @@ python scripts/dogfood_app.py
 
 ## 📝 License
 
-MIT License - Feel free to use and modify as needed!
+AGPLv3 - see [LICENSE](LICENSE).
