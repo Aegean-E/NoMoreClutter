@@ -27,6 +27,8 @@ nomoreclutter/
 ├── .aikit/                   <- this project's memory: record, ledger, decisions
 ├── .gitignore                <- transient AIKit state excluded
 ├── README.md                 <- cold-start reference and documentation
+├── COMMERCIAL.md
+├── LICENSE
 ├── requirements.txt          <- dependencies
 ├── main.py                   <- desktop application entrypoint
 ├── models/                   <- data models
