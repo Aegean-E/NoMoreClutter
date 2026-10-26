@@ -142,3 +142,9 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
 - **Context**: NoMoreClutter originally shipped with embedded standalone copies of early AIKit principles and tooling (`.agents/`, `scripts/`, `knowledge/`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `GUIDELINES.md`). Under AIKit's multi-project cockpit model (ADR-119, PRINCIPLE-011 R8), AIKit is the workspace root and managed projects live in their own repositories under `projects/` with memory isolated to `.aikit/`.
 - **Decision**: Migrate NoMoreClutter into a standard AIKit-managed project: clean up obsolete embedded AIKit governance scripts, rules, and knowledge directories; format past ADRs into `.aikit/decisions.md`; integrate the dogfooding harness cleanly; ensure full gate compliance with `aikit check nomoreclutter`.
 - **Consequences**: NoMoreClutter codebase becomes lean and focused on its core application functionality; 100% compliant with AIKit's 4 Phase 4 delivery gates; zero duplicate governance files.
+
+## Licensing migration (agpl-final)
+
+- New versions use the Aegean License 1.1 (AL-1.1); versions up to and including `agpl-final` remain under GNU AGPL-3.0.
+- Rights holder: AegeanWorks; commercial use under ACL-1.0.
+- Counsel review of the 1.1 texts remains pending.

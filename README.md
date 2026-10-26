@@ -1,6 +1,6 @@
 # NoMoreClutter 🗂️✨
 
-[![AIKit Integrated](https://img.shields.io/badge/AIKit-integrated-6f42c1)](https://github.com/Aegean-E/AIKit)
+[![AIKit Integrated](https://img.shields.io/badge/AIKit-integrated-6f42c1)](https://github.com/AegeanWorks/AIKit)
 
 An intelligent AI-powered desktop application that automatically organizes your files using Large Language Models (LLMs). Say goodbye to cluttered folders and let AI analyze, categorize, and rename your files with smart descriptive names!
 
@@ -29,6 +29,8 @@ nomoreclutter/
 ├── README.md                 <- cold-start reference and documentation
 ├── COMMERCIAL.md
 ├── LICENSE
+├── LICENSES/                 <- REUSE license texts
+├── REUSE.toml                <- Machine-readable SPDX metadata
 ├── requirements.txt          <- dependencies
 ├── main.py                   <- desktop application entrypoint
 ├── models/                   <- data models
@@ -156,6 +158,8 @@ python scripts/dogfood_app.py
 
 ---
 
-## 📝 License
+> **License history:** versions up to and including `agpl-final` remain available under GNU AGPL-3.0.
 
-AGPLv3 - see [LICENSE](LICENSE).
+## 📜 License
+
+Free for personal use under the Aegean License 1.1 (AL-1.1); see [LICENSE](LICENSE). Any commercial use needs the Aegean Commercial License 1.0 (ACL-1.0); see [COMMERCIAL.md](COMMERCIAL.md).
