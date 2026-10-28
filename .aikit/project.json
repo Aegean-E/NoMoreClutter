@@ -13,8 +13,10 @@
   "ui_source": "detected",
   "topics": [
     "aikit",
+    "source-available",
+    "aegean-license",
+    "commercial-license",
     "ai",
-    "automation",
     "customtkinter",
     "desktop-app",
     "file-management",
@@ -22,12 +24,10 @@
     "llm",
     "local-llm",
     "python",
-    "source-available",
     "aegeanworks",
     "desktop-application",
     "gui",
     "productivity",
-    "software",
     "ai-assistant",
     "local-ai",
     "privacy",
@@ -41,5 +41,10 @@
     "gui",
     "productivity",
     "desktop-application"
+  ],
+  "license_topics": [
+    "source-available",
+    "aegean-license",
+    "commercial-license"
   ]
 }
