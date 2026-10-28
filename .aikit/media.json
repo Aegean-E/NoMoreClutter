@@ -5,53 +5,48 @@
   "has_ui": true,
   "ui_kind": "desktop",
   "palette": [
-    "#100b1f",
-    "#2b1750",
-    "#34d399",
-    "#f5f3ff"
+    "#0b1015",
+    "#172431",
+    "#94a3b8",
+    "#38bdf8"
   ],
+  "motif": "grid",
+  "layout": "left",
   "assets": {
     "logo": {
       "path": "assets/logo.svg",
       "status": "approved",
       "commit": "",
-      "generated_at": "2026-10-28T08:02:40",
+      "generated_at": "2026-10-28T08:47:06",
       "review": {
         "status": "approved",
         "reviewer": "subagent:vision-review",
         "method": "vision",
-        "notes": "NO monogram in green, dark purple gradient, coherent.",
-        "score": 93,
-        "reviewed_at": "2026-10-28T08:10:43"
+        "notes": "NO grid, distinct from AE grid",
+        "score": 89,
+        "reviewed_at": "2026-10-28T08:58:21"
       }
     },
     "social_preview": {
       "path": "assets/social-preview.svg",
       "status": "approved",
       "commit": "",
-      "generated_at": "2026-10-28T08:02:40",
+      "generated_at": "2026-10-28T08:47:06",
       "review": {
         "status": "approved",
         "reviewer": "subagent:vision-review",
         "method": "vision",
-        "notes": "NO icon, title, file organizer description, DESKTOP tag, green.",
-        "score": 93,
-        "reviewed_at": "2026-10-28T08:10:43"
+        "notes": "Consistent template, legible",
+        "score": 89,
+        "reviewed_at": "2026-10-28T08:58:21"
       }
     },
     "social_preview_png": {
       "path": "assets/social-preview.png",
-      "status": "approved",
+      "status": "pending_review",
       "commit": "",
-      "generated_at": "2026-10-28T08:02:41",
-      "review": {
-        "status": "approved",
-        "reviewer": "subagent:vision-review",
-        "method": "structural",
-        "notes": "Rendered from the approved 1280x640 social SVG; exact dimensions verified.",
-        "score": null,
-        "reviewed_at": "2026-10-28T08:16:55"
-      }
+      "generated_at": "2026-10-28T08:47:07",
+      "review": null
     }
   },
   "screenshots": []
