@@ -13,6 +13,7 @@
   "ui_source": "detected",
   "topics": [
     "aikit",
+    "aikit-integrated",
     "source-available",
     "aegean-license",
     "commercial-license",
@@ -27,7 +28,6 @@
     "aegeanworks",
     "desktop-application",
     "gui",
-    "productivity",
     "ai-assistant",
     "local-ai",
     "privacy",
