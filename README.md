@@ -1,5 +1,10 @@
 # NoMoreClutter 🗂️✨
 
+<!-- aegean:media:start -->
+<p align="center"><img src="assets/logo.svg" alt="Nomoreclutter logo" width="96" height="96"></p>
+<p align="center"><img src="assets/social-preview.svg" alt="Nomoreclutter social preview" width="100%"></p>
+<!-- aegean:media:end -->
+
 [![AIKit Integrated](https://img.shields.io/badge/AIKit-integrated-6f42c1)](https://github.com/AegeanWorks/AIKit)
 
 An intelligent AI-powered desktop application that automatically organizes your files using Large Language Models (LLMs). Say goodbye to cluttered folders and let AI analyze, categorize, and rename your files with smart descriptive names!

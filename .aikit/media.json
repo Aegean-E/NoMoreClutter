@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "name": "nomoreclutter",
+  "repo": "Nomoreclutter",
+  "has_ui": true,
+  "ui_kind": "desktop",
+  "palette": [
+    "#100b1f",
+    "#2b1750",
+    "#34d399",
+    "#f5f3ff"
+  ],
+  "assets": {
+    "logo": {
+      "path": "assets/logo.svg",
+      "status": "approved",
+      "commit": "",
+      "generated_at": "2026-10-28T08:02:40",
+      "review": {
+        "status": "approved",
+        "reviewer": "subagent:vision-review",
+        "method": "vision",
+        "notes": "NO monogram in green, dark purple gradient, coherent.",
+        "score": 93,
+        "reviewed_at": "2026-10-28T08:10:43"
+      }
+    },
+    "social_preview": {
+      "path": "assets/social-preview.svg",
+      "status": "approved",
+      "commit": "",
+      "generated_at": "2026-10-28T08:02:40",
+      "review": {
+        "status": "approved",
+        "reviewer": "subagent:vision-review",
+        "method": "vision",
+        "notes": "NO icon, title, file organizer description, DESKTOP tag, green.",
+        "score": 93,
+        "reviewed_at": "2026-10-28T08:10:43"
+      }
+    },
+    "social_preview_png": {
+      "path": "assets/social-preview.png",
+      "status": "pending_review",
+      "commit": "",
+      "generated_at": "2026-10-28T08:02:41",
+      "review": null
+    }
+  },
+  "screenshots": []
+}
