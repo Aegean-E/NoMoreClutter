@@ -10,7 +10,7 @@
 - **Total Classes**: `57`
 - **Total Top-Level Functions**: `25`
 - **Total Class Methods**: `420`
-- **Total Source Lines**: `11144`
+- **Total Source Lines**: `11150`
 
 ---
 
@@ -566,7 +566,7 @@
 ### [`tests/test_dogfood.py`](tests/test_dogfood.py)
 > *Unit and integration tests for the interactive dogfooding harness (PRINCIPLE-016).*
 
-**Size**: `109` lines (`5209` bytes)
+**Size**: `115` lines (`5545` bytes)
 
 **Classes:**
 - `class TestDogfoodHarness`

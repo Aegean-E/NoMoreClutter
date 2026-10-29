@@ -15,6 +15,8 @@ An intelligent AI-powered desktop application that automatically organizes your 
   ```bash
   python -m unittest discover tests
   ```
+  The default suite is headless. Interactive dogfood tests that mount the live UI are opt-in:
+  `NOMORECLUTTER_GUI_TESTS=1 python -m unittest tests.test_dogfood`.
 
 ### 🛠️ AIKit Commands (run from the AIKit folder)
 | Role | Command |

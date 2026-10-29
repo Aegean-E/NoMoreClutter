@@ -3,10 +3,16 @@ Unit and integration tests for the interactive dogfooding harness (PRINCIPLE-016
 Verifies that the dogfood engine executes, captures errors, and cleans up properly.
 """
 
+import os
 import unittest
 from scripts.dogfood_app import DogfoodHarness
 
+# Interactive dogfooding mounts real CustomTkinter windows. It is opt-in so the default
+# headless test gate never opens windows on the user's desktop (ADR-021).
+GUI_TESTS = os.environ.get("NOMORECLUTTER_GUI_TESTS") == "1"
 
+
+@unittest.skipUnless(GUI_TESTS, "interactive UI dogfooding is opt-in; set NOMORECLUTTER_GUI_TESTS=1")
 class TestDogfoodHarness(unittest.TestCase):
     def setUp(self):
         self.harness = DogfoodHarness(verbose=False)

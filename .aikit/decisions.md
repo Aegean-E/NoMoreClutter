@@ -143,6 +143,13 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
 - **Decision**: Migrate NoMoreClutter into a standard AIKit-managed project: clean up obsolete embedded AIKit governance scripts, rules, and knowledge directories; format past ADRs into `.aikit/decisions.md`; integrate the dogfooding harness cleanly; ensure full gate compliance with `aikit check nomoreclutter`.
 - **Consequences**: NoMoreClutter codebase becomes lean and focused on its core application functionality; 100% compliant with AIKit's 4 Phase 4 delivery gates; zero duplicate governance files.
 
+### ADR-021: Interactive Dogfood Tests Are Opt-In
+- **Date**: 2026-10-29
+- **Status**: Accepted
+- **Context**: `python -m unittest discover tests` ran `TestDogfoodHarness`, which mounts live CustomTkinter windows and spammed the user's desktop during every gate run. The dogfood harness is an interactive operational check, not a headless unit test.
+- **Decision**: Skip the dogfood harness tests unless `NOMORECLUTTER_GUI_TESTS=1`; keep `python scripts/dogfood_app.py` as the explicit interactive entry point. The default test gate stays headless.
+- **Consequences**: Gate runs never open windows; interactive UI verification remains available on demand. UI coverage is intentionally opt-in, consistent with ADR-019.
+
 ## Licensing migration (agpl-final)
 
 - New versions use the Aegean License 1.1 (AL-1.1); versions up to and including `agpl-final` remain under GNU AGPL-3.0.
