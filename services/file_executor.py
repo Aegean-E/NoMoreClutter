@@ -130,19 +130,25 @@ class FileExecutor:
                 # Collision safety: resolve conflicting target filenames
                 safe_dest = cls._resolve_collision(change.new_path)
 
-                if change.action == "move":
-                    shutil.move(change.original, safe_dest)
-                else:
-                    shutil.copy2(change.original, safe_dest)
-                    os.remove(change.original)
+                # Write-ahead intent: journal the move before mutating the filesystem, so a
+                # power loss after the move still leaves a record that undo can use.
+                current_batch_moves.append((change.original, safe_dest))
+                cls._save_history()
+
+                try:
+                    if change.action == "move":
+                        shutil.move(change.original, safe_dest)
+                    else:
+                        shutil.copy2(change.original, safe_dest)
+                        os.remove(change.original)
+                except Exception:
+                    current_batch_moves.pop()
+                    cls._save_history()
+                    raise
 
                 # Update change object with actual path used
                 change.new_path = safe_dest
-                current_batch_moves.append((change.original, safe_dest))
                 success += 1
-
-                # Incremental WAL checkpointing: persist move immediately to disk
-                cls._save_history()
 
             except Exception as e:
                 errors += 1

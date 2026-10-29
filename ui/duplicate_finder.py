@@ -556,7 +556,8 @@ class DuplicateFinderDialog(ctk.CTkToplevel):
 
         # Duplicate Rows (Selected for action)
         for dup_path in group.duplicates:
-            default_val = self._unrendered_dup_vars.get(dup_path, True)
+            existing = self.dup_checkbox_vars.get(dup_path)
+            default_val = existing.get() if existing is not None else self._unrendered_dup_vars.get(dup_path, True)
             dup_var = ctk.BooleanVar(value=default_val)
             self.dup_checkbox_vars[dup_path] = dup_var
 

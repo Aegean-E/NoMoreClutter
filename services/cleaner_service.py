@@ -5,7 +5,7 @@ and OS debris (Thumbs.db, .DS_Store, desktop.ini) with zero external dependencie
 """
 
 import os
-from typing import List, Optional, Callable
+from typing import Any, List, Optional, Callable
 from models import CleanupItem, CleanupReport
 
 

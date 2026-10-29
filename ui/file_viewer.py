@@ -321,10 +321,9 @@ class FileViewerDialog(ctk.CTkToplevel):
 
         identical = False
         try:
-            sz1 = os.path.getsize(self.compare_filepath)
-            sz2 = os.path.getsize(self.filepath)
-            identical = (sz1 == sz2)
-        except Exception:  # hygiene: allow file stat failure defaults identical flag to False
+            import filecmp
+            identical = filecmp.cmp(self.compare_filepath, self.filepath, shallow=False)
+        except Exception:  # hygiene: allow comparison failure defaults identical flag to False
             pass
 
         if identical:

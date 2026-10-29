@@ -31,6 +31,7 @@ nomoreclutter/
 ├── .aikit/                   <- this project's memory: record, ledger, decisions
 ├── .gitignore                <- transient AIKit state excluded
 ├── README.md                 <- cold-start reference and documentation
+├── assets/
 ├── COMMERCIAL.md
 ├── LICENSE
 ├── LICENSES/                 <- REUSE license texts

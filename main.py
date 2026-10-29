@@ -561,9 +561,15 @@ class NoMoreClutterApp(ctk.CTk):
         self.batch_size_entry = ctk.CTkEntry(scroll)
         self.limit_entry = ctk.CTkEntry(scroll)
 
+        def _safe_number(key, default, cast, low, high):
+            """Read a persisted setting defensively; older releases stored raw entry text."""
+            try:
+                return max(low, min(high, cast(self.settings.get(key, default) or default)))
+            except (TypeError, ValueError):
+                return default
+
         # 1. RLM Cluster Batch Size Slider
-        initial_batch = int(self.settings.get("batch_size", "15") or 15)
-        initial_batch = max(1, min(30, initial_batch))
+        initial_batch = _safe_number("batch_size", 15, int, 1, 30)
 
         batch_head = ctk.CTkFrame(scroll, fg_color="transparent")
         batch_head.pack(fill="x", padx=10, pady=(6, 2))
@@ -584,8 +590,7 @@ class NoMoreClutterApp(ctk.CTk):
         ctk.CTkLabel(scroll, text="Number of files grouped per AI prompt. Higher is faster; lower saves GPU/CPU RAM.", font=ctk.CTkFont(size=11), text_color="gray").pack(padx=10, pady=(0, 8), anchor="w")
 
         # 2. Max Files Limit Slider
-        initial_limit = int(self.settings.get("limit", "50") or 50)
-        initial_limit = max(0, min(250, initial_limit))
+        initial_limit = _safe_number("limit", 50, int, 0, 250)
 
         limit_head = ctk.CTkFrame(scroll, fg_color="transparent")
         limit_head.pack(fill="x", padx=10, pady=(6, 2))
@@ -607,8 +612,7 @@ class NoMoreClutterApp(ctk.CTk):
         ctk.CTkLabel(scroll, text="Processing limit per run. Slide to 0 for unlimited file processing.", font=ctk.CTkFont(size=11), text_color="gray").pack(padx=10, pady=(0, 8), anchor="w")
 
         # 3. Document Peeking Context Budget Slider
-        initial_peek = int(self.settings.get("peek_length", 180) or 180)
-        initial_peek = max(50, min(350, initial_peek))
+        initial_peek = _safe_number("peek_length", 180, int, 50, 350)
 
         peek_head = ctk.CTkFrame(scroll, fg_color="transparent")
         peek_head.pack(fill="x", padx=10, pady=(6, 2))
@@ -629,8 +633,7 @@ class NoMoreClutterApp(ctk.CTk):
         ctk.CTkLabel(scroll, text="Snippet character preview length extracted from PDFs, Word docs, and text.", font=ctk.CTkFont(size=11), text_color="gray").pack(padx=10, pady=(0, 8), anchor="w")
 
         # 4. Inter-Batch Pacing Delay Slider
-        initial_pacing = float(self.settings.get("pacing_delay", 0.2) or 0.2)
-        initial_pacing = max(0.0, min(2.0, initial_pacing))
+        initial_pacing = _safe_number("pacing_delay", 0.2, float, 0.0, 2.0)
 
         pacing_head = ctk.CTkFrame(scroll, fg_color="transparent")
         pacing_head.pack(fill="x", padx=10, pady=(6, 2))

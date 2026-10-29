@@ -42,3 +42,5 @@ models/bin/
 .aikit/*.bak
 .aikit/*.tmp_*
 .aikit/*.corrupt_*
+# AIKit transient state
+node_modules/

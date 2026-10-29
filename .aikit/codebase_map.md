@@ -10,14 +10,14 @@
 - **Total Classes**: `57`
 - **Total Top-Level Functions**: `25`
 - **Total Class Methods**: `420`
-- **Total Source Lines**: `11135`
+- **Total Source Lines**: `11144`
 
 ---
 
 ## 📦 Modules & Exported Symbols
 
 ### [`main.py`](main.py)
-**Size**: `2110` lines (`101138` bytes)
+**Size**: `2113` lines (`101233` bytes)
 
 **Classes:**
 - `class NoMoreClutterApp`
@@ -185,7 +185,7 @@
 ### [`services/cleaner_service.py`](services/cleaner_service.py)
 > *Orphan Folder & Junk Pruner Service (PRINCIPLE-003: Modularity, PRINCIPLE-007: Speed & Safety)*
 
-**Size**: `221` lines (`8479` bytes)
+**Size**: `221` lines (`8484` bytes)
 
 **Classes:**
 - `class CleanerService` - *Safely cleans empty folders, zero-byte artifacts, and system junk.*
@@ -229,7 +229,7 @@
 ### [`services/file_executor.py`](services/file_executor.py)
 > *Safe File Operations & Persistent Multi-Session Undo Management (PRINCIPLE-007: Reliability)*
 
-**Size**: `268` lines (`10432` bytes)
+**Size**: `274` lines (`10714` bytes)
 
 **Classes:**
 - `class FileExecutor` - *Safe execution engine with persistent multi-session undo tracking and collision resolution.*
@@ -771,7 +771,7 @@
 ### [`ui/duplicate_finder.py`](ui/duplicate_finder.py)
 > *Smart Duplicate File Finder & Storage Reclaimer UI Dialog*
 
-**Size**: `755` lines (`30610` bytes)
+**Size**: `756` lines (`30714` bytes)
 
 **Classes:**
 - `class DuplicateFinderDialog` - *Interactive Duplicate File Finder & Storage Reclaimer.*
@@ -804,7 +804,7 @@
 ### [`ui/file_viewer.py`](ui/file_viewer.py)
 > *In-App File Viewer & Visual Duplicate Inspector (PRINCIPLE-003, PRINCIPLE-007, PRINCIPLE-012)*
 
-**Size**: `707` lines (`28029` bytes)
+**Size**: `706` lines (`28003` bytes)
 
 **Classes:**
 - `class FileViewerDialog` - *Rich in-app File Viewer and Side-by-Side Duplicate Comparator.*
