@@ -44,3 +44,4 @@ models/bin/
 .aikit/*.corrupt_*
 # AIKit transient state
 node_modules/
+.aikit/reforge.reviews/
