@@ -771,7 +771,7 @@
 ### [`ui/duplicate_finder.py`](ui/duplicate_finder.py)
 > *Smart Duplicate File Finder & Storage Reclaimer UI Dialog*
 
-**Size**: `756` lines (`30714` bytes)
+**Size**: `756` lines (`30734` bytes)
 
 **Classes:**
 - `class DuplicateFinderDialog` - *Interactive Duplicate File Finder & Storage Reclaimer.*

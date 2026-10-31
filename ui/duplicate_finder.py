@@ -9,7 +9,7 @@ import queue
 import subprocess
 import sys
 import threading
-from typing import List, Dict
+from typing import List, Dict, Optional, Optional
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from models import DuplicateGroup
